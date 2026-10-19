@@ -1,0 +1,576 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>body{margin:0}[hidden]{display:none!important}</style>
+<title>Charge in Motion</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Six animated circuits, from a battery and resistor to an AC RLC loop, showing how charge carriers move and how voltage and current evolve.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&family=Martian+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a bench — the live schematic on the left, the instrument panel on the right, the scope across the bottom. */
+:root {
+  --bg: #eef1ef;
+  --panel: #fbfcfb;
+  --ink: #17211f;
+  --ink-2: #3f4b48;
+  --muted: #64716d;
+  --rule: #d3dad7;
+  --grid: #e2e8e5;
+  --wire: #2b3633;
+  --v: #b87400;
+  --i: #0a8a7a;
+  --q: #7a4fd0;
+  --pos: #d4483b;
+  --neg: #2f6fd6;
+  --heat: #ff7a1a;
+  --f-display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --f-body: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-data: "Martian Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1413; --panel: #151c1a; --ink: #e6eeeb; --ink-2: #bcc8c4; --muted: #8d9b96; --rule: #27312e; --grid: #1e2725;
+    --wire: #c9d4d0; --v: #f0a52a; --i: #2fd1bb; --q: #a888f0; --pos: #ff6b5c; --neg: #5f9bff; --heat: #ff8a3a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1413; --panel: #151c1a; --ink: #e6eeeb; --ink-2: #bcc8c4; --muted: #8d9b96; --rule: #27312e; --grid: #1e2725;
+  --wire: #c9d4d0; --v: #f0a52a; --i: #2fd1bb; --q: #a888f0; --pos: #ff6b5c; --neg: #5f9bff; --heat: #ff8a3a;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink);
+  font: 16px/1.55 var(--f-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 56px;
+}
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 20px; }
+h1, h2 { font-family: var(--f-display); font-weight: 700; margin: 0; text-wrap: balance; letter-spacing: -0.01em; line-height: 1.1; }
+h1 { font-size: clamp(2rem, 5vw, 3.1rem); }
+h2 { font-size: 1.6rem; }
+p { margin: 0; max-width: 64ch; }
+header.top { padding-block: 36px 4px; display: grid; gap: 10px; }
+.lede { color: var(--ink-2); font-size: 1.05rem; }
+.mono, output, .chip b { font-family: var(--f-data); font-variant-numeric: tabular-nums; }
+
+nav.circuits { display: flex; flex-wrap: wrap; gap: 14px 22px; align-items: flex-start; }
+.group { display: grid; gap: 6px; }
+.group .lab { font: 500 0.7rem var(--f-data); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.group .row { display: flex; flex-wrap: wrap; gap: 6px; }
+nav.circuits button {
+  font: 500 0.92rem var(--f-body); color: var(--ink-2); background: var(--panel);
+  border: 1px solid var(--rule); border-radius: 6px; padding: 7px 12px; cursor: pointer;
+  display: inline-flex; gap: 8px; align-items: baseline;
+}
+nav.circuits button .n { font: 500 0.72rem var(--f-data); color: var(--muted); }
+nav.circuits button:hover { border-color: var(--muted); }
+nav.circuits button[aria-selected="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+nav.circuits button[aria-selected="true"] .n { color: var(--bg); opacity: 0.7; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--i); outline-offset: 2px; }
+
+.bench { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 860px) { .bench { grid-template-columns: minmax(0, 1fr); } }
+.board { background: var(--panel); border: 1px solid var(--rule); border-radius: 10px; padding: 12px; display: grid; gap: 10px; min-width: 0; }
+.board canvas { display: block; width: 100%; height: auto; }
+.boardbar { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; justify-content: space-between; font-size: 0.85rem; color: var(--ink-2); }
+.seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; }
+.seg button { font: inherit; font-size: 0.82rem; background: var(--panel); color: var(--ink-2); border: 0; padding: 5px 10px; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--rule); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn { font: 500 0.85rem var(--f-body); color: var(--ink); background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--i); border-color: var(--i); color: var(--panel); }
+
+.panel { display: grid; gap: 16px; min-width: 0; }
+.panel .kicker { font: 500 0.72rem var(--f-data); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.panel .text { display: grid; gap: 10px; color: var(--ink-2); }
+.eqs { display: grid; gap: 4px; background: var(--panel); border: 1px solid var(--rule); border-radius: 8px; padding: 10px 14px; font: 0.9rem/1.7 var(--f-data); color: var(--ink); overflow-x: auto; }
+.eqs i { font-family: var(--f-body); font-style: italic; }
+.try { font-size: 0.92rem; color: var(--ink); display: flex; gap: 8px; }
+.try::before { content: "Try"; font: 500 0.7rem/1.9 var(--f-data); letter-spacing: 0.1em; text-transform: uppercase; color: var(--i); flex: none; }
+.sliders { display: grid; gap: 8px; }
+.sliders label { display: grid; grid-template-columns: 5.6em minmax(0, 1fr) 5.4em; gap: 10px; align-items: center; font-size: 0.9rem; color: var(--ink-2); }
+.sliders input[type=range] { width: 100%; min-width: 0; accent-color: var(--i); }
+.sliders output { text-align: right; color: var(--ink); font-size: 0.82rem; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-flex; gap: 6px; align-items: baseline; padding: 4px 9px; border-radius: 99px; border: 1px solid var(--rule); background: var(--panel); font-size: 0.8rem; color: var(--muted); }
+.chip b { font-weight: 500; color: var(--c, var(--ink)); font-size: 0.8rem; }
+
+.scope { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 20px; align-items: start; }
+@media (max-width: 860px) { .scope { grid-template-columns: minmax(0, 1fr); } }
+.scope .board canvas { aspect-ratio: auto; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 0.8rem; color: var(--ink-2); }
+.legend span { display: inline-flex; gap: 6px; align-items: center; }
+.legend i { width: 16px; height: 3px; border-radius: 2px; display: inline-block; }
+.side { display: grid; gap: 12px; width: 260px; max-width: 100%; }
+@media (max-width: 860px) { .side { width: 100%; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); } }
+.side .board { justify-items: center; }
+.side canvas { max-width: 240px; }
+.side .cap { font-size: 0.8rem; color: var(--ink-2); text-align: center; max-width: 30ch; }
+.note { font-size: 0.85rem; color: var(--muted); border-top: 1px solid var(--rule); padding-top: 14px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <h1>Charge in Motion</h1>
+    <p class="lede">Six circuits, from a battery and a resistor to an AC loop with a resistor, an inductor and a capacitor. Every dot is a charge carrier. Watch how far and how fast they move, and compare it with the voltage and current on the scope below.</p>
+  </header>
+
+  <nav class="circuits" aria-label="Circuits">
+    <div class="group"><span class="lab">Direct current</span><div class="row" role="tablist">
+      <button role="tab" data-c="dc-r"><span class="n">1</span>Battery + R</button>
+      <button role="tab" data-c="dc-c"><span class="n">2</span>Battery + C</button>
+      <button role="tab" data-c="rc"><span class="n">3</span>Battery + R + C</button>
+    </div></div>
+    <div class="group"><span class="lab">Alternating current</span><div class="row" role="tablist">
+      <button role="tab" data-c="ac-r"><span class="n">4</span>AC + R</button>
+      <button role="tab" data-c="ac-rl"><span class="n">5</span>AC + R + L</button>
+      <button role="tab" data-c="ac-rlc"><span class="n">6</span>AC + R + L + C</button>
+    </div></div>
+  </nav>
+
+  <div class="bench">
+    <div class="board">
+      <canvas id="cv" width="560" height="340" aria-label="Animated circuit schematic"></canvas>
+      <div class="boardbar">
+        <span>Show
+          <span class="seg" role="group" aria-label="Carrier type">
+            <button type="button" id="show-e" aria-pressed="true">electrons</button><button type="button" id="show-p" aria-pressed="false">positive charge</button>
+          </span>
+        </span>
+        <div class="btns">
+          <button type="button" class="btn primary" id="sw" hidden>Switch to bypass</button>
+          <button type="button" class="btn" id="tune" hidden>Tune to resonance</button>
+          <button type="button" class="btn" id="play">Pause</button>
+          <button type="button" class="btn" id="reset">Restart</button>
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="kicker" id="kicker"></div>
+      <h2 id="title"></h2>
+      <div class="text" id="text"></div>
+      <div class="eqs" id="eqs"></div>
+      <p class="try" id="try"></p>
+      <div class="sliders" id="sliders"></div>
+      <div class="chips" id="chips"></div>
+    </div>
+  </div>
+
+  <div class="scope">
+    <div class="board">
+      <div class="legend" id="legend"></div>
+      <canvas id="sc" width="800" height="240" aria-label="Scope trace of voltage and current over the last ten seconds"></canvas>
+    </div>
+    <div class="side" id="side">
+      <div class="board" id="phbox"><canvas id="ph" width="240" height="240" aria-label="Phasor diagram"></canvas><p class="cap" id="phcap"></p></div>
+      <div class="board" id="rsbox"><canvas id="rs" width="240" height="150" aria-label="Current amplitude against frequency"></canvas><p class="cap" id="rscap"></p></div>
+    </div>
+  </div>
+
+  <p class="note">Component values are chosen so the motion is slow enough to follow: AC frequencies are fractions of a hertz and capacitors are in farads. A real 50 Hz circuit does the same things a hundred times faster. Dot speed is proportional to the current, with a scale set per circuit so each one stays readable. In a real copper wire carrying 1 A, electrons drift at roughly a tenth of a millimetre per second, while the push that starts them moving travels along the wire close to the speed of light.</p>
+</div>
+
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+let C = {};
+const readColors = () => { for (const k of ["bg", "panel", "ink", "ink-2", "muted", "rule", "grid", "wire", "v", "i", "q", "pos", "neg", "heat"]) C[k] = css("--" + k); };
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+// ---------- circuit definitions ----------
+// Values in volts, ohms, farads, henries and hertz. k sets how many pixels the carriers move per coulomb.
+const DEFS = {
+  "dc-r": { group: "Direct current · 1", title: "A battery and a resistor", parts: ["R"], src: "dc", k: 80,
+    p: { V: [1, 12, 0.5, 9, "V", "V"], R: [2, 50, 1, 10, "R", "Ω"] },
+    text: ["The battery holds a fixed voltage across the resistor, so the current is steady. Every carrier in the loop starts moving at the same moment and drifts at the same speed, because charge cannot pile up anywhere in a plain wire.",
+      "The carriers lose the energy the battery gave them inside the resistor, which glows here in proportion to the power it dissipates."],
+    eqs: ["<i>I</i> = <i>V</i> / <i>R</i>", "<i>P</i> = <i>I</i>²<i>R</i>"],
+    try: "Double R and every carrier slows to half speed at once." },
+  "dc-c": { group: "Direct current · 2", title: "A battery and a capacitor", parts: ["C"], src: "dc", sw: true, k: 7, r: 0.5,
+    p: { V: [1, 12, 0.5, 9, "V", "V"], C: [0.2, 2, 0.1, 1, "C", "F"] },
+    text: ["No carrier crosses the gap between the plates. Carriers pile up on one plate and leave the other, until the capacitor's own voltage Q/C equals the battery's. Then the current stops, with the charge parked on the plates.",
+      "With perfect wires this would happen instantly. Here the wires have r = 0.5 Ω, so the burst lasts about rC."],
+    eqs: ["<i>Q</i><sub>final</sub> = <i>C V</i>", "<i>τ</i> = <i>r C</i> (wire resistance only)"],
+    try: "Flip the switch to the bypass. The plates push the charge back round the loop the other way." },
+  "rc": { group: "Direct current · 3", title: "A battery, a resistor and a capacitor", parts: ["R", "C"], src: "dc", sw: true, k: 30,
+    p: { V: [1, 12, 0.5, 9, "V", "V"], R: [2, 20, 1, 10, "R", "Ω"], C: [0.05, 0.5, 0.01, 0.2, "C", "F"] },
+    text: ["The resistor limits how fast charge can reach the plates, so charging takes time. The current starts at V/R and dies away as the capacitor's voltage rises to meet the battery's.",
+      "After one time constant τ = RC the capacitor holds 63% of its final charge, and after five it is effectively full."],
+    eqs: ["<i>I</i>(<i>t</i>) = (<i>V</i>/<i>R</i>) e<sup>−<i>t</i>/<i>RC</i></sup>", "<i>V<sub>C</sub></i>(<i>t</i>) = <i>V</i> (1 − e<sup>−<i>t</i>/<i>RC</i></sup>)"],
+    try: "Flip the switch halfway through charging, then back again." },
+  "ac-r": { group: "Alternating current · 4", title: "An AC source and a resistor", parts: ["R"], src: "ac", k: 150,
+    p: { V: [1, 12, 0.5, 10, "V₀", "V"], R: [2, 50, 1, 10, "R", "Ω"], f: [0.1, 2, 0.05, 0.5, "f", "Hz"] },
+    text: ["The source keeps reversing, so the carriers only rock back and forth. No net charge goes anywhere, yet the resistor heats on both swings.",
+      "The current follows the voltage exactly: it peaks when the voltage peaks and is zero when the voltage is zero. The two phasors turn together."],
+    eqs: ["<i>V</i>(<i>t</i>) = <i>V</i>₀ sin <i>ωt</i>", "<i>I</i>(<i>t</i>) = (<i>V</i>₀/<i>R</i>) sin <i>ωt</i>, in phase"],
+    try: "Lower f: each swing lasts longer, so the carriers travel further before turning back." },
+  "ac-rl": { group: "Alternating current · 5", title: "An AC source, a resistor and an inductor", parts: ["R", "L"], src: "ac", k: 150,
+    p: { V: [1, 12, 0.5, 10, "V₀", "V"], R: [2, 50, 1, 10, "R", "Ω"], L: [0.5, 5, 0.1, 2, "L", "H"], f: [0.1, 2, 0.05, 0.5, "f", "Hz"] },
+    text: ["The inductor opposes any change in current with a voltage L dI/dt. The current can't keep up with the source, so it lags behind it and swings less.",
+      "The faster the source reverses, the harder the inductor pushes back: at high frequency the lag approaches a quarter cycle and the current shrinks."],
+    eqs: ["<i>Z</i> = √(<i>R</i>² + (<i>ωL</i>)²)", "<i>I</i>₀ = <i>V</i>₀ / <i>Z</i>,  tan <i>φ</i> = <i>ωL</i> / <i>R</i> (current lags)"],
+    try: "Raise f and watch the current phasor fall behind towards 90°." },
+  "ac-rlc": { group: "Alternating current · 6", title: "An AC source with R, L and C", parts: ["R", "L", "C"], src: "ac", k: 80,
+    p: { V: [1, 12, 0.5, 10, "V₀", "V"], R: [1, 30, 0.5, 5, "R", "Ω"], L: [0.5, 5, 0.1, 2, "L", "H"], C: [0.01, 0.5, 0.01, 0.05, "C", "F"], f: [0.1, 2, 0.01, 0.3, "f", "Hz"] },
+    text: ["The inductor makes the current lag and the capacitor makes it lead. Below the resonant frequency the capacitor wins and the current leads; above it the inductor wins and the current lags.",
+      "At f₀ the two cancel exactly. The current is then in phase with the source and as large as the resistor allows, while energy sloshes between the capacitor's plates and the inductor's field."],
+    eqs: ["<i>Z</i> = √(<i>R</i>² + (<i>ωL</i> − 1/<i>ωC</i>)²)", "<i>f</i>₀ = 1 / (2π√(<i>LC</i>)),  <i>I</i>₀ = <i>V</i>₀ / <i>Z</i>"],
+    try: "Tune to resonance, then lower R to make the peak taller and sharper." },
+};
+
+// ---------- geometry: the loop runs clockwise from the top-left corner ----------
+const W = 560, H = 340, X0 = 80, X1 = 490, Y0 = 56, Y1 = 290;
+const SEGS = [[X0, Y0, X1, Y0], [X1, Y0, X1, Y1], [X1, Y1, X0, Y1], [X0, Y1, X0, Y0]];
+const LEN = SEGS.map(([a, b, c, d]) => Math.hypot(c - a, d - b)), PER = LEN.reduce((a, b) => a + b);
+const CX = (X0 + X1) / 2, CY = (Y0 + Y1) / 2, GAP = 9, BYX = X0 - 40, SWY = 96, BRY = 236;
+function pointAt(s) {
+  s = ((s % PER) + PER) % PER;
+  for (let k = 0; k < 4; k++) {
+    if (s <= LEN[k]) { const [a, b, c, d] = SEGS[k], f = s / LEN[k]; return [a + (c - a) * f, b + (d - b) * f, k]; }
+    s -= LEN[k];
+  }
+  return [X0, Y0, 0];
+}
+
+// ---------- state ----------
+let id = "dc-r", D = DEFS[id], P = {}, S, running = !reduce, electrons = true, last = 0, buf = [], sampleAcc = 0;
+function iniState() {
+  S = { t: 0, th: 0, Q: 0, I: 0, X: 0, sw: 1 };
+  if (D.src === "ac") { // start in the steady state so the page opens without a transient
+    const { I0, phi, w } = acAmp();
+    S.I = I0 * Math.sin(-phi);
+    S.Q = -(I0 / w) * Math.cos(-phi);
+    S.X = S.Q;
+  }
+  buf = []; sampleAcc = 0;
+  // prefill the scope; the switched circuits open just after the switch closes, so they are still charging
+  const pre = id === "rc" ? 60 : id === "dc-c" ? 6 : 600;
+  for (let k = 0; k < pre; k++) step(1 / 60, true);
+}
+function acAmp() {
+  const w = 2 * Math.PI * P.f, xl = D.parts.includes("L") ? w * P.L : 0, xc = D.parts.includes("C") ? 1 / (w * P.C) : 0;
+  const Z = Math.hypot(P.R, xl - xc);
+  return { w, Z, I0: P.V / Z, phi: Math.atan2(xl - xc, P.R) };
+}
+function srcV() { return D.src === "dc" ? (S.sw ? P.V : 0) : P.V * Math.sin(S.th); }
+function vC() { return D.parts.includes("C") ? S.Q / P.C : 0; }
+
+function step(dt, prefill) {
+  const n = Math.max(1, Math.ceil(dt / 0.002)), h = dt / n;
+  for (let k = 0; k < n; k++) {
+    const w = 2 * Math.PI * (P.f || 0);
+    if (id === "dc-r") { S.I = P.V / P.R; S.X += S.I * h; }
+    else if (id === "dc-c" || id === "rc") {
+      // exact exponential update of a series RC loop driven by V or by the bypass (0 V)
+      const R = id === "rc" ? P.R : D.r, Vs = S.sw ? P.V : 0, Qi = P.C * Vs, Qn = Qi + (S.Q - Qi) * Math.exp(-h / (R * P.C));
+      S.X += Qn - S.Q; S.Q = Qn; S.I = (Vs - S.Q / P.C) / R;
+    } else if (id === "ac-r") {
+      S.I = P.V * Math.sin(S.th) / P.R; S.X += S.I * h;
+    } else {
+      // RK4 on L dI/dt = V(t) - R I - Q/C, dQ/dt = I
+      const hasC = id === "ac-rlc", f = (th, q, i) => [i, (P.V * Math.sin(th) - P.R * i - (hasC ? q / P.C : 0)) / P.L];
+      const th = S.th, q = S.Q, i = S.I;
+      const k1 = f(th, q, i), k2 = f(th + w * h / 2, q + h / 2 * k1[0], i + h / 2 * k1[1]);
+      const k3 = f(th + w * h / 2, q + h / 2 * k2[0], i + h / 2 * k2[1]), k4 = f(th + w * h, q + h * k3[0], i + h * k3[1]);
+      const dq = h / 6 * (k1[0] + 2 * k2[0] + 2 * k3[0] + k4[0]);
+      S.Q += dq; S.X += dq; S.I += h / 6 * (k1[1] + 2 * k2[1] + 2 * k3[1] + k4[1]);
+    }
+    S.th += w * h; S.t += h;
+  }
+  sampleAcc += dt;
+  while (sampleAcc >= 1 / 50) { sampleAcc -= 1 / 50; buf.push([srcV(), vC(), S.I]); if (buf.length > 500) buf.shift(); }
+}
+
+// ---------- canvas helpers ----------
+function fit(cv, w, h) {
+  const r = Math.min(2.5, window.devicePixelRatio || 1), cw = cv.clientWidth || w;
+  const ch = Math.round(cw * h / w);
+  if (cv.width !== Math.round(cw * r) || cv.height !== Math.round(ch * r)) { cv.width = Math.round(cw * r); cv.height = Math.round(ch * r); }
+  const ctx = cv.getContext("2d"); ctx.setTransform(cv.width / w, 0, 0, cv.height / h, 0, 0); return ctx;
+}
+function line(ctx, pts, col, wd = 2.4) { ctx.strokeStyle = col; ctx.lineWidth = wd; ctx.lineJoin = ctx.lineCap = "round"; ctx.beginPath(); pts.forEach(([x, y], k) => k ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.stroke(); }
+function text(ctx, s, x, y, col, size = 13, align = "center", font = "--f-data") {
+  ctx.fillStyle = col; ctx.font = `500 ${size}px ${font === "--f-data" ? '"Martian Mono", monospace' : '"Instrument Sans", sans-serif'}`;
+  ctx.textAlign = align; ctx.textBaseline = "middle"; ctx.fillText(s, x, y);
+}
+const fmtU = (v, u, d = 2) => `${v.toFixed(d)} ${u}`;
+
+// ---------- schematic ----------
+function hiddenAt(x, y, seg) {
+  if (D.parts.includes("C") && seg === 2 && Math.abs(x - CX) < GAP) return true;           // between the plates
+  if (D.src === "ac" && seg === 3 && Math.abs(y - CY) < 22) return true;                     // inside the AC source
+  if (D.src === "dc" && seg === 3 && S.sw && Math.abs(y - CY) < 12) return true;              // inside the battery
+  return false;
+}
+// carriers on the left side follow the switch: battery branch at X0, bypass branch at BYX
+function leftX(y) {
+  if (!D.sw) return X0;
+  const target = S.sw ? X0 : BYX;
+  if (y <= SWY) return X0;
+  if (y < SWY + 26) return X0 + (target - X0) * (y - SWY) / 26;
+  if (y <= BRY) return target;
+  return X0;
+}
+function drawCircuit() {
+  const ctx = fit($("cv"), W, H);
+  ctx.clearRect(0, 0, W, H);
+  const Imax = imax(), a = Math.min(1, Math.abs(S.I) / Imax);
+  // wires
+  const lw = [[X0, Y0], [X1, Y0], [X1, Y1], [X0, Y1]];
+  line(ctx, [[X0, SWY], [X0, Y0], [X1, Y0], [X1, Y1], [X0, Y1], [X0, BRY]], C.wire);
+  if (D.sw) {
+    line(ctx, [[X0, SWY + 26], [X0, BRY]], C.wire);
+    line(ctx, [[BYX, SWY + 26], [BYX, BRY], [X0, BRY]], C.wire);
+    // switch blade
+    const bx = S.sw ? X0 : BYX;
+    line(ctx, [[X0, SWY], [bx, SWY + 26]], C.ink, 3);
+    for (const [cx, cy] of [[X0, SWY], [X0, SWY + 26], [BYX, SWY + 26]]) { ctx.fillStyle = C.panel; ctx.strokeStyle = C.wire; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, cy, 3.5, 0, 7); ctx.fill(); ctx.stroke(); }
+    text(ctx, S.sw ? "battery" : "bypass", X0 + 12, SWY + 4, C.muted, 11, "left", "body");
+  } else line(ctx, [[X0, SWY], [X0, BRY]], C.wire);
+
+  // resistor with a heat glow proportional to I²R
+  if (D.parts.includes("R")) {
+    const rx0 = CX - 44, rx1 = CX + 44;
+    const g = ctx.createRadialGradient(CX, Y0, 4, CX, Y0, 70);
+    g.addColorStop(0, C.heat); g.addColorStop(1, "transparent");
+    ctx.globalAlpha = 0.55 * a * a; ctx.fillStyle = g; ctx.fillRect(CX - 80, Y0 - 70, 160, 140); ctx.globalAlpha = 1;
+    ctx.fillStyle = C.panel; ctx.fillRect(rx0, Y0 - 12, rx1 - rx0, 24);
+    const zz = [[rx0, Y0]]; for (let k = 1; k < 12; k++) zz.push([rx0 + k * (rx1 - rx0) / 12, Y0 + (k % 2 ? -10 : 10)]); zz.push([rx1, Y0]);
+    line(ctx, zz, C.wire, 2.4);
+    text(ctx, `R = ${P.R} Ω`, CX, Y0 - 26, C["ink-2"], 12);
+  }
+  // inductor: coils on the right side with a field halo proportional to |I|
+  if (D.parts.includes("L")) {
+    const ly0 = CY - 44, ly1 = CY + 44;
+    ctx.globalAlpha = 0.35 * a; ctx.strokeStyle = C.i; ctx.lineWidth = 1.5;
+    for (let r = 0; r < 3; r++) { ctx.beginPath(); ctx.ellipse(X1, CY, 22 + r * 12, 54 + r * 12, 0, 0, 7); ctx.stroke(); }
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = C.panel; ctx.fillRect(X1 - 4, ly0, 24, ly1 - ly0);
+    ctx.strokeStyle = C.wire; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.moveTo(X1, ly0);
+    for (let k = 0; k < 4; k++) { const y = ly0 + k * 22; ctx.arc(X1, y + 11, 11, -Math.PI / 2, Math.PI / 2, false); }
+    ctx.stroke();
+    text(ctx, `L = ${P.L} H`, X1 + 28, CY, C.ink, 12, "left");
+  }
+  // capacitor: plates on the bottom wire, signs and field lines proportional to the charge
+  if (D.parts.includes("C")) {
+    ctx.fillStyle = C.panel; ctx.fillRect(CX - GAP, Y1 - 4, 2 * GAP, 8);
+    line(ctx, [[CX - GAP, Y1 - 24], [CX - GAP, Y1 + 24]], C.wire, 3.4);
+    line(ctx, [[CX + GAP, Y1 - 24], [CX + GAP, Y1 + 24]], C.wire, 3.4);
+    const vc = vC(), n = Math.min(6, Math.round(Math.abs(vc) / 12 * 6 + (Math.abs(vc) > 0.15 ? 0.5 : 0)));
+    // positive I flows right to left along the bottom wire, so it charges the right-hand plate positive
+    const right = vc >= 0, xp = right ? CX + GAP + 9 : CX - GAP - 9, xn = right ? CX - GAP - 9 : CX + GAP + 9;
+    for (let k = 0; k < n; k++) {
+      const y = Y1 - 20 + k * 8;
+      text(ctx, "+", xp, y, C.pos, 11); text(ctx, "−", xn, y, C.neg, 11);
+      ctx.globalAlpha = 0.5; line(ctx, [[CX + (right ? 1 : -1) * (GAP - 2), y], [CX - (right ? 1 : -1) * (GAP - 2), y]], C.q, 1); ctx.globalAlpha = 1;
+    }
+    text(ctx, `C = ${P.C} F`, CX, Y1 + 38, C.ink, 12);
+  }
+  // carriers: every one moves by the same charge displacement X; electrons go the other way
+  const sp = 22, N = Math.floor(PER / sp), off = (electrons ? -1 : 1) * D.k * S.X;
+  for (let k = 0; k < N; k++) {
+    let [x, y, seg] = pointAt(k * sp + off + sp / 2);
+    if (seg === 3) x = leftX(y);
+    if (hiddenAt(x, y, seg)) continue;
+    ctx.fillStyle = electrons ? C.neg : C.pos;
+    ctx.beginPath(); ctx.arc(x, y, 5, 0, 7); ctx.fill();
+    ctx.strokeStyle = C.panel; ctx.lineWidth = 1.6; ctx.beginPath();
+    ctx.moveTo(x - 2.6, y); ctx.lineTo(x + 2.6, y);
+    if (!electrons) { ctx.moveTo(x, y - 2.6); ctx.lineTo(x, y + 2.6); }
+    ctx.stroke();
+  }
+  // source drawn last so carriers pass under it
+  if (D.src === "dc") {
+    if (S.sw || !D.sw) {
+      ctx.fillStyle = C.panel; ctx.fillRect(X0 - 24, CY - 12, 48, 24);
+      line(ctx, [[X0 - 22, CY - 7], [X0 + 22, CY - 7]], C.wire, 3);
+      line(ctx, [[X0 - 12, CY + 7], [X0 + 12, CY + 7]], C.wire, 5);
+    } else {
+      line(ctx, [[X0 - 22, CY - 7], [X0 + 22, CY - 7]], C.muted, 3);
+      line(ctx, [[X0 - 12, CY + 7], [X0 + 12, CY + 7]], C.muted, 5);
+    }
+    text(ctx, "+", X0 + 30, CY - 14, C.pos, 14); text(ctx, `${P.V} V`, X0 + 30, CY + 8, C.ink, 12, "left");
+  } else {
+    ctx.fillStyle = C.panel; ctx.strokeStyle = C.wire; ctx.lineWidth = 2.4;
+    ctx.beginPath(); ctx.arc(X0, CY, 20, 0, 7); ctx.fill(); ctx.stroke();
+    const sw = [], ph = S.th;
+    for (let k = 0; k <= 24; k++) { const u = k / 24; sw.push([X0 - 12 + 24 * u, CY - 7 * Math.sin(2 * Math.PI * u)]); }
+    line(ctx, sw, C.v, 2);
+    // a marker riding the source's own sine shows where in the cycle it is
+    text(ctx, `${P.V} V`, X0 + 30, CY - 8, C.ink, 12, "left"); text(ctx, `${P.f} Hz`, X0 + 30, CY + 10, C.muted, 11, "left");
+  }
+  // current direction arrow (conventional current), length proportional to |I|
+  const L = 16 + 46 * a, ay = Y0 + 22, ax = X1 - 60;
+  if (a > 0.02) {
+    const dir = Math.sign(S.I);
+    ctx.globalAlpha = 0.85;
+    line(ctx, [[ax - dir * L / 2, ay], [ax + dir * L / 2, ay]], C.i, 2.4);
+    line(ctx, [[ax + dir * L / 2 - dir * 7, ay - 5], [ax + dir * L / 2, ay], [ax + dir * L / 2 - dir * 7, ay + 5]], C.i, 2.4);
+    ctx.globalAlpha = 1;
+    text(ctx, "I", ax, ay + 14, C.i, 12);
+  }
+}
+function imax() {
+  if (id === "dc-r") return 12 / 2;
+  if (id === "dc-c") return Math.max(P.V / D.r, 1e-6);
+  if (id === "rc") return Math.max(P.V / P.R, 1e-6);
+  return Math.max(acAmp().I0 * 1.15, 1e-6);
+}
+
+// ---------- scope ----------
+function drawScope() {
+  const cv = $("sc"), w = 800, h = 240, ctx = fit(cv, w, h);
+  ctx.clearRect(0, 0, w, h);
+  const ml = 54, mr = 58, mt = 12, mb = 28, x0 = ml, x1 = w - mr, y0 = h - mb, y1 = mt;
+  const dc = D.src === "dc", vmax = dc ? 12.5 : 12.5, vmin = dc ? (D.sw ? -12.5 : 0) : -12.5;
+  const im = (id === "dc-r" ? Math.max(P.V / P.R, 0.05) * 1.25 : imax() * 1.1), imin = dc && !D.sw ? 0 : -im;
+  const yv = v => y0 + (v - vmin) / (vmax - vmin) * (y1 - y0), yi = v => y0 + (v - imin) / (im - imin) * (y1 - y0);
+  ctx.strokeStyle = C.grid; ctx.lineWidth = 1;
+  for (let k = 0; k <= 10; k++) { const x = x0 + (x1 - x0) * k / 10; ctx.beginPath(); ctx.moveTo(x, y1); ctx.lineTo(x, y0); ctx.stroke(); }
+  const vt = dc && !D.sw ? [0, 4, 8, 12] : [-12, -6, 0, 6, 12];
+  for (const v of vt) { ctx.beginPath(); ctx.moveTo(x0, yv(v)); ctx.lineTo(x1, yv(v)); ctx.stroke(); text(ctx, `${v}`, x0 - 8, yv(v), C.v, 10, "right"); }
+  const it = [imin, imin / 2, 0, im / 2, im].filter((v, k, a) => a.indexOf(v) === k);
+  for (const v of it) text(ctx, fmtI(v), x1 + 8, yi(v), C.i, 10, "left");
+  ctx.strokeStyle = C.muted; ctx.beginPath(); ctx.moveTo(x0, yv(0)); ctx.lineTo(x1, yv(0)); ctx.stroke();
+  text(ctx, "volts", x0 - 8, h - 8, C.v, 10, "right");
+  text(ctx, "amps", x1 + 8, h - 8, C.i, 10, "left");
+  text(ctx, "last 10 s →", (x0 + x1) / 2, h - 8, C.muted, 10);
+  const n = buf.length, xs = k => x1 - (n - 1 - k) * (x1 - x0) / 499, clip = (v, lo, hi) => Math.max(y1 - 2, Math.min(y0 + 2, v));
+  const trace = (col, f, wd) => { ctx.save(); ctx.beginPath(); ctx.rect(x0, y1 - 2, x1 - x0, y0 - y1 + 4); ctx.clip(); line(ctx, buf.map((b, k) => [xs(k), clip(f(b))]), col, wd); ctx.restore(); };
+  trace(C.v, b => yv(b[0]), 2);
+  if (D.parts.includes("C")) trace(C.q, b => yv(b[1]), 2);
+  trace(C.i, b => yi(b[2]), 2.4);
+}
+const fmtI = v => Math.abs(v) >= 10 ? v.toFixed(0) : Math.abs(v) >= 1 ? v.toFixed(1) : v.toFixed(2);
+
+// ---------- phasors and resonance (AC only) ----------
+function drawPhasor() {
+  const ctx = fit($("ph"), 240, 240), c = 120, R = 92;
+  ctx.clearRect(0, 0, 240, 240);
+  const { I0, phi } = acAmp(), Iref = Math.max(I0, P.V / P.R) * 1.02;
+  ctx.strokeStyle = C.grid; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(c, c, R, 0, 7); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(c - R - 8, c); ctx.lineTo(c + R + 8, c); ctx.moveTo(c, c - R - 8); ctx.lineTo(c, c + R + 8); ctx.stroke();
+  const arrow = (ang, len, col) => {
+    const x = c + len * Math.cos(ang), y = c - len * Math.sin(ang);
+    line(ctx, [[c, c], [x, y]], col, 3);
+    const a1 = ang + Math.PI - 0.4, a2 = ang + Math.PI + 0.4;
+    line(ctx, [[x + 9 * Math.cos(a1), y - 9 * Math.sin(a1)], [x, y], [x + 9 * Math.cos(a2), y - 9 * Math.sin(a2)]], col, 3);
+    ctx.setLineDash([3, 3]); line(ctx, [[x, y], [c, y]], col, 1); ctx.setLineDash([]);
+  };
+  // the vertical projection of each phasor is the instantaneous value
+  arrow(S.th, R * 0.95, C.v);
+  arrow(S.th - phi, R * 0.95 * I0 / Iref, C.i);
+  text(ctx, "V", c + (R + 12) * Math.cos(S.th), c - (R + 12) * Math.sin(S.th), C.v, 12);
+  const li = R * 0.95 * I0 / Iref + 12;
+  text(ctx, "I", c + li * Math.cos(S.th - phi), c - li * Math.sin(S.th - phi), C.i, 12);
+  const deg = phi * 180 / Math.PI;
+  $("phcap").innerHTML = Math.abs(deg) < 1 ? "Current <b>in phase</b> with the voltage"
+    : `Current <b>${deg > 0 ? "lags" : "leads"}</b> the voltage by <span class="mono">${Math.abs(deg).toFixed(0)}°</span>`;
+}
+function drawRes() {
+  const ctx = fit($("rs"), 240, 150), x0 = 34, x1 = 230, y0 = 120, y1 = 12;
+  ctx.clearRect(0, 0, 240, 150);
+  const amp = f => P.V / Math.hypot(P.R, 2 * Math.PI * f * P.L - 1 / (2 * Math.PI * f * P.C));
+  const top = P.V / P.R * 1.08, xs = f => x0 + (f - 0.1) / 1.9 * (x1 - x0), ys = v => y0 + v / top * (y1 - y0);
+  ctx.strokeStyle = C.grid; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y0); ctx.moveTo(x0, y0); ctx.lineTo(x0, y1); ctx.stroke();
+  const pts = []; for (let k = 0; k <= 200; k++) { const f = 0.1 + 1.9 * k / 200; pts.push([xs(f), ys(amp(f))]); }
+  line(ctx, pts, C.i, 2);
+  const f0 = 1 / (2 * Math.PI * Math.sqrt(P.L * P.C));
+  if (f0 <= 2) { ctx.setLineDash([3, 3]); line(ctx, [[xs(f0), y0], [xs(f0), y1]], C.muted, 1); ctx.setLineDash([]); text(ctx, "f₀", xs(f0), y0 + 10, C.muted, 10); }
+  ctx.fillStyle = C.i; ctx.beginPath(); ctx.arc(xs(P.f), ys(amp(P.f)), 5, 0, 7); ctx.fill();
+  for (const f of [0.5, 1, 1.5, 2]) text(ctx, String(f), xs(f), y0 + 22, C.muted, 9);
+  text(ctx, "I₀", x0 - 14, y1 + 6, C.i, 10);
+  $("rscap").innerHTML = `Current amplitude against frequency. f₀ = <span class="mono">${f0.toFixed(2)} Hz</span>`;
+}
+
+// ---------- panel ----------
+function chip(lbl, val, col) { return `<span class="chip" style="--c:var(--${col})">${lbl}<b>${val}</b></span>`; }
+let lastChip = 0;
+function updateChips(now) {
+  if (now - lastChip < 100) return; lastChip = now;
+  const h = [chip("I", fmtU(S.I, "A"), "i")];
+  if (D.parts.includes("R")) h.push(chip("V<sub>R</sub>", fmtU(S.I * P.R, "V"), "ink"));
+  if (D.parts.includes("C")) h.push(chip("V<sub>C</sub>", fmtU(vC(), "V"), "q"), chip("Q", fmtU(S.Q, "C"), "q"));
+  if (id === "dc-c") h.push(chip("τ = rC", fmtU(D.r * P.C, "s"), "muted"));
+  if (id === "rc") h.push(chip("τ = RC", fmtU(P.R * P.C, "s"), "muted"));
+  if (D.src === "ac") { const a = acAmp(); h.push(chip("I₀", fmtU(a.I0, "A"), "i"), chip("Z", fmtU(a.Z, "Ω", 1), "muted")); }
+  if (D.parts.includes("R")) h.push(chip("P", fmtU(S.I * S.I * P.R, "W"), "heat"));
+  $("chips").innerHTML = h.join("");
+}
+function buildPanel() {
+  $("kicker").textContent = D.group;
+  $("title").textContent = D.title;
+  $("text").innerHTML = D.text.map(t => `<p>${t}</p>`).join("");
+  $("eqs").innerHTML = D.eqs.map(e => `<div>${e}</div>`).join("");
+  $("try").textContent = D.try;
+  $("sliders").innerHTML = Object.entries(D.p).map(([k, [lo, hi, st, def, lab, u]]) =>
+    `<label><span>${lab}</span><input type="range" id="p-${id}-${k}" min="${lo}" max="${hi}" step="${st}" value="${P[k]}"><output id="o-${k}"></output></label>`).join("");
+  for (const k of Object.keys(D.p)) {
+    const inp = $(`p-${id}-${k}`), u = D.p[k][5];
+    const show = () => $("o-" + k).textContent = `${(+inp.value).toFixed(k === "C" || k === "f" ? 2 : 1).replace(/\.0+$/, "")} ${u}`;
+    show();
+    inp.addEventListener("input", () => { P[k] = +inp.value; show(); if (D.src === "ac") drawSide(); });
+  }
+  const leg = [`<span><i style="background:var(--v)"></i>source voltage (V)</span>`];
+  if (D.parts.includes("C")) leg.push(`<span><i style="background:var(--q)"></i>capacitor voltage (V)</span>`);
+  leg.push(`<span><i style="background:var(--i)"></i>current (A, right axis)</span>`);
+  $("legend").innerHTML = leg.join("");
+  $("sw").hidden = !D.sw; $("tune").hidden = id !== "ac-rlc";
+  $("phbox").hidden = D.src !== "ac"; $("rsbox").hidden = id !== "ac-rlc"; $("side").hidden = D.src !== "ac";
+  swLabel();
+}
+const swLabel = () => { $("sw").textContent = S && !S.sw ? "Switch to battery" : "Switch to bypass"; };
+function drawSide() { if (D.src === "ac") { drawPhasor(); if (id === "ac-rlc") drawRes(); } }
+
+function select(nid, push) {
+  id = nid; D = DEFS[id];
+  P = Object.fromEntries(Object.entries(D.p).map(([k, v]) => [k, v[3]]));
+  document.querySelectorAll("nav.circuits button").forEach(b => b.setAttribute("aria-selected", b.dataset.c === id));
+  iniState(); buildPanel(); render(performance.now());
+  if (push) try { history.replaceState(null, "", "#" + id); } catch (e) {}
+}
+function render(now) { drawCircuit(); drawScope(); drawSide(); updateChips(now); }
+
+function loop(now) {
+  const dt = Math.min(0.05, (now - last) / 1000 || 0); last = now;
+  if (running) { step(dt); render(now); }
+  requestAnimationFrame(loop);
+}
+
+// ---------- wiring ----------
+document.querySelectorAll("nav.circuits button").forEach(b => b.addEventListener("click", () => select(b.dataset.c, true)));
+$("show-e").addEventListener("click", () => { electrons = true; $("show-e").setAttribute("aria-pressed", "true"); $("show-p").setAttribute("aria-pressed", "false"); render(performance.now()); });
+$("show-p").addEventListener("click", () => { electrons = false; $("show-p").setAttribute("aria-pressed", "true"); $("show-e").setAttribute("aria-pressed", "false"); render(performance.now()); });
+$("sw").addEventListener("click", () => { S.sw = S.sw ? 0 : 1; swLabel(); render(performance.now()); });
+$("tune").addEventListener("click", () => {
+  const f0 = 1 / (2 * Math.PI * Math.sqrt(P.L * P.C)), inp = $(`p-${id}-f`);
+  P.f = Math.min(2, Math.max(0.1, Math.round(f0 * 100) / 100)); inp.value = P.f; inp.dispatchEvent(new Event("input"));
+});
+$("play").addEventListener("click", () => { running = !running; $("play").textContent = running ? "Pause" : "Play"; });
+$("reset").addEventListener("click", () => { iniState(); swLabel(); render(performance.now()); });
+$("play").textContent = running ? "Pause" : "Play";
+readColors();
+const reTheme = () => { readColors(); render(performance.now()); };
+try { matchMedia("(prefers-color-scheme: dark)").addEventListener("change", reTheme); } catch (e) {}
+new MutationObserver(reTheme).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+window.addEventListener("resize", () => render(performance.now()));
+if (document.fonts) document.fonts.ready.then(() => render(performance.now()));
+const h0 = (location.hash || "").slice(1);
+select(DEFS[h0] ? h0 : "dc-r", false);
+requestAnimationFrame(loop);
+})();
+</script>
+
+</html>
