@@ -1,0 +1,1462 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>body{margin:0}[hidden]{display:none!important}</style>
+<title>Toys versus Wilks</title>
+<meta name="description" content="A walkthrough of qwilks.py: a binned Poisson likelihood, the one-sided q_mu test statistic, and toy Monte Carlo p-values compared with Wilks' asymptotic formula.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+:root {
+  --bg: #f5f6f8;
+  --panel: #ffffff;
+  --ink: #141820;
+  --ink-2: #454d5d;
+  --muted: #727b8c;
+  --rule: #dce0e7;
+  --grid: #e9ecf1;
+  --code-bg: #eef0f4;
+  --bkg: #2a78d6;
+  --sig: #eb6834;
+  --asym: #1baf7a;
+  --ref: #d93f3e;
+  --hl-kw: #7a3fb0;
+  --hl-str: #1c7a4c;
+  --hl-com: #7a8294;
+  --hl-num: #b0521c;
+  --hl-fn: #1c5cab;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #12151b;
+    --panel: #1a1e26;
+    --ink: #eef0f4;
+    --ink-2: #bfc5d1;
+    --muted: #8a93a4;
+    --rule: #2d333f;
+    --grid: #252a34;
+    --code-bg: #1f242d;
+    --bkg: #3987e5;
+    --sig: #d95926;
+    --asym: #199e70;
+    --ref: #e66767;
+    --hl-kw: #c49af0;
+    --hl-str: #7fd3a5;
+    --hl-com: #7f889a;
+    --hl-num: #f0a36e;
+    --hl-fn: #86b6ef;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #12151b;
+  --panel: #1a1e26;
+  --ink: #eef0f4;
+  --ink-2: #bfc5d1;
+  --muted: #8a93a4;
+  --rule: #2d333f;
+  --grid: #252a34;
+  --code-bg: #1f242d;
+  --bkg: #3987e5;
+  --sig: #d95926;
+  --asym: #199e70;
+  --ref: #e66767;
+  --hl-kw: #c49af0;
+  --hl-str: #7fd3a5;
+  --hl-com: #7f889a;
+  --hl-num: #f0a36e;
+  --hl-fn: #86b6ef;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: 16px/1.62 "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  padding-inline: 20px;
+  padding-block: 0 64px;
+}
+.wrap { max-width: 760px; margin: 0 auto; }
+h1, h2, h3 {
+  font-family: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  font-weight: 600;
+  text-wrap: balance;
+  line-height: 1.15;
+  margin: 0;
+}
+h1 { font-size: clamp(2.1rem, 6vw, 3rem); letter-spacing: -0.01em; }
+h2 { font-size: 1.55rem; }
+h3 { font-size: 1.1rem; font-weight: 500; }
+p { margin: 0; max-width: 66ch; }
+a { color: var(--bkg); }
+a:focus-visible, summary:focus-visible, input:focus-visible, button:focus-visible { outline: 2px solid var(--bkg); outline-offset: 2px; }
+code, pre, .mono { font-family: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace; }
+p code, li code { font-size: 0.88em; background: var(--code-bg); padding: 0.08em 0.35em; border-radius: 3px; }
+
+header.top {
+  padding-block: 48px 28px;
+  border-bottom: 1px solid var(--rule);
+  display: grid;
+  gap: 14px;
+}
+.eyebrow { font: 500 0.75rem/1 "IBM Plex Mono", monospace; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.lede { font-size: 1.12rem; color: var(--ink-2); }
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1px;
+  background: var(--rule);
+  border: 1px solid var(--rule);
+  margin-top: 10px;
+}
+.fact { background: var(--panel); padding: 12px 14px; display: grid; gap: 2px; }
+.fact .k { font-size: 0.78rem; color: var(--muted); }
+.fact .v { font: 500 1.35rem/1.2 "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
+.fact .n { font-size: 0.78rem; color: var(--ink-2); }
+
+section { padding-block: 40px 0; display: grid; gap: 16px; }
+section > h2 { display: flex; gap: 12px; align-items: baseline; }
+section > h2 .step { font: 500 0.85rem "IBM Plex Mono", monospace; color: var(--muted); }
+
+.eq {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.95rem;
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--ink);
+  padding: 14px 16px;
+  overflow-x: auto;
+  line-height: 1.9;
+  white-space: nowrap;
+}
+.eq i { font-family: "IBM Plex Sans", serif; font-style: italic; }
+.eq.tex { font-size: 1.05rem; line-height: 1; padding: 6px 16px; text-align: center; }
+.eq.tex mjx-container { margin: 0.6em 0 !important; }
+
+pre.code {
+  margin: 0;
+  background: var(--code-bg);
+  border-radius: 6px;
+  padding: 14px 16px;
+  overflow-x: auto;
+  font-size: 0.83rem;
+  line-height: 1.55;
+}
+pre.code code { background: none; padding: 0; }
+.hljs-keyword, .hljs-built_in, .hljs-literal { color: var(--hl-kw); }
+.hljs-string { color: var(--hl-str); }
+.hljs-comment, .hljs-meta { color: var(--hl-com); font-style: italic; }
+.hljs-number { color: var(--hl-num); }
+.hljs-title, .hljs-title.function_ { color: var(--hl-fn); }
+.codecap { font-size: 0.8rem; color: var(--muted); margin-top: -8px; }
+
+figure { margin: 0; background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; padding: 16px 16px 12px; display: grid; gap: 10px; }
+figcaption { font-size: 0.86rem; color: var(--ink-2); max-width: 70ch; }
+.figtitle { font-weight: 600; font-size: 0.95rem; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 0.8rem; color: var(--ink-2); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 12px; height: 12px; border-radius: 2px; display: inline-block; }
+.sw.line { height: 2px; border-radius: 0; width: 16px; }
+.sw.dash { height: 0; width: 16px; border-top: 2px dashed; border-radius: 0; background: none !important; }
+.sw.dot { width: 8px; height: 8px; border-radius: 50%; }
+.chart { position: relative; width: 100%; }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart text { font-family: "IBM Plex Sans", system-ui, sans-serif; }
+
+.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; font-size: 0.88rem; }
+.controls label { color: var(--ink-2); }
+.controls input[type=range] { flex: 1 1 220px; accent-color: var(--bkg); min-width: 0; }
+.readout { display: flex; flex-wrap: wrap; gap: 4px 18px; font: 0.85rem "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; color: var(--ink-2); }
+.readout b { color: var(--ink); font-weight: 500; }
+.pill { display: inline-block; font: 500 0.72rem/1 "IBM Plex Mono", monospace; padding: 4px 7px; border-radius: 99px; border: 1px solid currentColor; }
+.pill.excl { color: var(--ref); }
+.pill.ok { color: var(--ink-2); }
+
+.tip {
+  position: absolute; pointer-events: none; z-index: 5;
+  background: var(--ink); color: var(--bg);
+  font: 0.78rem/1.45 "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums;
+  padding: 7px 9px; border-radius: 4px; white-space: nowrap;
+  transform: translate(-50%, calc(-100% - 10px));
+}
+
+details.src { background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; }
+details.src summary { cursor: pointer; padding: 12px 16px; font-weight: 500; }
+details.src pre.code { border-radius: 0 0 6px 6px; max-height: 70vh; }
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; font: 0.8rem "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; width: 100%; }
+th, td { text-align: right; padding: 4px 10px; border-bottom: 1px solid var(--grid); }
+th { color: var(--muted); font-weight: 500; }
+.params { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px 16px; font-size: 0.86rem; }
+.params fieldset { margin: 0; border: 1px solid var(--rule); border-radius: 6px; padding: 8px 12px 10px; display: grid; gap: 6px; min-width: 0; }
+.params legend { padding: 0 4px; color: var(--ink-2); font-weight: 500; display: inline-flex; align-items: center; gap: 6px; }
+.params label { display: grid; grid-template-columns: 3.4em 1fr 4.6em; align-items: center; gap: 10px; color: var(--ink-2); }
+.params input[type=range] { width: 100%; min-width: 0; accent-color: var(--bkg); }
+.params output { text-align: right; font-variant-numeric: tabular-nums; color: var(--ink); }
+.pbtns { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+.pbtns button { font: inherit; font-size: 0.82rem; color: var(--ink); background: var(--panel); border: 1px solid var(--rule); border-radius: 4px; padding: 5px 10px; cursor: pointer; }
+.pbtns button:hover { border-color: var(--muted); }
+.plog { display: inline-flex; align-items: center; gap: 6px; font-size: 0.82rem; color: var(--ink-2); cursor: pointer; }
+.plog input { accent-color: var(--bkg); margin: 0; }
+.pstate { font-size: 0.8rem; color: var(--muted); }
+.note { font-size: 0.85rem; color: var(--muted); border-top: 1px solid var(--rule); padding-top: 16px; margin-top: 48px; }
+section { grid-template-columns: minmax(0, 1fr); }   /* keep the track at the text width so .wide can center on it */
+figure.wide { position: relative; left: 50%; transform: translateX(-50%); width: min(1560px, calc(100vw - 48px)); }
+.mugrid { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px 20px; }
+.mucol { display: grid; align-content: start; gap: 6px; min-width: 0; flex: 1 1 240px; max-width: 380px; }
+/* stepper: columns 2-5 stay laid out while hidden, so nothing reflows when they appear */
+.stepper { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 10px; }
+.stepper button { font: inherit; font-size: 0.82rem; color: var(--ink); background: var(--panel); border: 1px solid var(--rule); border-radius: 99px; padding: 5px 12px; cursor: pointer; }
+.stepper button:hover:not(:disabled) { border-color: var(--muted); }
+.stepper button:disabled { opacity: 0.4; cursor: default; }
+.stepper button.primary { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.stepper .dots { display: inline-flex; gap: 6px; padding: 0 4px; }
+.stepper .dot { width: 22px; height: 22px; padding: 0; border-radius: 50%; font: 500 0.7rem/1 "IBM Plex Mono", monospace; display: grid; place-items: center; color: var(--muted); }
+.stepper .dot.on { background: var(--bkg); border-color: var(--bkg); color: #fff; }
+.mucol { position: relative; --d: 0s; }
+.mucol > .colhead, .mucol > .legend { transition: opacity .55s ease, transform .55s cubic-bezier(.2,.7,.2,1), filter .55s ease; transition-delay: var(--d); }
+.mucol > .legend { transition-delay: calc(var(--d) + .08s); }
+.mucol > .chart { clip-path: inset(-80px -240px -80px -240px);   /* generous so hover tips are not cut off */ transition: clip-path 1s cubic-bezier(.65,0,.25,1), opacity .5s ease; transition-delay: calc(var(--d) + .15s); }
+.mucol.hid > .colhead, .mucol.hid > .legend { opacity: 0; transform: translateY(12px); filter: blur(6px); }
+.mucol.hid > .chart { clip-path: inset(-80px 100% -80px -240px); opacity: 0; pointer-events: none; }
+.mucol.hid > .colhead, .mucol.hid > .legend, .mucol.hid > .chart { transition-delay: 0s; }
+.ph { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 6px; margin: 0; padding: 0; font: inherit; color: var(--muted); cursor: pointer;
+  border: 1.5px dashed var(--rule); border-radius: 8px; background: repeating-linear-gradient(135deg, transparent 0 10px, color-mix(in srgb, var(--grid) 55%, transparent) 10px 11px);
+  transition: opacity .45s ease, transform .45s ease, border-color .2s; }
+.ph:hover { border-color: var(--muted); color: var(--ink-2); }
+.ph .phn { font: 500 2.6rem/1 "IBM Plex Mono", monospace; }
+.ph .pht { font-size: 0.78rem; }
+.ph.next { border-color: var(--bkg); color: var(--bkg); animation: phpulse 2.2s ease-in-out infinite; }
+@keyframes phpulse { 50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--bkg) 14%, transparent); } }
+.mucol:not(.hid) > .ph { opacity: 0; transform: scale(.97); pointer-events: none; animation: none; }
+.mulines { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; justify-items: center; font-size: 0.88rem; color: var(--ink-2); }
+.mulines li { display: flex; gap: 10px; align-items: baseline; max-width: 100%; --d: 0s; transition: opacity .55s ease, transform .55s cubic-bezier(.2,.7,.2,1), filter .55s ease; transition-delay: var(--d); }
+.mulines li > .mono { flex: none; width: 1.5em; height: 1.5em; border-radius: 50%; display: inline-grid; place-items: center; font-size: 0.72rem; background: var(--bkg); color: #fff; }
+.mulines li.hid { opacity: 0; transform: translateY(8px); filter: blur(4px); transition-delay: 0s; }
+@media (prefers-reduced-motion: reduce) {
+  .mucol > *, .mulines li, .ph { transition: none !important; animation: none !important; }
+}
+.vars { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+.var { background: var(--panel); border: 1px solid var(--rule); border-left: 3px solid var(--c); border-radius: 6px; padding: 10px 12px; display: grid; gap: 6px; align-content: start; }
+.var .vsym { color: var(--c); font-size: 1.25rem; line-height: 1.2; }
+.var p { font-size: 0.86rem; color: var(--ink-2); }
+.var .pill { justify-self: start; color: var(--muted); }
+.var .pill.vary { color: var(--ink); }
+.v-n { color: var(--ink); } .v-s { color: var(--sig); } .v-b { color: var(--bkg); } .v-mu { color: var(--hl-kw); }
+.colhead { font-size: 0.82rem; font-weight: 500; color: var(--ink-2); display: flex; gap: 8px; align-items: baseline; }
+.colhead .mono { font-size: 0.75rem; color: var(--muted); }
+ul { margin: 0; padding-left: 1.2em; max-width: 66ch; display: grid; gap: 6px; }
+</style>
+
+<div class="wrap">
+<header class="top">
+  <div class="eyebrow">stat_tools · likelihood_ratio_tests / qwilks.py</div>
+  <h1>Toys versus Wilks</h1>
+  <p class="lede">A walkthrough of a small Python script that fits the signal strength μ of a Gaussian bump on a falling background, then tests each value of μ two ways: by throwing toy experiments, and with the asymptotic formula that follows from Wilks' theorem.</p>
+  <div class="facts">
+    <div class="fact"><span class="k">Best fit, observed data</span><span class="v" id="f-muhat"></span><span class="n">μ̂ from L-BFGS-B, μ ≥ 0</span></div>
+    <div class="fact"><span class="k">95% CL upper limit (toys)</span><span class="v" id="f-ul"></span><span class="n">where p crosses 0.05</span></div>
+    <div class="fact"><span class="k">95% CL upper limit (Wilks)</span><span class="v" id="f-ula"></span><span class="n">p = 1 − Φ(√q)</span></div>
+    <div class="fact"><span class="k">Toys per μ</span><span class="v" id="f-ntoys"></span><span class="n">40 μ values from 1 to 2</span></div>
+  </div>
+</header>
+
+<section>
+  <h2><span class="step">1</span>The model</h2>
+  <p>The observable <i>x</i> runs from 0 to 10 in 30 bins. The background is an exponential with τ = <span class="mono" id="m-tau">2.0</span>, sampled by inverting its truncated CDF. The signal is a Gaussian resonance at <i>x</i> = <span class="mono" id="m-mean">3.0</span> with σ = <span class="mono" id="m-sigma">0.30</span>. <span class="mono" id="m-nbg">20,000</span> background and <span class="mono" id="m-nsig">100</span> signal events are drawn and fill the <code>b</code> and <code>s</code> templates. These templates act as the theory prediction.</p>
+  <p>A second, independent draw with the same sizes is the "measurement" <code>n_obs_obs</code>. It is fitted against the fixed templates.</p>
+  <p>The sliders below set these five parameters. Moving one, or asking for a new random draw, re-simulates the templates and the measurement and redraws the two plots in this section. <span id="m-state">They start at the script's values, with the script's seed (124), so the plots match its output.</span> Sections 2 to 5 always use the script's model, because the toy scan behind them was run once, offline.</p>
+  <figure>
+    <div class="figtitle">Templates and the simulated measurement</div>
+    <div class="legend">
+      <span><i class="sw" style="background:var(--bkg)"></i>Background b</span>
+      <span><i class="sw" style="background:var(--sig)"></i>Signal s (μ = 1)</span>
+      <span><i class="sw dot" style="background:var(--ink)"></i>Measurement n<sub>obs</sub> ± √n</span>
+    </div>
+    <div class="params">
+      <fieldset>
+        <legend><i class="sw" style="background:var(--bkg)"></i>Background · exponential</legend>
+        <label><span>N<sub>bg</sub></span><input type="range" id="p-nbg" min="1000" max="50000" step="1000" value="20000"><output class="mono" id="o-nbg"></output></label>
+        <label><span>τ</span><input type="range" id="p-tau" min="0.5" max="10" step="0.1" value="2"><output class="mono" id="o-tau"></output></label>
+      </fieldset>
+      <fieldset>
+        <legend><i class="sw" style="background:var(--sig)"></i>Signal · Gaussian</legend>
+        <label><span>N<sub>sig</sub></span><input type="range" id="p-nsig" min="0" max="2000" step="10" value="100"><output class="mono" id="o-nsig"></output></label>
+        <label><span>mean</span><input type="range" id="p-mean" min="0.5" max="9.5" step="0.1" value="3"><output class="mono" id="o-mean"></output></label>
+        <label><span>σ</span><input type="range" id="p-sigma" min="0.1" max="2" step="0.05" value="0.3"><output class="mono" id="o-sigma"></output></label>
+      </fieldset>
+      <div class="pbtns">
+        <button type="button" id="p-redraw">New random draw</button>
+        <button type="button" id="p-reset">Reset to script values</button>
+        <label class="plog"><input type="checkbox" id="p-log"> Log y-axis</label>
+        <span class="pstate" id="p-state"></span>
+      </div>
+    </div>
+    <div class="chart" id="c-model"></div>
+    <figcaption><span id="model-cap"></span> <span id="model-note"></span></figcaption>
+  </figure>
+  <figure>
+    <div class="figtitle">Measurement minus background, around the resonance</div>
+    <div class="legend">
+      <span><i class="sw" style="background:var(--sig)"></i>Signal template s (μ = 1)</span>
+      <span><i class="sw line" style="background:var(--ink)"></i>Best fit μ̂·s</span>
+      <span><i class="sw dot" style="background:var(--ink)"></i>n<sub>obs</sub> − b ± √n</span>
+    </div>
+    <div class="chart" id="c-resid"></div>
+    <figcaption id="resid-cap"></figcaption>
+  </figure>
+</section>
+
+<section>
+  <h2><span class="step">2</span>The binned Poisson likelihood</h2>
+  <p>Each bin is an independent Poisson count with mean ν<sub>i</sub> = μ·s<sub>i</sub> + b<sub>i</sub>. The log-likelihood adds up the bins:</p>
+  <figure>
+    <div class="figtitle">Where ν<sub>i</sub> comes from</div>
+    <svg class="sketch" viewBox="0 0 640 290" role="img" aria-label="Sketch of a steeply falling histogram. One bin, i, is highlighted; its height is the model prediction nu_i equals mu s_i plus b_i, and the observed count n_i in that bin is a Poisson fluctuation around it." style="display:block;width:100%;height:auto;color:var(--ink)">
+      <defs>
+        <filter id="sk-rough" x="-5%" y="-5%" width="110%" height="110%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="7"/>
+          <feDisplacementMap in="SourceGraphic" scale="3.2"/>
+        </filter>
+        <marker id="sk-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+          <path d="M1,1 L9,5 L1,9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </marker>
+      </defs>
+      <g filter="url(#sk-rough)" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="156" y="176.4" width="48" height="73.6" style="fill:var(--sig);fill-opacity:.28;stroke:none"/>
+        <polyline points="74.4,29.0 79.2,39.7 84.0,50.0 88.8,59.8 93.6,69.0 98.4,77.9 103.2,86.3 108.0,94.2 112.8,101.8 117.6,109.1 122.4,115.9 127.2,122.5 132.0,128.7 136.8,134.6 141.6,140.2 146.4,145.6 151.2,150.7 156.0,155.5 160.8,160.1 165.6,164.5 170.4,168.7 175.2,172.7 180.0,176.4 184.8,180.0 189.6,183.4 194.4,186.7 199.2,189.8 204.0,192.7 208.8,195.5 213.6,198.2 218.4,200.7 223.2,203.1 228.0,205.4 232.8,207.6 237.6,209.6 242.4,211.6 247.2,213.5 252.0,215.2 256.8,216.9 261.6,218.6 266.4,220.1 271.2,221.5 276.0,222.9 280.8,224.3 285.6,225.5 290.4,226.7 295.2,227.8 300.0,228.9 304.8,229.9 309.6,230.9 314.4,231.9 319.2,232.7 324.0,233.6 328.8,234.4 333.6,235.1 338.4,235.9 343.2,236.6 348.0,237.2 352.8,237.8 357.6,238.4 362.4,239.0 367.2,239.5 372.0,240.0 376.8,240.5 381.6,241.0 386.4,241.4 391.2,241.8 396.0,242.2 400.8,242.6 405.6,243.0 410.4,243.3 415.2,243.7 420.0,244.0 424.8,244.3 429.6,244.5 434.4,244.8 439.2,245.1 444.0,245.3 448.8,245.5 453.6,245.7 458.4,246.0 463.2,246.1 468.0,246.3 472.8,246.5 477.6,246.7 482.4,246.8 487.2,247.0 492.0,247.1 496.8,247.3 501.6,247.4 506.4,247.5 511.2,247.7 516.0,247.8 520.8,247.9 525.6,248.0 530.4,248.1 535.2,248.2 540.0,248.3" stroke-width="1.5" stroke-dasharray="5 6" style="stroke:var(--muted)"/>
+        <path d="M60,250 L60,50.0 L108,50.0 L108,128.7 L156,128.7 L156,176.4 L204,176.4 L204,205.4 L252,205.4 L252,222.9 L300,222.9 L300,233.6 L348,233.6 L348,240.0 L396,240.0 L396,244.0 L444,244.0 L444,246.3 L492,246.3 L492,247.8 L540,247.8 L540,250" stroke-width="2.2" style="fill:var(--bkg);fill-opacity:.1"/>
+        <g stroke-width="1.2" style="stroke:var(--bkg);opacity:.6"><line x1="108" y1="250" x2="108" y2="128.7"/><line x1="156" y1="250" x2="156" y2="176.4"/><line x1="204" y1="250" x2="204" y2="205.4"/><line x1="252" y1="250" x2="252" y2="222.9"/><line x1="300" y1="250" x2="300" y2="233.6"/><line x1="348" y1="250" x2="348" y2="240.0"/><line x1="396" y1="250" x2="396" y2="244.0"/><line x1="444" y1="250" x2="444" y2="246.3"/><line x1="492" y1="250" x2="492" y2="247.8"/></g>
+        <path d="M156,250 L156,176.4 L204,176.4 L204,250" stroke-width="3" style="stroke:var(--sig)"/>
+        <line x1="46" y1="250" x2="570" y2="250" stroke-width="2" marker-end="url(#sk-arr)"/>
+        <line x1="60" y1="258" x2="60" y2="24" stroke-width="2" marker-end="url(#sk-arr)"/>
+        <line x1="142" y1="248" x2="142" y2="178.4" stroke-width="1.6" marker-start="url(#sk-arr)" marker-end="url(#sk-arr)" style="stroke:var(--sig)"/>
+        <line x1="180.0" y1="183.4" x2="180.0" y2="205.4" stroke-width="1.6"/>
+        <path d="M352,82 Q262,72 208,172.4" stroke-width="1.6" marker-end="url(#sk-arr)"/>
+        <path d="M352,176 Q290,166 188.0,194.4" stroke-width="1.6" marker-end="url(#sk-arr)"/>
+      </g>
+      <circle cx="180.0" cy="194.4" r="4.5" fill="currentColor"/>
+      <g style="font-family:Caveat,'Comic Sans MS',cursive" fill="currentColor">
+        <text x="136" y="219.2" text-anchor="end" font-size="24" style="fill:var(--sig)">ν<tspan font-size="16" dy="5">i</tspan></text>
+        <text x="180.0" y="274" text-anchor="middle" font-size="22">bin i</text>
+        <text x="568" y="276" text-anchor="end" font-size="22">x</text>
+        <text x="70" y="30" font-size="22">counts</text>
+        <text x="168" y="112" font-size="18" style="fill:var(--muted)">true shape</text>
+        <text x="360" y="66" font-size="22">bin height = the model's prediction</text>
+        <text x="360" y="94" font-size="24" style="fill:var(--sig)">ν<tspan font-size="16" dy="5">i</tspan><tspan dy="-5"> = μ·s</tspan><tspan font-size="16" dy="5">i</tspan><tspan dy="-5"> + b</tspan><tspan font-size="16" dy="5">i</tspan></text>
+        <text x="360" y="172" font-size="22">what we count: n<tspan font-size="15" dy="5">i</tspan></text>
+        <text x="360" y="198" font-size="22">a Poisson draw around ν<tspan font-size="15" dy="5">i</tspan></text>
+      </g>
+    </svg>
+    <figcaption>The templates replace the smooth shape with its histogram: the content of bin <i>i</i>, μ·s<sub>i</sub> + b<sub>i</sub>, is taken as the expected count ν<sub>i</sub>. The data in that bin, n<sub>i</sub>, scatter around that height with Poisson errors.</figcaption>
+  </figure>
+  <div class="eq tex" id="eq-logl" aria-label="ln L of mu equals the sum over bins i of n_i times ln of mu s_i plus b_i, minus mu s_i plus b_i">\[ \ln L(\mu) \;=\; \sum_{i=1}^{30} \Big[\, n_i \ln\!\left(\mu s_i + b_i\right) \;-\; \left(\mu s_i + b_i\right) \Big] \;=\; \sum_{i} \Big[\, n_i \ln \nu_i - \nu_i \Big] \]</div>
+  <pre class="code"><code class="language-python">def poisson_likelihood(mu, n, s, b, log=True):
+    nu = mu * s + b
+    nu = np.clip(nu, 1e-12, None)
+    logL = np.sum(n * np.log(nu) - nu )#- gammaln(n + 1)
+    ...</code></pre>
+  <p class="codecap">The ln <i>n</i>! term is commented out. That is safe, because it does not depend on μ and cancels in every likelihood ratio below. The clip protects the log in empty bins.</p>
+  <p><code>fit_mu</code> minimizes −ln <i>L</i> with L-BFGS-B, with the physical bound μ ≥ 0. On the template dataset itself (<code>n = s + b</code>, which the script calls the Asimov dataset) it returns μ̂ = <span class="mono" id="t-muasimov"></span>, as it should. On the independent measurement it returns μ̂ = <span class="mono" id="t-muhat2"></span>.</p>
+</section>
+
+<section>
+  <h2><span class="step">3</span>The test statistic q<sub>μ</sub></h2>
+  <p>To test a value μ, the script compares the likelihood at that μ with the best one. It uses the one-sided form for upper limits, where data that fit a signal <em>larger</em> than μ are not evidence against μ:</p>
+  <div class="eq tex" id="eq-qmu" aria-label="q_mu equals minus 2 ln of L of mu over L of mu-hat if mu-hat is at most mu, and 0 if mu-hat is greater than mu">\[ q_\mu \;=\; \begin{cases} -2 \ln \dfrac{L(\mu)}{L(\hat\mu)} &amp; \text{if } \hat\mu \le \mu \\[1.2ex] 0 &amp; \text{if } \hat\mu &gt; \mu \end{cases} \]</div>
+  <figure>
+    <div class="figtitle">What goes into q<sub>μ</sub></div>
+    <svg class="sketch" viewBox="0 0 720 352" role="img" aria-label="Sketch of a falling histogram. Blue bars are the background template b_i, orange caps on three bins are the signal mu times s_i, and black dots with error bars are the observed counts n_i. A slider below the histogram marks the tested value mu, which we choose, and mu-hat, the value the fit prefers for these counts." style="display:block;width:100%;height:auto;color:var(--ink)">
+      <defs>
+        <filter id="sk3-rough" x="-5%" y="-5%" width="110%" height="110%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="3"/>
+          <feDisplacementMap in="SourceGraphic" scale="3.2"/>
+        </filter>
+        <marker id="sk3-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+          <path d="M1,1 L9,5 L1,9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </marker>
+      </defs>
+      <g filter="url(#sk3-rough)" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M66,270 V80 H112 V128 H158 V166 H204 V193 H250 V214 H296 V230 H342 V270" stroke-width="2.2" style="stroke:var(--bkg);fill:var(--bkg);fill-opacity:.14"/>
+        <g stroke-width="1.2" style="stroke:var(--bkg);opacity:.6"><line x1="112" y1="270" x2="112" y2="128"/><line x1="158" y1="270" x2="158" y2="166"/><line x1="204" y1="270" x2="204" y2="193"/><line x1="250" y1="270" x2="250" y2="214"/><line x1="296" y1="270" x2="296" y2="230"/></g>
+        <g stroke-width="2.4" style="stroke:var(--sig);fill:var(--sig);fill-opacity:.38">
+          <path d="M112,128 V114 H158 V128"/><path d="M158,166 V142 H204 V166"/><path d="M204,193 V185 H250 V193"/>
+        </g>
+        <g stroke-width="1.6"><line x1="89" y1="66" x2="89" y2="88"/><line x1="135" y1="106" x2="135" y2="128"/><line x1="181" y1="136" x2="181" y2="156"/><line x1="227" y1="179" x2="227" y2="197"/><line x1="273" y1="203" x2="273" y2="219"/><line x1="319" y1="226" x2="319" y2="240"/></g>
+        <line x1="50" y1="270" x2="360" y2="270" stroke-width="2" marker-end="url(#sk3-arr)"/>
+        <line x1="60" y1="278" x2="60" y2="30" stroke-width="2" marker-end="url(#sk3-arr)"/>
+        <path d="M412,70 Q300,38 144,110" stroke-width="1.6" marker-end="url(#sk3-arr)"/>
+        <path d="M412,158 Q300,126 200,152" stroke-width="1.6" marker-end="url(#sk3-arr)" style="stroke:var(--sig)"/>
+        <path d="M412,244 Q340,256 284,246" stroke-width="1.6" marker-end="url(#sk3-arr)" style="stroke:var(--bkg)"/>
+        <line x1="80" y1="318" x2="320" y2="318" stroke-width="2.4" style="stroke:var(--muted)"/>
+        <g stroke-width="1.6" style="stroke:var(--muted)"><line x1="80" y1="312" x2="80" y2="324"/><line x1="200" y1="312" x2="200" y2="324"/><line x1="320" y1="312" x2="320" y2="324"/></g>
+        <path d="M116,306 L128,306 L122,316 Z" stroke-width="1.6" style="fill:var(--ink)"/>
+      </g>
+      <circle cx="224" cy="318" r="7" style="fill:var(--hl-kw)"/>
+      <g fill="currentColor"><circle cx="89" cy="77" r="4.5"/><circle cx="135" cy="117" r="4.5"/><circle cx="181" cy="146" r="4.5"/><circle cx="227" cy="188" r="4.5"/><circle cx="273" cy="211" r="4.5"/><circle cx="319" cy="233" r="4.5"/></g>
+      <g style="font-family:Caveat,'Comic Sans MS',cursive" fill="currentColor">
+        <text x="70" y="26" font-size="22">counts</text>
+        <text x="362" y="292" font-size="22">x</text>
+        <text x="420" y="66" font-size="28">n<tspan font-size="18" dy="6">i</tspan></text>
+        <text x="420" y="90" font-size="21">what we count in bin i</text>
+        <text x="420" y="112" font-size="19" style="fill:var(--muted)">the data, or one toy</text>
+        <text x="420" y="154" font-size="28"><tspan style="fill:var(--hl-kw)">μ</tspan><tspan style="fill:var(--sig)">·s</tspan><tspan font-size="18" dy="6" style="fill:var(--sig)">i</tspan></text>
+        <text x="420" y="178" font-size="21">the signal template at μ = 1,</text>
+        <text x="420" y="200" font-size="21">stretched by the strength <tspan style="fill:var(--hl-kw)">μ</tspan></text>
+        <text x="420" y="240" font-size="28" style="fill:var(--bkg)">b<tspan font-size="18" dy="6">i</tspan></text>
+        <text x="420" y="264" font-size="21">the background template,</text>
+        <text x="420" y="286" font-size="19" style="fill:var(--muted)">fixed, from simulation</text>
+        <text x="80" y="342" text-anchor="middle" font-size="18" style="fill:var(--muted)">0</text>
+        <text x="200" y="342" text-anchor="middle" font-size="18" style="fill:var(--muted)">1</text>
+        <text x="320" y="342" text-anchor="middle" font-size="18" style="fill:var(--muted)">2</text>
+        <text x="224" y="302" text-anchor="middle" font-size="24" style="fill:var(--hl-kw)">μ</text>
+        <text x="122" y="300" text-anchor="middle" font-size="24">μ̂</text>
+        <text x="420" y="322" font-size="21"><tspan style="fill:var(--hl-kw)">μ</tspan>: the value we test, our choice</text>
+        <text x="420" y="345" font-size="21">μ̂: the value this n prefers</text>
+      </g>
+    </svg>
+    <figcaption>The templates and the tested μ set the prediction. The counts n set the data. The fitted μ̂ is the strength that brings the prediction closest to those counts. q<sub>μ</sub> measures how much worse the tested μ fits than μ̂ does.</figcaption>
+  </figure>
+  <div class="vars" id="q-vars">
+    <div class="var" style="--c:var(--ink)">
+      <div class="vsym">\( n_i \)</div>
+      <p>Observed events in bin <i>i</i>. For the measurement this is <code>n_obs_obs</code>. In section 4 every toy supplies a new set of n<sub>i</sub>.</p>
+      <span class="pill vary">data · new in every toy</span>
+    </div>
+    <div class="var" style="--c:var(--sig)">
+      <div class="vsym">\( s_i \)</div>
+      <p>Expected signal events in bin <i>i</i> at μ = 1: the histogram of the 100 simulated signal events.</p>
+      <span class="pill">template · fixed</span>
+    </div>
+    <div class="var" style="--c:var(--bkg)">
+      <div class="vsym">\( b_i \)</div>
+      <p>Expected background events in bin <i>i</i>: the histogram of the 20,000 simulated background events.</p>
+      <span class="pill">template · fixed</span>
+    </div>
+    <div class="var" style="--c:var(--hl-kw)">
+      <div class="vsym">\( \mu \)</div>
+      <p>The signal strength under test. It is the hypothesis, so we pick it. The script's scan runs μ from 1 to 2.</p>
+      <span class="pill">hypothesis · our choice</span>
+    </div>
+    <div class="var" style="--c:var(--hl-kw)">
+      <div class="vsym">\( \hat\mu \)</div>
+      <p>The μ that maximizes <i>L</i> for these counts, with μ̂ ≥ 0. It is computed from n, so it changes with n.</p>
+      <span class="pill vary">fit · new in every toy</span>
+    </div>
+  </div>
+  <p>Writing out both likelihoods with ν<sub>i</sub> = μ·s<sub>i</sub> + b<sub>i</sub> shows every ingredient at once:</p>
+  <div class="eq tex" id="eq-qexp" aria-label="For mu-hat at most mu, q_mu equals minus 2 times the sum over bins of n_i times ln of mu s_i plus b_i over mu-hat s_i plus b_i, minus mu minus mu-hat times s_i">\[ q_\mu \;=\; -2 \sum_{i=1}^{30} \left[\, \class{v-n}{n_i} \,\ln \frac{\class{v-mu}{\mu}\,\class{v-s}{s_i} + \class{v-b}{b_i}}{\class{v-mu}{\hat\mu}\,\class{v-s}{s_i} + \class{v-b}{b_i}} \;-\; \big(\class{v-mu}{\mu} - \class{v-mu}{\hat\mu}\big)\, \class{v-s}{s_i} \,\right] \qquad \text{for } \hat\mu \le \mu \]</div>
+  <p>The templates s and b are fixed once and for all, and μ is the hypothesis we choose. Only n comes from an experiment, and μ̂ follows from n. So for a given μ, q<sub>μ</sub> is a function of the counts alone. That is what section 4 exploits: it keeps s, b and μ, swaps in a new set of counts thousands of times, and records the q<sub>μ</sub> each one gives. For the measurement, μ̂ = <span class="mono" id="t-muhat3"></span>, so q<sub>obs</sub> is 0 for every μ below that and grows above it.</p>
+</section>
+
+<section>
+  <h2><span class="step">4</span>Toy experiments</h2>
+  <p>A single q<sub>obs</sub> means nothing until you know how q<sub>μ</sub> is distributed when μ is true. Every toy starts from the prediction for the tested μ, ν = μ·s + b. The background template stays fixed, and μ only scales the signal on top of it. At μ = 0.01 there is almost no resonance, at μ = 1 there is the nominal signal, and at μ = 2 there is twice the nominal signal.</p>
+  <figure class="wide">
+    <div class="figtitle">From the prediction to a set of toys, for five values of μ</div>
+    <div class="stepper" role="group" aria-label="Reveal the columns one at a time">
+      <button type="button" id="st-back" aria-label="Hide the last column">◀ Back</button>
+      <span class="dots" id="st-dots"></span>
+      <button type="button" id="st-next" class="primary">Reveal next ▶</button>
+      <button type="button" id="st-all">Show all</button>
+      <button type="button" id="st-reset">Hide 2–5</button>
+    </div>
+    <div class="mugrid">
+      <div class="mucol">
+        <div class="colhead"><span class="mono">1</span> Expected events per bin, ν = μ·s + b</div>
+        <div class="legend">
+          <span><i class="sw" style="background:var(--bkg)"></i>Background b</span>
+          <span><i class="sw" style="background:var(--sig)"></i>Signal μ·s</span>
+          <span><i class="sw dash" style="border-color:var(--ink)"></i>Nominal (μ = 1)</span>
+        </div>
+        <div class="chart" id="c-mu"></div>
+      </div>
+      <div class="mucol">
+        <div class="colhead"><span class="mono">2</span> One toy: n<sub>i</sub> ~ Poisson(ν<sub>i</sub>)</div>
+        <div class="legend">
+          <span><i class="sw" style="background:var(--ink-2)"></i>Sampled counts (signal and background cannot be told apart)</span>
+        </div>
+        <div class="chart" id="c-toy"></div>
+      </div>
+      <div class="mucol">
+        <div class="colhead"><span class="mono">3</span> The set of N toys behind q<sub>μ</sub></div>
+        <div class="legend">
+          <span><i class="sw" style="background:var(--ink-2)"></i>Toys #2, #3, …, #N, each a new Poisson draw around the same ν</span>
+        </div>
+        <div class="chart" id="c-many"></div>
+      </div>
+      <div class="mucol">
+        <div class="colhead"><span class="mono">4</span> q<sub>μ</sub> of all N toys</div>
+        <div class="legend">
+          <span><i class="sw" style="background:var(--bkg)"></i>Toys</span>
+          <span><i class="sw line" style="background:var(--asym)"></i>Wilks: ½δ(0) + ½χ²₁</span>
+        </div>
+        <div class="chart" id="c-qset"></div>
+      </div>
+      <div class="mucol">
+        <div class="colhead"><span class="mono">5</span> Compare with the data: p<sub>μ</sub></div>
+        <div class="legend">
+          <span><i class="sw" style="background:var(--bkg)"></i>Toys with q &gt; q<sub>obs</sub></span>
+          <span><i class="sw line" style="background:var(--asym)"></i>Wilks</span>
+          <span><i class="sw dash" style="border-color:var(--ref)"></i>q<sub>obs</sub> of the measurement</span>
+        </div>
+        <div class="chart" id="c-pval"></div>
+      </div>
+    </div>
+    <div class="pbtns"><button type="button" id="toy-redraw">Draw new toys</button><span class="pstate" id="toy-state"></span></div>
+    <ol class="mulines" aria-label="What each column shows">
+      <li><span class="mono">1</span><span>The prediction ν = μ·s + b, zoomed to <i>x</i> from <span class="mono" id="mu-xlo"></span> to <span class="mono" id="mu-xhi"></span> with the y-axis starting at <span class="mono" id="mu-ylo"></span>. μ only scales the orange signal.</span></li>
+      <li><span class="mono">2</span><span>One toy is a Poisson draw in every bin around ν. The fit sees only these counts, never which events are signal.</span></li>
+      <li><span class="mono">3</span><span>The set holds N = 5,000 independent toys, each drawn afresh from ν. The script uses 100,000.</span></li>
+      <li><span class="mono">4</span><span>Fitting each toy for μ̂ gives one q<sub>μ</sub>. About half are 0, the rest follow ½χ²₁, except next to the μ̂ ≥ 0 bound.</span></li>
+      <li><span class="mono">5</span><span>q<sub>obs</sub> comes from the measurement, and the fraction of toys beyond it is the p-value.</span></li>
+    </ol>
+  </figure>
+  <p>For every tested μ, <code>generate_toys</code> fluctuates each bin of μ·s + b with its own Poisson draw. Each toy is refitted for its own μ̂, and its q<sub>μ</sub> is computed exactly as for the data. The p-value is the fraction of toys that come out less compatible than the data:</p>
+  <div class="eq">p<sub>μ</sub> = P( q<sub>μ</sub><sup>toy</sup> &gt; q<sub>μ</sub><sup>obs</sup> ) &nbsp;&nbsp;→&nbsp;&nbsp; <span class="mono">pval = np.mean(q &gt; qobs)</span></div>
+  <figure>
+    <div class="figtitle">Distribution of q<sub>μ</sub> from toys</div>
+    <div class="controls">
+      <label for="mu-slider">Tested μ</label>
+      <input type="range" id="mu-slider" min="0" max="39" step="1" value="6">
+      <span class="mono" id="mu-val"></span>
+    </div>
+    <div class="legend">
+      <span><i class="sw" style="background:var(--bkg)"></i>Toys</span>
+      <span><i class="sw line" style="background:var(--asym)"></i>Wilks: ½δ(0) + ½χ²₁</span>
+      <span><i class="sw dash" style="border-color:var(--ref)"></i>q<sub>obs</sub></span>
+    </div>
+    <div class="chart" id="c-hist"></div>
+    <div class="readout" id="hist-readout"></div>
+    <figcaption>Log scale, bins of width 0.25, the same binning as the script's <code>3_q_mu.pdf</code>. About half of all toys land in the first bin, because a toy that fluctuates up gives μ̂ &gt; μ and so q = 0.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <h2><span class="step">5</span>Wilks' theorem and the upper limit</h2>
+  <p>Wilks' theorem says that −2 ln λ approaches a χ² distribution with one degree of freedom for one parameter when the sample is large. For the one-sided q<sub>μ</sub>, half the probability sits at exactly zero and the other half follows χ²₁. That gives a closed form with no toys:</p>
+  <div class="eq">p<sub>μ</sub> ≈ 1 − Φ( √q<sub>μ</sub><sup>obs</sup> )</div>
+  <p>With about 700 events per bin near the peak, this sample is far into the asymptotic regime, and the two methods agree within toy statistics. The μ where p drops below 0.05 is the 95% CL upper limit on the signal strength.</p>
+  <figure>
+    <div class="figtitle">p-value versus tested μ</div>
+    <div class="legend">
+      <span><i class="sw dot" style="background:var(--bkg)"></i>Toys ± binomial error</span>
+      <span><i class="sw line" style="background:var(--asym)"></i>Wilks asymptotic</span>
+      <span><i class="sw dash" style="border-color:var(--ref)"></i>p = 0.05</span>
+    </div>
+    <div class="pbtns"><label class="plog"><input type="checkbox" id="p-plog" checked> Log y-axis</label></div>
+    <div class="chart" id="c-p"></div>
+    <figcaption id="p-cap"></figcaption>
+  </figure>
+  <details class="src">
+    <summary>Scan results as a table</summary>
+    <div class="tablewrap"><table id="p-table"></table></div>
+  </details>
+</section>
+
+<section>
+  <h2><span class="step">6</span>Full source</h2>
+  <p>The script as it is in the repository, unchanged: <a href="https://github.com/winkelf/stat_tools/blob/main/likelihood_ratio_tests/qwilks.py">winkelf/stat_tools · qwilks.py</a>. It needs numpy, scipy and matplotlib, and writes <code>1_sb.pdf</code>, <code>2_bonly.pdf</code> and <code>3_q_mu.pdf</code>.</p>
+  <details class="src">
+    <summary>qwilks.py</summary>
+    <pre class="code"><code class="language-python">import numpy as np
+import matplotlib.pyplot as plt
+from scipy.optimize import minimize
+from matplotlib.backends.backend_pdf import PdfPages
+np.random.seed(124)
+
+#########################################################################################################################
+#                                              FUNCTIONS 
+#########################################################################################################################
+
+&#x27;&#x27;&#x27;
+Aca estan las funciones (nada raro, solo el calculo de las likelihoods, la minimizacion de logL, generacion de toys y plotting)
+&#x27;&#x27;&#x27;
+
+def poisson_likelihood(mu, n, s, b, log=True):
+
+    n = np.asarray(n)
+    s = np.asarray(s)
+    b = np.asarray(b)
+
+    # expected counts
+    nu = mu * s + b
+
+    # protect against zeros
+    nu = np.clip(nu, 1e-12, None)
+
+    # log-likelihood for independent Poisson bins
+    logL = np.sum(n * np.log(nu) - nu )#- gammaln(n + 1)
+
+    if log:
+        return logL
+    else:
+        return np.exp(logL)
+
+def fit_mu(n, s, b, mu_initial=1.0):
+
+    # function to minimize
+    def neg_logL(mu):
+        mu = mu[0]
+        # enforce mu &gt;= 0
+        if mu &lt; 0:
+            return np.inf
+        return -poisson_likelihood(mu, n, s, b, log=True)
+
+    # run minimization
+    result = minimize(
+        neg_logL,
+        x0=[mu_initial],
+        bounds=[(0, None)],       # mu &gt;= 0
+        method=&#x27;L-BFGS-B&#x27;
+    )
+
+    return result
+
+def generate_toys(mu_test, bg_events, sig_events, bins, xmin=0, xmax=10, N_toys=1000):
+
+    # Template histograms
+    b, bin_edges = np.histogram(bg_events,  bins=bins, range=(xmin, xmax))
+    s, _         = np.histogram(sig_events, bins=bins, range=(xmin, xmax))
+
+    # Compute expected counts for this test mu
+    nu = mu_test * s + b
+
+    # Protect against numerical issues
+    nu = np.clip(nu, 1e-12, None)
+
+    # Generate toys: each bin independently Poisson-fluctuated
+    toys = np.random.poisson(lam=nu, size=(N_toys, len(nu)))
+
+    return toys, s, b
+
+def plotToy(toyn):
+    toy = toys[toyn]
+    # Recreate bin edges (same as histogram)
+    bin_edges = np.linspace(0, 10, 31)   # 30 bins → 31 edges
+    bin_centers = 0.5*(bin_edges[1:] + bin_edges[:-1])
+    
+    plt.figure()
+    plt.bar(bin_centers, toy, width=(10/30), alpha=0.5, label=&#x27;Toy&#x27;)
+    plt.title(&quot;Toy bkg model&quot;)
+    plt.xlabel(&quot;Observable x&quot;)
+    plt.ylabel(&quot;Counts&quot;)
+    plt.tight_layout()
+    plt.legend()
+    plt.savefig(&#x27;toy.pdf&#x27;)
+
+def plotLLH(mu_test,sig_events,bg_events):
+    fig = plt.figure()
+    xAxis = np.linspace(0,10,101)
+    yAxis = [poisson_likelihood(mu_test, len(np.concatenate([bg_events, sig_events])), len(sig_events), len(bg_events), log=True) for mu_test in xAxis]
+    plt.plot(xAxis, yAxis)
+    plt.xlabel(&quot;LL&quot;)
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(&#x27;LL.pdf&#x27;)
+
+
+#########################################################################################################################
+#                                              Global parameters
+#########################################################################################################################
+&#x27;&#x27;&#x27;
+Definimos el numero de eventos a simular y los parametros de las distribuciones correspondientes
+
+    B: Exp decreciente
+    S: Gaussiana
+&#x27;&#x27;&#x27;
+
+# Parameters
+N_bg  = 20000   # number of background events
+N_sig = 100    # number of signal (resonance) events
+
+# Background shape: exponential
+tau = 2.0
+
+# Signal shape: Gaussian
+mean  = 3.0
+sigma = 0.3
+
+# Histogram settings
+xmin, xmax = 0, 10
+bins       = 30
+
+# Numero de toys
+N_toys  = 100000
+#########################################################################################################################
+#                                              SIMULATING ASIMOV DATASET 
+#########################################################################################################################
+&#x27;&#x27;&#x27;
+
+Simulamos y ploteamos S+B y Bonly
+
+&#x27;&#x27;&#x27;
+
+# Generate background events
+u = np.random.random(N_bg)
+bg_events = -tau * np.log(1 - u * (1 - np.exp(-(xmax - xmin)/tau))) + xmin
+
+# Generate signal events (Gaussian)
+sig_events = np.random.normal(mean, sigma, N_sig)
+sig_events = sig_events[(sig_events &gt;= xmin) &amp; (sig_events &lt;= xmax)]
+
+# Plot histograms
+plt.figure()
+plt.hist(bg_events, bins=bins, range=(xmin, xmax),                                 histtype=&#x27;stepfilled&#x27;, alpha=0.5, label=&#x27;Background&#x27;)
+plt.hist(sig_events, bins=bins, range=(xmin, xmax),                                histtype=&#x27;stepfilled&#x27;, alpha=0.7, label=&#x27;Gaussian Resonance&#x27;)
+plt.hist(np.concatenate([bg_events, sig_events]),  bins=bins, range=(xmin, xmax),  histtype=&#x27;step&#x27;, linewidth=2, label=&#x27;Total&#x27;)
+
+#print(plt.hist(bg_events, bins=bins, range=(xmin, xmax),                                 histtype=&#x27;stepfilled&#x27;, alpha=0.5, label=&#x27;Background&#x27;)[0])
+#print(plt.hist(sig_events, bins=bins, range=(xmin, xmax),                                histtype=&#x27;stepfilled&#x27;, alpha=0.7, label=&#x27;Gaussian Resonance&#x27;)[0])
+
+n_obs, bin_edges = np.histogram(np.concatenate([bg_events, sig_events]),  bins=bins, range=(xmin, xmax))
+b, _             = np.histogram(bg_events,  bins=bins, range=(xmin, xmax))
+s, _             = np.histogram(sig_events, bins=bins, range=(xmin, xmax))
+
+plt.xlabel(&quot;Observable x&quot;)
+plt.ylabel(&quot;Counts&quot;)
+#plt.yscale(&#x27;log&#x27;) 
+plt.title(&quot;Smoothly falling Background + Gaussian Resonance&quot;)
+plt.legend()
+plt.tight_layout()
+plt.savefig(&#x27;1_sb.pdf&#x27;)
+plt.close()
+
+plt.figure()
+plt.hist(bg_events, bins=bins, range=(xmin, xmax), histtype=&#x27;stepfilled&#x27;, alpha=0.5, label=&#x27;Background&#x27;)
+plt.xlabel(&quot;Observable x&quot;)
+plt.ylabel(&quot;Counts&quot;)
+#plt.yscale(&#x27;log&#x27;) 
+plt.title(&quot;Smoothly falling Background&quot;)
+plt.legend()
+plt.tight_layout()
+plt.savefig(&#x27;2_bonly.pdf&#x27;)
+plt.close()
+
+#mu_test = 1   # test signal strength
+#LL = poisson_likelihood(mu_test, n_obs, s, b, log=True) 
+#print(&quot;log-likelihood =&quot;, LL)
+#plotLLH(mu_test,sig_events,bg_events)
+
+result = fit_mu(n_obs, s, b) 
+mu_hat = result.x[0]
+logL_at_mu_hat = -result.fun
+print(&quot;Best-fit mu =&quot;, mu_hat)
+print(&quot;log-likelihood at mu_hat =&quot;, logL_at_mu_hat)
+#########################################################################################################################
+#                                              SIMULATE MEASUREMENT 
+#########################################################################################################################
+&#x27;&#x27;&#x27;
+
+Simulamos una medicion, pero S y B tienen que ser los mismos de antes porque son una prediccion de la teoria! 
+
+&#x27;&#x27;&#x27;
+N_bg_obs  = 20000   # number of background events
+N_sig_obs = 100    # number of signal (resonance) events
+
+# Generate background events
+u = np.random.random(N_bg_obs)
+bg_events_obs = -tau * np.log(1 - u * (1 - np.exp(-(xmax - xmin)/tau))) + xmin
+
+# Generate signal events (Gaussian)
+sig_events_obs = np.random.normal(mean, sigma, N_sig_obs)
+sig_events_obs = sig_events_obs[(sig_events_obs &gt;= xmin) &amp; (sig_events_obs &lt;= xmax)]
+
+# Generate obs number of events in measurement
+n_obs_obs, bin_edges = np.histogram(np.concatenate([bg_events_obs, sig_events_obs]),  bins=bins, range=(xmin, xmax))
+
+#print(np.histogram(np.concatenate([bg_events_obs, sig_events_obs]),  bins=bins, range=(xmin, xmax))[0])
+
+#########################################################################################################################
+#                                              SIMULATE MEASUREMENT 
+#########################################################################################################################
+
+&#x27;&#x27;&#x27;
+
+Construimos -logL(n_obs, s, b) y lo minimizamos para obtener el μ de maxima verosimilitud
+
+Es decir, buscamos el μ mas consistente con n_obs dados s y b
+
+&#x27;&#x27;&#x27;
+
+result_obs   = fit_mu(n_obs_obs, s, b)  
+mu_hat_obs   = result_obs.x[0]
+logL_hat_obs = -result_obs.fun
+
+with PdfPages(&#x27;3_q_mu.pdf&#x27;) as pdf:
+
+    # Escaneamos valores de mu
+    for v in np.linspace(1,2,40):
+        mu_test = v
+
+        # Para este dado valor de μ, calculamos q_obs(μ) = -2ln( L(μ) - L(μ_hat) )
+        logL_mu_test = poisson_likelihood(mu_test, n_obs_obs, s, b, log=True)
+
+        qobs = -999
+
+        if mu_hat_obs &gt; mu_test:
+            qobs = 0.0
+        else:
+            qobs = -2.0 * (logL_mu_test - logL_hat_obs)
+
+        # Generamos N histogramas sampleados de mis predicciones de S y B, dado un valor de μ 
+        toys, _ , _ = generate_toys(
+            mu_test,
+            bg_events,
+            sig_events,
+            bins=bins,
+            xmin=0,
+            xmax=10,
+            N_toys=N_toys
+        )
+       
+        #plotToy(0)
+
+        # Ahora de cada uno de los N histogramas, calculamos N valores de q para obtener la distribucion  
+        q = []
+        for t in toys:
+
+            # Fit μ-hat for this toy
+            result_toy   = fit_mu(t, s, b)
+            mu_hat_toy   = result_toy.x[0]
+            mu_hat_toy   = max(mu_hat_toy, 0)
+            logL_hat_toy = -result_toy.fun
+
+            # logL at fixed μ_test for the toy
+            logL_mu_test_toy = poisson_likelihood(mu_test, t, s, b, log=True)
+
+            if mu_hat_toy &gt; mu_test:
+                q_mu_toy = 0.0
+            else:
+                q_mu_toy = -2.0 * (logL_mu_test_toy - logL_hat_toy)
+
+            q.append(q_mu_toy)
+
+        # Para la distribucion de mu calculamos el pVal dado el qobs 
+        q    = np.array(q)
+        pval = np.mean(q &gt; qobs)
+
+        print(f&quot;mu value = {mu_test}, pval = {pval}&quot;)
+
+        plt.figure()
+        plt.hist(q, bins=np.linspace(0,15,60), alpha=0.5, label=f&#x27;Distribution of q (mu = {round(v,3)}, $pval = ${pval})&#x27;)
+        plt.title(&quot;&quot;)
+        plt.xlabel(&quot;q&quot;)
+        plt.ylabel(&quot;Counts&quot;)
+        plt.yscale(&quot;log&quot;)
+        plt.xlim([0,15])
+        plt.ylim([1,5e5])
+        plt.tight_layout()
+
+        # Plot a vertical line at x=2.5
+        plt.axvline(x=qobs, color=&#x27;r&#x27;, linestyle=&#x27;--&#x27;, label=&#x27;$q_{obs}$&#x27;)
+
+        plt.legend()
+        pdf.savefig()
+
+        
+
+</code></pre>
+  </details>
+</section>
+
+<p class="note">How the numbers on this page were made: the templates and the measurement were regenerated with the script's seed (124) and draw order, so they match the script's output. The toys were then rerun with <span id="n-toys-note"></span> toys per μ instead of the script's 100,000, which puts a statistical uncertainty of about ±0.003 on a toy p-value near 0.05. The asymptotic curve and both upper limits come from the same scan, interpolated linearly in log p.</p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>
+window.MathJax = {
+  tex: { inlineMath: [["\\(", "\\)"]], displayMath: [["\\[", "\\]"]] },
+  svg: { fontCache: "global" },
+  startup: { typeset: false, pageReady: () => MathJax.startup.defaultPageReady().then(() => MathJax.typesetPromise([document.getElementById("eq-logl"), document.getElementById("eq-qmu"), document.getElementById("q-vars"), document.getElementById("eq-qexp")])) }
+};
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.min.js" async></script>
+<script>
+const D = {"n_toys": 5000, "edges": [0.0, 0.3333333333333333, 0.6666666666666666, 1.0, 1.3333333333333333, 1.6666666666666665, 2.0, 2.333333333333333, 2.6666666666666665, 3.0, 3.333333333333333, 3.6666666666666665, 4.0, 4.333333333333333, 4.666666666666666, 5.0, 5.333333333333333, 5.666666666666666, 6.0, 6.333333333333333, 6.666666666666666, 7.0, 7.333333333333333, 7.666666666666666, 8.0, 8.333333333333332, 8.666666666666666, 9.0, 9.333333333333332, 9.666666666666666, 10.0], "n_obs": [3182, 2594, 2201, 1847, 1606, 1331, 1138, 913, 872, 666, 594, 509, 434, 368, 319, 258, 202, 182, 174, 131, 113, 103, 72, 74, 51, 40, 41, 30, 28, 27], "s": [0, 0, 0, 0, 0, 0, 0, 5, 43, 37, 13, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], "b": [3163, 2597, 2243, 1893, 1527, 1344, 1094, 1018, 813, 684, 600, 478, 390, 392, 303, 249, 223, 189, 157, 106, 104, 69, 90, 63, 42, 46, 46, 29, 26, 22], "n_asimov": [3163, 2597, 2243, 1893, 1527, 1344, 1094, 1023, 856, 721, 613, 480, 390, 392, 303, 249, 223, 189, 157, 106, 104, 69, 90, 63, 42, 46, 46, 29, 26, 22], "mu_hat_asimov": 1.0, "mu_hat": 0.35339519651632484, "qedges": [0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0, 4.25, 4.5, 4.75, 5.0, 5.25, 5.5, 5.75, 6.0, 6.25, 6.5, 6.75, 7.0, 7.25, 7.5, 7.75, 8.0, 8.25, 8.5, 8.75, 9.0, 9.25, 9.5, 9.75, 10.0, 10.25, 10.5, 10.75, 11.0, 11.25, 11.5, 11.75, 12.0, 12.25, 12.5, 12.75, 13.0, 13.25, 13.5, 13.75, 14.0, 14.25, 14.5, 14.75, 15.0], "scan": [{"mu": 1.0, "qobs": 1.854815503465943, "pval": 0.0834, "pasym": 0.08661217997008086, "zero": 2474, "over": 0, "hist": [3445, 353, 233, 181, 136, 109, 97, 66, 70, 44, 45, 34, 30, 22, 21, 18, 14, 12, 7, 12, 8, 6, 3, 7, 4, 2, 2, 3, 3, 5, 2, 1, 2, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"mu": 1.0256410256410255, "qobs": 2.0031712565687485, "pval": 0.0724, "pasym": 0.07848524747665173, "zero": 2539, "over": 0, "hist": [3464, 341, 260, 171, 148, 105, 77, 70, 70, 43, 27, 39, 33, 20, 16, 11, 13, 10, 12, 6, 13, 9, 8, 5, 5, 2, 3, 3, 1, 5, 3, 3, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"mu": 1.0512820512820513, "qobs": 2.1571043502772227, "pval": 0.0744, "pasym": 0.07095594970371949, "zero": 2391, "over": 0, "hist": [3424, 333, 215, 203, 151, 107, 94, 67, 65, 58, 47, 33, 28, 23, 26, 15, 17, 8, 8, 10, 10, 7, 10, 2, 7, 4, 6, 1, 3, 2, 1, 1, 3, 3, 1, 0, 1, 0, 2, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"mu": 1.0769230769230769, "qobs": 2.3166009496781044, "pval": 0.0656, "pasym": 0.0639997272099048, "zero": 2468, "over": 0, "hist": [3428, 376, 231, 173, 142, 100, 93, 71, 48, 47, 39, 29, 41, 24, 16, 10, 15, 17, 19, 9, 15, 6, 3, 5, 5, 7, 2, 3, 7, 3, 2, 3, 0, 0, 2, 2, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"mu": 1.1025641025641026, "qobs": 2.4816472727397922, "pval": 0.061, "pasym": 0.0575907810815038, "zero": 2503, "over": 0, "hist": [3448, 332, 236, 168, 129, 102, 93, 79, 53, 62, 40, 34, 34, 27, 34, 21, 20, 16, 12, 10, 9, 8, 4, 4, 1, 6, 3, 1, 0, 3, 0, 2, 1, 2, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0]}, {"mu": 1.1282051282051282, "qobs": 2.652229589933995, "pval": 0.0528, "pasym": 0.051702386198447706, "zero": 2540, "over": 1, "hist": [3473, 366, 202, 166, 117, 107, 92, 73, 72, 47, 39, 39, 31, 13, 18, 24, 13, 17, 13, 13, 4, 7, 5, 7, 4, 8, 7, 3, 1, 2, 0, 4, 0, 3, 0, 2, 2, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0]}, {"mu": 1.1538461538461537, "qobs": 2.8283342241484206, "pval": 0.0456, "pasym": 0.046307188619832115, "zero": 2477, "over": 0, "hist": [3407, 387, 224, 166, 143, 100, 103, 74, 69, 45, 42, 36, 21, 24, 11, 15, 23, 13, 11, 5, 10, 9, 6, 7, 6, 4, 7, 3, 3, 5, 4, 7, 2, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0]}, {"mu": 1.1794871794871795, "qobs": 3.009947550133802, "pval": 0.0412, "pasym": 0.04137748439750877, "zero": 2517, "over": 0, "hist": [3535, 326, 220, 169, 136, 99, 87, 51, 53, 39, 39, 38, 29, 20, 27, 18, 17, 8, 12, 11, 7, 9, 4, 4, 6, 7, 4, 4, 3, 1, 1, 6, 3, 1, 0, 0, 0, 0, 2, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"mu": 1.205128205128205, "qobs": 3.1970559945330024, "pval": 0.041, "pasym": 0.036885477608490654, "zero": 2480, "over": 0, "hist": [3432, 338, 230, 191, 135, 104, 82, 82, 61, 50, 40, 34, 25, 20, 23, 16, 26, 21, 14, 13, 5, 10, 6, 7, 9, 3, 3, 4, 2, 1, 0, 3, 3, 1, 1, 1, 0, 0, 0, 0, 0, 1, 2, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"mu": 1.2307692307692308, "qobs": 3.389646035444457, "pval": 0.0338, "pasym": 0.03280351600163099, "zero": 2446, "over": 0, "hist": [3449, 361, 252, 153, 124, 117, 91, 65, 57, 43, 41, 37, 25, 27, 26, 21, 11, 13, 13, 7, 6, 11, 3, 4, 3, 4, 4, 4, 2, 6, 3, 2, 1, 1, 3, 3, 0, 0, 3, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"mu": 1.2564102564102564, "qobs": 3.5877042022475507, "pval": 0.0308, "pasym": 0.0291043031157544, "zero": 2487, "over": 0, "hist": [3468, 347, 222, 141, 143, 109, 103, 72, 58, 47, 32, 38, 30, 28, 23, 13, 21, 13, 11, 10, 13, 8, 8, 3, 5, 5, 5, 4, 3, 4, 1, 6, 0, 1, 1, 2, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0]}, {"mu": 1.282051282051282, "qobs": 3.7912170751951635, "pval": 0.026, "pasym": 0.02576108625117517, "zero": 2480, "over": 0, "hist": [3492, 338, 247, 172, 109, 102, 75, 76, 54, 57, 41, 40, 29, 19, 16, 15, 14, 11, 13, 9, 8, 8, 7, 9, 7, 5, 3, 2, 1, 2, 1, 1, 1, 1, 3, 1, 4, 1, 1, 1, 0, 1, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"mu": 1.3076923076923077, "qobs": 4.000171285413671, "pval": 0.025, "pasym": 0.02274782010566789, "zero": 2475, "over": 1, "hist": [3416, 354, 254, 172, 124, 122, 74, 70, 75, 44, 46, 31, 28, 29, 19, 17, 16, 17, 13, 14, 14, 3, 3, 4, 5, 9, 1, 3, 3, 4, 3, 2, 0, 2, 1, 1, 2, 0, 1, 0, 0, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"mu": 1.3333333333333333, "qobs": 4.214553514262661, "pval": 0.0234, "pasym": 0.020039306327781545, "zero": 2507, "over": 0, "hist": [3447, 375, 218, 150, 139, 112, 75, 58, 64, 58, 36, 43, 26, 20, 20, 17, 26, 11, 14, 13, 5, 11, 6, 7, 11, 7, 5, 3, 1, 3, 1, 3, 0, 2, 2, 1, 1, 0, 1, 1, 2, 0, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1]}, {"mu": 1.358974358974359, "qobs": 4.434350493509555, "pval": 0.0168, "pasym": 0.017611309564805923, "zero": 2513, "over": 0, "hist": [3439, 341, 279, 160, 106, 120, 97, 59, 74, 48, 56, 31, 28, 17, 19, 17, 15, 16, 10, 4, 11, 14, 3, 7, 4, 2, 3, 4, 0, 0, 2, 5, 0, 2, 3, 0, 0, 1, 0, 0, 2, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"mu": 1.3846153846153846, "qobs": 4.65954900480574, "pval": 0.0142, "pasym": 0.015440650943630651, "zero": 2508, "over": 0, "hist": [3472, 360, 246, 172, 118, 108, 87, 67, 62, 48, 34, 31, 28, 25, 13, 15, 16, 15, 13, 9, 13, 4, 6, 6, 4, 2, 1, 5, 1, 3, 3, 2, 1, 0, 1, 2, 1, 0, 2, 2, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"mu": 1.4102564102564101, "qobs": 4.890135879482841, "pval": 0.014, "pasym": 0.013505280149280405, "zero": 2490, "over": 0, "hist": [3438, 355, 227, 170, 143, 116, 78, 74, 63, 48, 41, 33, 37, 26, 20, 17, 15, 14, 11, 6, 4, 7, 8, 9, 0, 7, 7, 2, 1, 3, 2, 1, 2, 4, 0, 0, 2, 1, 1, 3, 1, 0, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"mu": 1.435897435897436, "qobs": 5.126097998290788, "pval": 0.0134, "pasym": 0.011784327500198614, "zero": 2530, "over": 0, "hist": [3490, 333, 212, 179, 157, 98, 68, 57, 56, 49, 44, 47, 17, 19, 15, 26, 11, 14, 22, 11, 14, 8, 8, 7, 4, 7, 4, 1, 2, 1, 2, 1, 3, 0, 0, 0, 2, 0, 3, 3, 0, 1, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0]}, {"mu": 1.4615384615384615, "qobs": 5.367422291194089, "pval": 0.0094, "pasym": 0.010258137575701941, "zero": 2538, "over": 1, "hist": [3474, 361, 210, 176, 131, 100, 86, 79, 47, 48, 50, 33, 24, 30, 23, 17, 13, 9, 19, 9, 9, 8, 5, 7, 1, 4, 2, 6, 2, 1, 1, 2, 0, 1, 1, 1, 0, 1, 2, 3, 0, 0, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"mu": 1.4871794871794872, "qobs": 5.6140957371681, "pval": 0.0114, "pasym": 0.00890828606853418, "zero": 2498, "over": 0, "hist": [3436, 336, 218, 168, 135, 110, 82, 81, 60, 65, 39, 29, 32, 23, 21, 29, 16, 15, 14, 10, 9, 12, 5, 5, 8, 2, 6, 4, 4, 4, 2, 2, 1, 1, 1, 0, 1, 0, 1, 0, 2, 0, 2, 1, 0, 1, 0, 1, 0, 0, 1, 0, 0, 2, 2, 0, 1, 0, 0, 0]}, {"mu": 1.5128205128205128, "qobs": 5.866105363791576, "pval": 0.0082, "pasym": 0.007717581606671739, "zero": 2502, "over": 0, "hist": [3434, 345, 248, 150, 142, 111, 103, 78, 57, 42, 33, 35, 32, 24, 24, 19, 23, 12, 13, 11, 8, 5, 5, 7, 4, 4, 4, 5, 3, 2, 1, 3, 1, 1, 2, 1, 1, 0, 0, 2, 0, 0, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0]}, {"mu": 1.5384615384615383, "qobs": 6.123438247130252, "pval": 0.0092, "pasym": 0.006670054315236842, "zero": 2467, "over": 0, "hist": [3434, 324, 235, 190, 135, 108, 87, 70, 57, 51, 55, 39, 21, 23, 29, 14, 15, 12, 11, 13, 13, 8, 6, 2, 4, 4, 7, 4, 3, 1, 4, 2, 3, 3, 4, 1, 0, 2, 0, 2, 1, 1, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"mu": 1.564102564102564, "qobs": 6.3860815113876015, "pval": 0.004, "pasym": 0.00575093288910608, "zero": 2479, "over": 0, "hist": [3411, 368, 220, 187, 129, 117, 90, 87, 65, 63, 39, 34, 34, 25, 20, 12, 13, 9, 10, 11, 7, 7, 8, 3, 7, 7, 3, 2, 2, 0, 1, 2, 0, 0, 1, 1, 0, 2, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"mu": 1.5897435897435899, "qobs": 6.654022328963038, "pval": 0.0052, "pasym": 0.0049466119030212325, "zero": 2517, "over": 0, "hist": [3499, 315, 221, 187, 138, 107, 83, 75, 63, 44, 37, 37, 29, 24, 20, 18, 14, 18, 9, 8, 6, 5, 6, 2, 2, 5, 3, 4, 1, 3, 1, 1, 0, 0, 0, 2, 1, 1, 1, 1, 2, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0]}, {"mu": 1.6153846153846154, "qobs": 6.927247919753427, "pval": 0.0058, "pasym": 0.004244611027863638, "zero": 2496, "over": 0, "hist": [3445, 334, 242, 203, 126, 100, 79, 50, 62, 61, 43, 32, 33, 29, 18, 15, 13, 16, 7, 11, 13, 7, 8, 6, 6, 4, 3, 6, 4, 5, 2, 2, 2, 2, 2, 0, 0, 1, 0, 2, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0]}, {"mu": 1.641025641025641, "qobs": 7.205745551240398, "pval": 0.0034, "pasym": 0.0036335277252455326, "zero": 2526, "over": 0, "hist": [3492, 342, 224, 144, 117, 109, 82, 80, 80, 42, 32, 41, 31, 28, 20, 23, 18, 15, 10, 9, 9, 7, 9, 4, 2, 3, 2, 2, 7, 3, 0, 1, 3, 1, 0, 0, 3, 2, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"mu": 1.6666666666666665, "qobs": 7.489502538111992, "pval": 0.0038, "pasym": 0.003102984897658487, "zero": 2489, "over": 0, "hist": [3482, 342, 244, 141, 123, 104, 69, 65, 67, 51, 45, 48, 27, 22, 23, 17, 19, 10, 19, 12, 5, 10, 6, 7, 7, 3, 7, 1, 3, 2, 3, 2, 1, 1, 4, 0, 1, 1, 1, 0, 2, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"mu": 1.6923076923076923, "qobs": 7.778506242175354, "pval": 0.003, "pasym": 0.0026435748472958777, "zero": 2535, "over": 0, "hist": [3478, 295, 227, 190, 153, 111, 82, 77, 59, 44, 36, 37, 27, 31, 23, 19, 16, 14, 13, 5, 7, 3, 5, 5, 5, 6, 6, 5, 2, 2, 2, 2, 2, 2, 2, 0, 1, 0, 1, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0]}, {"mu": 1.717948717948718, "qobs": 8.072744071832858, "pval": 0.0026, "pasym": 0.002246800774186418, "zero": 2470, "over": 0, "hist": [3448, 345, 247, 179, 132, 109, 84, 79, 48, 49, 44, 30, 25, 30, 15, 18, 20, 13, 14, 9, 7, 9, 4, 5, 5, 3, 4, 3, 3, 2, 2, 1, 2, 1, 1, 3, 1, 1, 1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0]}, {"mu": 1.7435897435897436, "qobs": 8.372203482256737, "pval": 0.003, "pasym": 0.0019050169097320064, "zero": 2513, "over": 0, "hist": [3441, 358, 222, 166, 141, 94, 91, 80, 53, 45, 57, 46, 27, 32, 18, 15, 12, 11, 10, 12, 7, 5, 4, 7, 5, 2, 3, 5, 0, 4, 4, 4, 3, 1, 4, 2, 1, 2, 0, 1, 0, 0, 0, 2, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0]}, {"mu": 1.7692307692307692, "qobs": 8.676871974719688, "pval": 0.002, "pasym": 0.0016113682532804317, "zero": 2457, "over": 0, "hist": [3409, 368, 240, 186, 150, 118, 94, 67, 59, 54, 37, 32, 25, 24, 23, 15, 16, 8, 10, 8, 10, 9, 2, 4, 1, 4, 4, 3, 1, 0, 2, 1, 0, 4, 3, 2, 2, 0, 2, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"mu": 1.7948717948717947, "qobs": 8.986737096798606, "pval": 0.0022, "pasym": 0.0013597307434212826, "zero": 2525, "over": 0, "hist": [3411, 355, 252, 185, 126, 128, 89, 85, 47, 53, 38, 34, 27, 21, 20, 19, 11, 13, 13, 9, 13, 4, 5, 7, 2, 9, 3, 2, 1, 4, 2, 0, 0, 1, 0, 0, 1, 1, 3, 1, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0]}, {"mu": 1.8205128205128205, "qobs": 9.30178644170519, "pval": 0.001, "pasym": 0.0011446525727439182, "zero": 2512, "over": 1, "hist": [3497, 341, 224, 185, 122, 107, 81, 74, 52, 48, 38, 37, 32, 26, 19, 14, 19, 9, 9, 8, 6, 9, 9, 7, 8, 2, 2, 1, 3, 1, 1, 1, 0, 0, 1, 0, 2, 1, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"mu": 1.8461538461538463, "qobs": 9.62200764848967, "pval": 0.0014, "pasym": 0.0009612972296887482, "zero": 2444, "over": 0, "hist": [3409, 330, 240, 172, 135, 116, 83, 69, 69, 47, 37, 41, 39, 35, 21, 26, 20, 16, 12, 14, 8, 9, 2, 6, 8, 4, 3, 6, 4, 2, 2, 1, 0, 0, 3, 2, 1, 0, 2, 0, 0, 0, 2, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0]}, {"mu": 1.8717948717948718, "qobs": 9.947388401458738, "pval": 0.001, "pasym": 0.0008053887404800632, "zero": 2521, "over": 0, "hist": [3490, 333, 226, 176, 145, 88, 79, 78, 53, 51, 46, 27, 20, 16, 23, 16, 19, 13, 16, 12, 5, 6, 4, 11, 6, 7, 4, 4, 2, 5, 3, 2, 3, 3, 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0]}, {"mu": 1.8974358974358974, "qobs": 10.277916430146433, "pval": 0.0008, "pasym": 0.0006731594766659329, "zero": 2500, "over": 1, "hist": [3469, 330, 228, 171, 127, 102, 85, 72, 53, 53, 37, 42, 34, 21, 14, 23, 27, 15, 11, 8, 7, 14, 5, 7, 3, 7, 3, 7, 4, 2, 2, 3, 2, 1, 1, 3, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0]}, {"mu": 1.923076923076923, "qobs": 10.613579509139527, "pval": 0.001, "pasym": 0.00056130079990118, "zero": 2425, "over": 0, "hist": [3411, 348, 232, 156, 137, 120, 91, 86, 57, 38, 46, 46, 32, 30, 22, 13, 15, 11, 11, 14, 13, 7, 7, 8, 9, 5, 4, 5, 3, 3, 3, 4, 1, 0, 3, 1, 1, 0, 0, 2, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0]}, {"mu": 1.9487179487179487, "qobs": 10.954365457524545, "pval": 0.0002, "pasym": 0.0004669167295662328, "zero": 2489, "over": 1, "hist": [3477, 335, 231, 187, 115, 114, 94, 64, 51, 51, 37, 41, 27, 16, 21, 12, 20, 18, 14, 13, 10, 7, 7, 6, 5, 1, 3, 5, 6, 0, 3, 1, 0, 2, 0, 1, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"mu": 1.9743589743589745, "qobs": 11.300262139207916, "pval": 0.0, "pasym": 0.00038748074319755184, "zero": 2540, "over": 0, "hist": [3469, 389, 222, 173, 124, 98, 78, 70, 60, 42, 34, 36, 15, 37, 18, 18, 20, 11, 15, 10, 8, 10, 4, 9, 3, 3, 4, 3, 3, 4, 3, 0, 0, 1, 2, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"mu": 2.0, "qobs": 11.651257462101057, "pval": 0.0006, "pasym": 0.00032079575550104163, "zero": 2492, "over": 0, "hist": [3459, 331, 249, 150, 140, 98, 102, 85, 55, 56, 43, 37, 22, 23, 27, 25, 21, 12, 12, 10, 6, 5, 2, 2, 1, 4, 2, 3, 2, 1, 2, 4, 2, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0]}], "curve": [[0.0, 0.5729353288479615], [0.025, 0.49432667257497087], [0.05, 0.421575409010984], [0.07500000000000001, 0.35466658778022975], [0.1, 0.29358531738398597], [0.125, 0.23831676461850293], [0.15000000000000002, 0.18884615440038033], [0.17500000000000002, 0.1451587694173213], [0.2, 0.10723994980799034], [0.225, 0.07507509301649407], [0.25, 0.04864965315209702], [0.275, 0.027949141163844615], [0.30000000000000004, 0.01295912405475974], [0.325, 0.003665224969154224], [0.35000000000000003, 5.312261055223644e-05], [0.375, 0.002108551299897954], [0.4, 0.009817300277063623], [0.42500000000000004, 0.023165213700849563], [0.45, 0.04213819024153054], [0.47500000000000003, 0.06672218290623277], [0.5, 0.09690319871879183], [0.525, 0.1326672982540913], [0.55, 0.17400059557985514], [0.5750000000000001, 0.22088925805292092], [0.6000000000000001, 0.27331950567895547], [0.625, 0.3312776113161817], [0.65, 0.394749899947783], [0.675, 0.4637227487983182], [0.7000000000000001, 0.5381825867225416], [0.7250000000000001, 0.6181158943218179], [0.75, 0.7035092033038381], [0.775, 0.7943490964826196], [0.8, 0.8906222074001562], [0.8250000000000001, 0.9923152200353798], [0.8500000000000001, 1.099414868716849], [0.875, 1.2119079377152957], [0.9, 1.3297812609816901], [0.925, 1.453021722030826], [0.9500000000000001, 1.5816162535338663], [0.9750000000000001, 1.7155518372310326], [1.0, 1.854815503465943], [1.0250000000000001, 1.9993943311856128], [1.05, 2.1492754475330003], [1.075, 2.3044460277014878], [1.1, 2.464893294556532], [1.125, 2.6306045186065603], [1.1500000000000001, 2.801567017508205], [1.175, 2.9777681561245117], [1.2000000000000002, 3.159195345971966], [1.225, 3.345836045278702], [1.25, 3.537677758547943], [1.2750000000000001, 3.7347080363542773], [1.3, 3.936914475343656], [1.3250000000000002, 4.144284717651317], [1.35, 4.356806450989097], [1.375, 4.574467408005148], [1.4000000000000001, 4.797255366749596], [1.425, 5.025158149714116], [1.4500000000000002, 5.258163624006556], [1.475, 5.4962597012054175], [1.5, 5.7394343367777765], [1.5250000000000001, 5.9876755302539095], [1.55, 6.240971324761631], [1.5750000000000002, 6.499309806909878], [1.6, 6.762679106584983], [1.625, 7.031067396688741], [1.6500000000000001, 7.304462892905576], [1.675, 7.582853853615234], [1.7000000000000002, 7.866228579572635], [1.725, 8.154575413733255], [1.75, 8.447882741107605], [1.7750000000000001, 8.746138988470193], [1.8, 9.049332624155795], [1.8250000000000002, 9.357452157884836], [1.85, 9.670486140734283], [1.875, 9.988423164584674], [1.9000000000000001, 10.31125186214922], [1.925, 10.638960906828288], [1.9500000000000002, 10.971539012418361], [1.975, 11.308974932821002], [2.0, 11.651257462101057], [2.025, 11.998375434079207], [2.0500000000000003, 12.350317722157342], [2.075, 12.70707323931856], [2.1, 13.068630937690614], [2.125, 13.434979808575008], [2.15, 13.80610888209776], [2.1750000000000003, 14.18200722700567], [2.2, 14.562663950782735], [2.225, 14.948068199038971], [2.25, 15.338209155655932], [2.275, 15.73307604243746], [2.3000000000000003, 16.132658119109692], [2.325, 16.536944682709873], [2.35, 16.94592506813933], [2.375, 17.359588647144847], [2.4000000000000004, 17.77792482887162], [2.4250000000000003, 18.200923059193883], [2.45, 18.628572820860427], [2.475, 19.060863633087138], [2.5, 19.4977850515279], [2.5250000000000004, 19.93932666798355], [2.5500000000000003, 20.385478110518306], [2.575, 20.83622904290678], [2.6, 21.29156916460488], [2.625, 21.75148821080802], [2.6500000000000004, 22.215975951985456], [2.6750000000000003, 22.685022193880286], [2.7, 23.158616777218413], [2.725, 23.636749577824958], [2.75, 24.119410505896667], [2.7750000000000004, 24.60658950661309], [2.8000000000000003, 25.098276559379883], [2.825, 25.594461677828804], [2.85, 26.095134909788612], [2.875, 26.60028633699403], [2.9000000000000004, 27.109906074911123], [2.9250000000000003, 27.623984272795497], [2.95, 28.142511113284854], [2.975, 28.665476812282577], [3.0, 29.192871619015932]]};
+try { hljs.highlightAll(); } catch (e) {}
+
+const $ = id => document.getElementById(id);
+const fmt = (v, d = 3) => Number(v).toFixed(d);
+const NS = "http://www.w3.org/2000/svg";
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+// erf (Abramowitz–Stegun 7.1.26) for the chi2(1) CDF
+function erf(x) {
+  const s = Math.sign(x); x = Math.abs(x);
+  const t = 1 / (1 + 0.3275911 * x);
+  const y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x);
+  return s * y;
+}
+const chi2cdf1 = x => x <= 0 ? 0 : erf(Math.sqrt(x / 2));
+
+// upper limit: first crossing of p=0.05, interpolated in log p
+function upperLimit(key) {
+  const sc = D.scan;
+  for (let i = 1; i < sc.length; i++) {
+    const a = sc[i - 1], b = sc[i];
+    if (a[key] >= 0.05 && b[key] < 0.05) {
+      const la = Math.log(Math.max(a[key], 1e-6)), lb = Math.log(Math.max(b[key], 1e-6));
+      return a.mu + (Math.log(0.05) - la) / (lb - la) * (b.mu - a.mu);
+    }
+  }
+  return NaN;
+}
+const UL = upperLimit("pval"), ULA = upperLimit("pasym");
+$("f-muhat").textContent = fmt(D.mu_hat);
+$("f-ul").textContent = "μ < " + fmt(UL, 2);
+$("f-ula").textContent = "μ < " + fmt(ULA, 2);
+$("f-ntoys").textContent = D.n_toys.toLocaleString("en-US");
+$("n-toys-note").textContent = D.n_toys.toLocaleString("en-US");
+$("t-muhat2").textContent = fmt(D.mu_hat);
+$("t-muasimov").textContent = fmt(D.mu_hat_asimov);
+$("t-muhat3").textContent = fmt(D.mu_hat, 2);
+
+// ---------- tiny SVG chart kit ----------
+function el(tag, attrs, parent) {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function lin(d0, d1, r0, r1) { const f = v => r0 + (v - d0) / (d1 - d0) * (r1 - r0); f.inv = p => d0 + (p - r0) / (r1 - r0) * (d1 - d0); return f; }
+function logs(d0, d1, r0, r1) { const l0 = Math.log10(d0), l1 = Math.log10(d1); return v => r0 + (Math.log10(v) - l0) / (l1 - l0) * (r1 - r0); }
+
+function frame(host, { h = 280, ml = 52, mr = 14, mt = 12, mb = 40 } = {}) {
+  host.innerHTML = "";
+  const w = Math.max(280, host.clientWidth);
+  const svg = el("svg", { viewBox: `0 0 ${w} ${h}`, width: w, height: h, role: "img" }, host);
+  const tip = document.createElement("div"); tip.className = "tip"; tip.hidden = true; host.appendChild(tip);
+  return { svg, tip, w, h, x0: ml, x1: w - mr, y0: h - mb, y1: mt };
+}
+function axes(F, xs, ys, xt, yt, xlab, ylab, yfmt = v => v) {
+  const g = el("g", {}, F.svg);
+  for (const v of yt) {
+    const y = ys(v);
+    el("line", { x1: F.x0, x2: F.x1, y1: y, y2: y, stroke: css("--grid"), "stroke-width": 1 }, g);
+    const t = el("text", { x: F.x0 - 8, y: y + 4, "text-anchor": "end", "font-size": 11, fill: css("--muted") }, g); t.textContent = yfmt(v);
+  }
+  el("line", { x1: F.x0, x2: F.x1, y1: F.y0, y2: F.y0, stroke: css("--muted"), "stroke-width": 1 }, g);
+  for (const v of xt) {
+    const x = xs(v);
+    el("line", { x1: x, x2: x, y1: F.y0, y2: F.y0 + 4, stroke: css("--muted") }, g);
+    const t = el("text", { x, y: F.y0 + 17, "text-anchor": "middle", "font-size": 11, fill: css("--muted") }, g); t.textContent = v;
+  }
+  const tx = el("text", { x: (F.x0 + F.x1) / 2, y: F.h - 4, "text-anchor": "middle", "font-size": 12, fill: css("--ink-2") }, g); tx.innerHTML = xlab;
+  const ty = el("text", { x: 12, y: (F.y0 + F.y1) / 2, "text-anchor": "middle", "font-size": 12, fill: css("--ink-2"), transform: `rotate(-90 12 ${(F.y0 + F.y1) / 2})` }, g); ty.innerHTML = ylab;
+}
+function hover(F, target, html, x, y) {
+  target.addEventListener("pointerenter", () => { F.tip.innerHTML = html; F.tip.hidden = false; F.tip.style.left = (x / F.w * 100) + "%"; F.tip.style.top = (y / F.h * 100) + "%"; });
+  target.addEventListener("pointerleave", () => { F.tip.hidden = true; });
+}
+function roundTop(x, y, w, h) {
+  const r = Math.min(4, w / 2, h);
+  if (h <= 0) return "";
+  return `M${x},${y + h}V${y + r}Q${x},${y} ${x + r},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + h}Z`;
+}
+
+// ---------- 1. model ----------
+// The page opens on the script's own templates (D). Moving a slider regenerates
+// b, s and n_obs in the browser with the same recipe as qwilks.py, using a seeded PRNG.
+const DEF = { nbg: 20000, tau: 2, nsig: 100, mean: 3, sigma: 0.3 };
+const PAR = [["nbg", 0], ["tau", 1], ["nsig", 0], ["mean", 1], ["sigma", 2]];
+let M = { b: D.b, s: D.s, n_obs: D.n_obs, custom: false };
+let seed = 124;
+
+function mulberry32(a) {
+  return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+}
+function histEvents(P, rnd) {
+  const nb = D.edges.length - 1, xmin = 0, xmax = 10, bw = (xmax - xmin) / nb;
+  const bh = new Array(nb).fill(0), sh = new Array(nb).fill(0);
+  const bin = x => Math.min(nb - 1, Math.floor((x - xmin) / bw));
+  const c = 1 - Math.exp(-(xmax - xmin) / P.tau);
+  for (let k = 0; k < P.nbg; k++) bh[bin(-P.tau * Math.log(1 - rnd() * c) + xmin)]++;
+  for (let k = 0; k < P.nsig; k++) {
+    const g = Math.sqrt(-2 * Math.log(1 - rnd())) * Math.cos(2 * Math.PI * rnd());
+    const x = P.mean + P.sigma * g;
+    if (x >= xmin && x <= xmax) sh[bin(x)]++;
+  }
+  return { b: bh, s: sh };
+}
+function readParams() { const P = {}; for (const [k] of PAR) P[k] = +$("p-" + k).value; return P; }
+function showParams(P) { for (const [k, d] of PAR) $("o-" + k).textContent = $("m-" + k).textContent = k === "nbg" || k === "nsig" ? P[k].toLocaleString("en-US") : fmt(P[k], d); }
+function isDefault(P) { return PAR.every(([k]) => Math.abs(P[k] - DEF[k]) < 1e-9); }
+function rebuildModel() {
+  const P = readParams();
+  showParams(P);
+  if (isDefault(P) && seed === 124) { M = { b: D.b, s: D.s, n_obs: D.n_obs, custom: false }; }
+  else {
+    const rnd = mulberry32(seed);
+    const tmpl = histEvents(P, rnd), meas = histEvents(P, rnd);
+    M = { b: tmpl.b, s: tmpl.s, n_obs: meas.b.map((v, i) => v + meas.s[i]), custom: true };
+  }
+  $("p-state").textContent = M.custom ? "Custom model: these two plots are recomputed." : "Script values, seed 124.";
+  $("m-state").textContent = !M.custom
+    ? "They start at the script's values, with the script's seed (124), so the plots match its output."
+    : isDefault(P)
+    ? "The values above are the script's, but with a different random seed, so the draws differ from its output."
+    : "The values above are your current settings, not the script's (20,000 background with τ = 2.0, 100 signal at x = 3.0 with σ = 0.30).";
+  drawModel();
+  drawResid();
+}
+function niceTicks(max, n = 4) {
+  const raw = max / n, p = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / p;
+  const step = (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * p;
+  const t = []; for (let v = 0; v <= max + 1e-9; v += step) t.push(Math.round(v * 1e6) / 1e6);
+  return t;
+}
+
+function drawModel() {
+  const F = frame($("c-model"), { h: 290 });
+  const E = D.edges, n = M.n_obs.length;
+  let ymax = 10;
+  for (let i = 0; i < n; i++) ymax = Math.max(ymax, M.b[i] + M.s[i], M.n_obs[i] + Math.sqrt(M.n_obs[i]));
+  const logY = $("p-log").checked, floor = 0.5; // log axis: empty bins sit on the lower edge
+  let xs, ys, yt;
+  xs = lin(0, 10, F.x0, F.x1);
+  if (logY) {
+    ymax = Math.pow(10, Math.log10(ymax) + 0.15);
+    const ysl = logs(floor, ymax, F.y0, F.y1);
+    ys = v => ysl(Math.max(v, floor));
+    yt = []; for (let v = 1; v < ymax; v *= 10) yt.push(v);
+  } else {
+    ymax *= 1.08;
+    ys = lin(0, ymax, F.y0, F.y1);
+    yt = niceTicks(ymax).filter(v => v < ymax);
+  }
+  axes(F, xs, ys, [0, 2, 4, 6, 8, 10], yt, "Observable x", "Events per bin", v => v.toLocaleString("en-US"));
+  for (let i = 0; i < n; i++) {
+    const xa = xs(E[i]) + 1, bw = xs(E[i + 1]) - xs(E[i]) - 2;
+    const yb = ys(M.b[i]), ytop = ys(M.b[i] + M.s[i]);
+    if (M.b[i] > 0) el("rect", { x: xa, y: yb, width: bw, height: F.y0 - yb, fill: css("--bkg"), opacity: 0.85 }, F.svg);
+    if (M.s[i] > 0) el("path", { d: roundTop(xa, ytop, bw, yb - ytop - 1), fill: css("--sig") }, F.svg);
+    const xc = (xs(E[i]) + xs(E[i + 1])) / 2, yo = ys(M.n_obs[i]), er = Math.sqrt(M.n_obs[i]);
+    if (M.n_obs[i] > 0) {
+      el("line", { x1: xc, x2: xc, y1: ys(M.n_obs[i] + er), y2: ys(M.n_obs[i] - er), stroke: css("--ink"), "stroke-width": 1.5 }, F.svg);
+      el("circle", { cx: xc, cy: yo, r: 3.2, fill: css("--ink"), stroke: css("--panel"), "stroke-width": 1.5 }, F.svg);
+    }
+    const hit = el("rect", { x: xs(E[i]), y: F.y1, width: xs(E[i + 1]) - xs(E[i]), height: F.y0 - F.y1, fill: "transparent" }, F.svg);
+    hover(F, hit, `x ∈ [${fmt(E[i], 2)}, ${fmt(E[i + 1], 2)})<br>b = ${M.b[i]}  s = ${M.s[i]}<br>n_obs = ${M.n_obs[i]}`, xc, Math.min(yo, ytop));
+  }
+  // caption: size of the signal against the background at its peak bin
+  let pk = 0; for (let i = 1; i < n; i++) if (M.s[i] > M.s[pk]) pk = i;
+  const xpk = fmt((E[pk] + E[pk + 1]) / 2, 1);
+  $("model-cap").innerHTML = M.s[pk] > 0
+    ? `The signal adds up to ${M.s[pk].toLocaleString("en-US")} events in the bin at <i>x</i> ≈ ${xpk}, on top of ${M.b[pk].toLocaleString("en-US")} background events, where the Poisson error is ±${fmt(Math.sqrt(M.b[pk] + M.s[pk]), 0)}.`
+    : "With no signal events the templates are background only.";
+  $("model-note").textContent = M.custom
+    ? "This plot and the next one follow the sliders."
+    : "At the script's settings the signal is hard to see at this scale, which is why the next panel subtracts the background.";
+}
+
+// ---------- 1b. residual ----------
+// mu-hat for the current model: maximize sum n ln(mu s + b) - (mu s + b) with mu >= 0.
+// The derivative falls monotonically in mu, so bisection on it is enough.
+function fitMu(n, s, b) {
+  if (!s.some(v => v > 0)) return 0;
+  const g = mu => { let d = 0; for (let i = 0; i < n.length; i++) { const nu = Math.max(mu * s[i] + b[i], 1e-12); d += s[i] * (n[i] / nu - 1); } return d; };
+  if (g(0) <= 0) return 0;
+  let lo = 0, hi = 1;
+  while (g(hi) > 0 && hi < 1e6) { lo = hi; hi *= 2; }
+  for (let k = 0; k < 80; k++) { const m = (lo + hi) / 2; if (g(m) > 0) lo = m; else hi = m; }
+  return (lo + hi) / 2;
+}
+function drawResid() {
+  const F = frame($("c-resid"), { h: 260 });
+  const E = D.edges, nb = E.length - 1, bw0 = E[1] - E[0];
+  const muHat = M.custom ? fitMu(M.n_obs, M.s, M.b) : D.mu_hat;
+  // window: centered on the signal's peak bin, wide enough to hold the whole bump
+  let c = 0; for (let i = 1; i < nb; i++) if (M.s[i] > M.s[c]) c = i;
+  if (!(M.s[c] > 0)) c = Math.min(nb - 1, Math.floor(readParams().mean / bw0));
+  const hw = Math.max(7, Math.ceil(3 * readParams().sigma / bw0) + 2);
+  let lo = c - hw, hi = c + hw + 1;
+  if (lo < 0) { hi = Math.min(nb, hi - lo); lo = 0; }
+  if (hi > nb) { lo = Math.max(0, lo - (hi - nb)); hi = nb; }
+  let yr = 10, minEr = Infinity, maxEr = 0, maxS = 0;
+  for (let i = lo; i < hi; i++) {
+    const r = M.n_obs[i] - M.b[i], er = Math.sqrt(M.n_obs[i]);
+    yr = Math.max(yr, Math.abs(r) + er, M.s[i], muHat * M.s[i]);
+    minEr = Math.min(minEr, er); maxEr = Math.max(maxEr, er); maxS = Math.max(maxS, M.s[i]);
+  }
+  yr *= 1.1;
+  const xs = lin(E[lo], E[hi], F.x0, F.x1), ys = lin(-yr, yr, F.y0, F.y1);
+  const pos = niceTicks(yr, 3).filter(v => v > 0 && v < yr), yt = [...pos.map(v => -v).reverse(), 0, ...pos];
+  const xstep = E[hi] - E[lo] > 8 ? 2 : 1, xt = [];
+  for (let v = Math.ceil(E[lo] / xstep) * xstep; v <= E[hi] + 1e-9; v += xstep) xt.push(v);
+  axes(F, xs, ys, xt, yt, "Observable x", "n<tspan font-size='9' dy='3'>obs</tspan><tspan dy='-3'> − b</tspan>", v => v.toLocaleString("en-US"));
+  el("line", { x1: F.x0, x2: F.x1, y1: ys(0), y2: ys(0), stroke: css("--muted"), "stroke-width": 1 }, F.svg);
+  let path = "";
+  for (let i = lo; i < hi; i++) {
+    const xa = xs(E[i]) + 1, bw = xs(E[i + 1]) - xs(E[i]) - 2;
+    if (M.s[i] > 0) el("path", { d: roundTop(xa, ys(M.s[i]), bw, ys(0) - ys(M.s[i])), fill: css("--sig"), opacity: 0.55 }, F.svg);
+    const yf = ys(muHat * M.s[i]);
+    path += `${i === lo ? "M" : "L"}${xs(E[i])},${yf}H${xs(E[i + 1])}`;
+  }
+  el("path", { d: path, fill: "none", stroke: css("--ink"), "stroke-width": 2 }, F.svg);
+  for (let i = lo; i < hi; i++) {
+    const xc = (xs(E[i]) + xs(E[i + 1])) / 2, r = M.n_obs[i] - M.b[i], er = Math.sqrt(M.n_obs[i]);
+    el("line", { x1: xc, x2: xc, y1: ys(Math.min(yr, r + er)), y2: ys(Math.max(-yr, r - er)), stroke: css("--ink"), "stroke-width": 1.5 }, F.svg);
+    el("circle", { cx: xc, cy: ys(r), r: 4, fill: css("--ink"), stroke: css("--panel"), "stroke-width": 2 }, F.svg);
+    const hit = el("rect", { x: xs(E[i]), y: F.y1, width: xs(E[i + 1]) - xs(E[i]), height: F.y0 - F.y1, fill: "transparent" }, F.svg);
+    hover(F, hit, `x ∈ [${fmt(E[i], 2)}, ${fmt(E[i + 1], 2)})<br>n_obs − b = ${r} ± ${fmt(er, 0)}<br>s = ${M.s[i]}  μ̂·s = ${fmt(muHat * M.s[i], 1)}`, xc, ys(Math.min(yr, r + er)));
+  }
+  // caption follows the current model
+  const cmp = maxS === 0 ? "" : muHat < 0.9 ? "The measured excess is smaller than the nominal signal, so the fit prefers"
+    : muHat > 1.1 ? "The measured excess is larger than the nominal signal, so the fit prefers" : "The measured excess matches the nominal signal well, and the fit gives";
+  const errs = `The Poisson errors run from about ±${fmt(minEr, 0)} to ±${fmt(maxEr, 0)} across this range, which is `
+    + (minEr > maxS ? "more than the signal in any single bin." : maxEr < maxS ? "smaller than the signal in its peak bins." : "comparable to the signal in its peak bins.");
+  $("resid-cap").innerHTML = maxS === 0
+    ? "There is no signal template, so there is nothing to fit: μ̂ is undefined and the points only show background fluctuations."
+    : `${cmp} μ̂ ≈ <span class="mono">${fmt(muHat, 2)}</span>. ${errs}`;
+}
+
+// ---------- 4a. prediction vs mu ----------
+// Small multiples, one row per mu, on the script's templates and one shared,
+// cropped y-axis around the resonance. Column 1 is nu = mu*s + b split into
+// its parts; column 2 is one Poisson toy drawn from that nu, as the fit sees it;
+// column 3 is toys #2, #3, ..., #N of the same set, each drawn afresh from nu;
+// column 4 is the q_mu histogram of all N toys in that set.
+const MUS = [0.01, 0.5, 1, 1.5, 2], NSET = 5000;
+const QE = Array.from({ length: 25 }, (_, i) => i * 0.5);   // q bins of 0.5 up to 12, last one collects overflow
+let toySeed = 7, TOYS = null, QSET = null;
+// Stirling series for ln k!, exact enough for k >= 10
+const lnfact = k => k < 10 ? Math.log([1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880][k])
+  : (k + 0.5) * Math.log(k + 1) - (k + 1) + 0.5 * Math.log(2 * Math.PI) + 1 / (12 * (k + 1)) - 1 / (360 * Math.pow(k + 1, 3));
+// Poisson draw: Knuth's product method for small means, Hormann's PTRS
+// transformed rejection (the algorithm numpy uses) for means of 10 and above.
+function poisson(lam, rnd) {
+  if (lam < 10) {
+    const L = Math.exp(-lam); let k = 0, p = rnd();
+    while (p > L) { k++; p *= rnd(); }
+    return k;
+  }
+  const sl = Math.sqrt(lam), ll = Math.log(lam), b = 0.931 + 2.53 * sl, a = -0.059 + 0.02483 * b;
+  const ia = 1.1239 + 1.1328 / (b - 3.4), vr = 0.9277 - 3.6224 / (b - 2);
+  for (;;) {
+    const U = rnd() - 0.5, V = rnd(), us = 0.5 - Math.abs(U);
+    const k = Math.floor((2 * a / us + b) * U + lam + 0.43);
+    if (us >= 0.07 && V <= vr) return k;
+    if (k < 0 || (us < 0.013 && V > us)) continue;
+    if (Math.log(V) + Math.log(ia) - Math.log(a / (us * us) + b) <= -lam + k * ll - lnfact(k)) return k;
+  }
+}
+const logLik = (mu, n, s, b) => { let l = 0; for (let i = 0; i < n.length; i++) { const nu = Math.max(mu * s[i] + b[i], 1e-12); l += n[i] * Math.log(nu) - nu; } return l; };
+// q_mu exactly as in the script: mu-hat bounded at 0, and q = 0 when mu-hat > mu
+function qmu(mu, n, s, b) {
+  const mh = fitMu(n, s, b);
+  return mh > mu ? 0 : Math.max(0, -2 * (logLik(mu, n, s, b) - logLik(mh, n, s, b)));
+}
+function muWindow() {
+  const E = D.edges, s = D.s, b = D.b, nb = E.length - 1;
+  let pk = 0; for (let i = 1; i < nb; i++) if (s[i] > s[pk]) pk = i;
+  const lo = Math.max(0, pk - 2), hi = Math.min(nb, pk + 4);
+  let bmin = Infinity, ymax = 0;
+  for (let i = lo; i < hi; i++) { bmin = Math.min(bmin, b[i]); ymax = Math.max(ymax, b[i] + 2 * s[i]); }
+  const ylo = Math.max(0, Math.floor((bmin - 3 * Math.sqrt(bmin)) * 0.95 / 50) * 50);
+  return { pk, lo, hi, ylo, yhi: (ymax + 3 * Math.sqrt(ymax)) * 1.02 };
+}
+// Throw NSET full 30-bin toys per mu, keep the four that columns 2 and 3 show
+// (#1, #2, #3 and #N), and histogram q_mu of the whole set for column 4.
+function genToys() {
+  const rnd = mulberry32(toySeed), s = D.s, b = D.b;
+  TOYS = []; QSET = [];
+  for (const mu of MUS) {
+    const keep = [], h = new Array(QE.length - 1).fill(0), qobs = qmu(mu, D.n_obs, s, b);
+    let zero = 0, above = 0;
+    for (let t = 0; t < NSET; t++) {
+      const n = b.map((bi, i) => poisson(mu * s[i] + bi, rnd));
+      if (t < 3 || t === NSET - 1) keep.push(n);
+      const q = qmu(mu, n, s, b);
+      if (q === 0) zero++;
+      if (q > qobs) above++;   // pval = np.mean(q > qobs), as in the script
+      h[Math.min(h.length - 1, Math.floor(q / 0.5))]++;
+    }
+    TOYS.push(keep); QSET.push({ h, zero, qobs, p: above / NSET });
+  }
+  $("toy-state").textContent = (toySeed === 7 ? "Seed 7. " : "New random draw. ") + `N = ${NSET.toLocaleString("en-US")} toys per μ; columns 2 to 5 are redrawn together.`;
+}
+function drawToys() {
+  if (!TOYS) genToys();
+  drawMu("c-mu", "pred");
+  drawMu("c-toy", "toy");
+  drawMu("c-many", "many");
+  drawQset("c-qset", false);
+  drawQset("c-pval", true);
+}
+// ---------- 4a. column 4: q_mu of the whole set ----------
+// obs = false: the bare distribution (column 4); obs = true: q_obs and the p-value on top (column 5)
+function drawQset(id, obs) {
+  const host = $(id), N = NSET, qmax = QE[QE.length - 1];
+  const pad = 22, rowH = 130, h = pad + MUS.length * rowH + 30;
+  host.innerHTML = "";
+  const w = Math.max(260, host.clientWidth);
+  const F = { svg: el("svg", { viewBox: `0 0 ${w} ${h}`, width: w, height: h, role: "img", "aria-label": `Five histograms of the q_mu test statistic from the toys, one per value of mu from 0 to 2, on a log scale, with the Wilks half delta plus half chi-squared curve${obs ? ", the observed q and the p-value" : ""}` }, host), w, h };
+  F.tip = document.createElement("div"); F.tip.className = "tip"; F.tip.hidden = true; host.appendChild(F.tip);
+  const x0 = 68, x1 = w - 8, xs = lin(0, qmax, x0, x1);
+  const wilks = i => N * (0.5 * (chi2cdf1(i === QE.length - 2 ? 1e9 : QE[i + 1]) - chi2cdf1(QE[i])) + (i === 0 ? 0.5 : 0));
+  MUS.forEach((mu, r) => {
+    const top = pad + r * rowH, y0 = top + rowH - 14, ysl = logs(0.5, N * 1.6, y0, top + 4), ys = v => ysl(Math.max(v, 0.5));
+    const S = QSET[r];
+    for (const v of [1, 10, 100, 1000]) {
+      el("line", { x1: x0, x2: x1, y1: ys(v), y2: ys(v), stroke: css("--grid") }, F.svg);
+      el("text", { x: x0 - 6, y: ys(v) + 4, "text-anchor": "end", "font-size": 10, fill: css("--muted") }, F.svg).textContent = v.toLocaleString("en-US");
+    }
+    el("text", { x: 2, y: top + rowH / 2, "font-size": 13, "font-weight": 600, fill: css("--ink") }, F.svg).textContent = "μ = " + mu;
+    for (let i = 0; i < S.h.length; i++) {
+      const c = S.h[i], xa = xs(QE[i]) + 1, bw = xs(QE[i + 1]) - xs(QE[i]) - 2;
+      // bins beyond q_obs are the toys that count towards the p-value
+      if (c > 0) el("path", { d: roundTop(xa, ys(c), bw, y0 - ys(c)), fill: css("--bkg"), opacity: !obs ? 0.85 : S.zero < N && QE[i] >= S.qobs ? 1 : 0.45 }, F.svg);
+    }
+    let d = "";
+    for (let i = 0; i < S.h.length; i++) d += `${i ? "L" : "M"}${xs(QE[i])},${ys(wilks(i))}H${xs(QE[i + 1])}`;
+    el("path", { d, fill: "none", stroke: css("--asym"), "stroke-width": 1.8 }, F.svg);
+    el("line", { x1: x0, x2: x1, y1: y0, y2: y0, stroke: css("--muted") }, F.svg);
+    if (!obs) {
+      el("text", { x: x1, y: top + 12, "text-anchor": "end", "font-size": 11, fill: css("--ink-2") }, F.svg)
+        .textContent = S.zero === N ? "q = 0 for every toy" : `q = 0: ${(S.zero / N * 100).toFixed(0)}%`;
+    } else {
+    const qx = xs(Math.min(S.qobs, qmax));
+    el("line", { x1: qx, x2: qx, y1: top + 4, y2: y0, stroke: css("--ref"), "stroke-width": 1.8, "stroke-dasharray": "5 4" }, F.svg);
+    const pa = 0.5 * (1 - chi2cdf1(S.qobs));   // 1 - Phi(sqrt q)
+    const pf = v => v >= 0.001 ? fmt(v, 3) : v.toExponential(0);
+    const pt = S.p > 0 ? pf(S.p) : `< ${pf(1 / N)}`;
+    const lines = S.zero === N
+      ? ["q = 0 for every toy", "p undefined"]
+      : [`q_obs = ${fmt(S.qobs, 2)}`, `p ${S.p > 0 ? "= " : ""}${pt}  (Wilks ${pf(pa)})`];
+    lines.forEach((s, j) => {
+      const tx = el("text", { x: x1, y: top + 12 + j * 13, "text-anchor": "end", "font-size": 11, fill: j ? css("--ink") : css("--ink-2"), "font-weight": j ? 600 : 400 }, F.svg);
+      tx.textContent = s;
+    });
+    }
+    for (let i = 0; i < S.h.length; i++) {
+      const hit = el("rect", { x: xs(QE[i]), y: top, width: xs(QE[i + 1]) - xs(QE[i]), height: y0 - top, fill: "transparent" }, F.svg);
+      const rng = i === S.h.length - 1 ? `q ≥ ${fmt(QE[i], 1)}` : `q ∈ [${fmt(QE[i], 1)}, ${fmt(QE[i + 1], 1)})`;
+      hover(F, hit, `μ = ${mu}  ${rng}<br>toys: ${S.h[i]}<br>Wilks: ${fmt(wilks(i), 1)}`, (xs(QE[i]) + xs(QE[i + 1])) / 2, ys(Math.max(S.h[i], wilks(i))));
+    }
+  });
+  const yl = pad + MUS.length * rowH - 14;
+  for (let v = 0; v <= qmax; v += 3) {
+    el("line", { x1: xs(v), x2: xs(v), y1: yl, y2: yl + 4, stroke: css("--muted") }, F.svg);
+    el("text", { x: xs(v), y: yl + 16, "text-anchor": "middle", "font-size": 10, fill: css("--muted") }, F.svg).textContent = v === qmax ? v + "+" : v;
+  }
+  const tx = el("text", { x: (x0 + x1) / 2, y: h - 2, "text-anchor": "middle", "font-size": 12, fill: css("--ink-2") }, F.svg);
+  tx.innerHTML = "q<tspan font-size='9' dy='3'>μ</tspan><tspan dy='-3'> of each toy</tspan>";
+  el("text", { x: x0, y: 12, "font-size": 11, fill: css("--muted") }, F.svg).textContent = "toys per bin (log)";
+}
+function drawMu(id, mode) {
+  const toy = mode !== "pred", many = mode === "many";
+  const host = $(id);
+  const E = D.edges, s = D.s, b = D.b;
+  const { pk, lo, hi, ylo, yhi } = muWindow();
+  $("mu-xlo").textContent = fmt(E[lo], 2); $("mu-xhi").textContent = fmt(E[hi], 2); $("mu-ylo").textContent = ylo;
+  const yt = niceTicks(yhi, 3).filter(v => v > ylo && v < yhi);
+  const pad = 22, rowH = 130, h = pad + MUS.length * rowH + 30;
+  host.innerHTML = "";
+  const w = Math.max(260, host.clientWidth);
+  const F = { svg: el("svg", { viewBox: `0 0 ${w} ${h}`, width: w, height: h, role: "img", "aria-label": many
+    ? `Five rows, one per value of mu from 0 to 2, each showing toys 2 and 3, an ellipsis, and toy N`
+    : toy
+    ? "Five histograms, one Poisson toy per value of mu from 0 to 2, around the resonance, drawn in a single colour"
+    : "Five stacked histograms of mu times s plus b around the resonance, for mu from 0 to 2" }, host), w, h };
+  F.tip = document.createElement("div"); F.tip.className = "tip"; F.tip.hidden = true; host.appendChild(F.tip);
+  const x0 = 68, x1 = w - (toy ? 8 : 40);
+  // one x-scale per slot: a single panel, or four positions #2, #3, an ellipsis, #N
+  const gap = 8, sw = (x1 - x0 - 3 * gap) / 4, pos = j => ({ a: x0 + j * (sw + gap), z: x0 + j * (sw + gap) + sw });
+  const slots = many ? [{ k: 1, lab: "#2", ...pos(0) }, { k: 2, lab: "#3", ...pos(1) }, { k: 3, lab: "#N", ...pos(3) }]  // indices into the kept toys
+                     : [{ k: 0, lab: "#1", a: x0, z: x1 }];
+  const dots = pos(2);
+  for (const sl of slots) sl.xs = lin(E[lo], E[hi], sl.a, sl.z);
+  const xs = slots[0].xs;
+  MUS.forEach((mu, r) => {
+    const top = pad + r * rowH, y0 = top + rowH - 14, ysr = lin(ylo, yhi, y0, top), ys = v => ysr(Math.min(Math.max(v, ylo), yhi));
+    for (const v of yt) {
+      for (const sl of slots) el("line", { x1: sl.a, x2: sl.z, y1: ys(v), y2: ys(v), stroke: css("--grid") }, F.svg);
+      el("text", { x: x0 - 6, y: ys(v) + 4, "text-anchor": "end", "font-size": 10, fill: css("--muted") }, F.svg).textContent = v.toLocaleString("en-US");
+    }
+    el("text", { x: 2, y: top + rowH / 2, "font-size": 13, "font-weight": 600, fill: css("--ink") }, F.svg).textContent = "μ = " + mu;
+    for (const sl of slots) for (let i = lo; i < hi; i++) {
+      const xs = sl.xs, xa = xs(E[i]) + 1, bw = Math.max(1, xs(E[i + 1]) - xs(E[i]) - (many ? 1 : 2));
+      if (toy) {
+        const yn = ys(TOYS[r][sl.k][i]);
+        el("path", { d: roundTop(xa, yn, bw, y0 - yn), fill: css("--ink-2"), opacity: 0.8 }, F.svg);
+      } else {
+        const yb = ys(b[i]), yt2 = ys(b[i] + mu * s[i]);
+        el("rect", { x: xa, y: yb, width: bw, height: y0 - yb, fill: css("--bkg"), opacity: 0.85 }, F.svg);
+        if (mu * s[i] > 0) el("path", { d: roundTop(xa, yt2, bw, yb - yt2 - 1), fill: css("--sig") }, F.svg);
+      }
+    }
+    if (!toy) {
+      // nominal mu = 1 outline as the common reference
+      let d = "";
+      for (let i = lo; i < hi; i++) d += `${i === lo ? "M" : "L"}${xs(E[i])},${ys(b[i] + s[i])}H${xs(E[i + 1])}`;
+      el("path", { d, fill: "none", stroke: css("--ink"), "stroke-width": 1.5, "stroke-dasharray": "5 4" }, F.svg);
+      const ann = el("text", { x: xs(E[pk + 1]) + 6, y: ys(b[pk] + mu * s[pk]) + 4, "font-size": 11, fill: css("--ink-2") }, F.svg);
+      ann.textContent = `+${fmt(mu * s[pk], 1)}`;
+    }
+    // axis with a break mark, since the y-axis does not start at 0
+    for (const sl of slots) el("line", { x1: sl.a, x2: sl.z, y1: y0, y2: y0, stroke: css("--muted") }, F.svg);
+    if (many) {
+      for (const sl of slots) el("text", { x: (sl.a + sl.z) / 2, y: y0 + 11, "text-anchor": "middle", "font-size": 10, fill: css("--muted") }, F.svg).textContent = sl.lab;
+      el("text", { x: (dots.a + dots.z) / 2, y: (top + y0) / 2 + 8, "text-anchor": "middle", "font-size": 26, fill: css("--muted") }, F.svg).textContent = "…";
+    }
+    if (ylo > 0) el("path", { d: `M${x0 - 5},${y0 - 2}l4,-4l3,6l4,-6`, fill: "none", stroke: css("--muted"), "stroke-width": 1.2 }, F.svg);
+    for (const sl of slots) for (let i = lo; i < hi; i++) {
+      const xs = sl.xs, nu = b[i] + mu * s[i], n = toy ? TOYS[r][sl.k][i] : 0;
+      const hit = el("rect", { x: xs(E[i]), y: top, width: xs(E[i + 1]) - xs(E[i]), height: y0 - top, fill: "transparent" }, F.svg);
+      hover(F, hit, toy
+        ? `μ = ${mu}  toy ${sl.lab}  x ∈ [${fmt(E[i], 2)}, ${fmt(E[i + 1], 2)})<br>n = ${n}<br>expected ν = ${fmt(nu, 1)} ± ${fmt(Math.sqrt(nu), 0)}`
+        : `μ = ${mu}  x ∈ [${fmt(E[i], 2)}, ${fmt(E[i + 1], 2)})<br>b = ${b[i]}  μ·s = ${fmt(mu * s[i], 1)}<br>ν = ${fmt(nu, 1)}`,
+        (xs(E[i]) + xs(E[i + 1])) / 2, ys(toy ? n : nu));
+    }
+  });
+  const yl = pad + MUS.length * rowH - 14;
+  if (!many) for (let v = Math.ceil(E[lo] * 2) / 2; v <= E[hi] + 1e-9; v += 0.5) {
+    el("line", { x1: xs(v), x2: xs(v), y1: yl, y2: yl + 4, stroke: css("--muted") }, F.svg);
+    el("text", { x: xs(v), y: yl + 16, "text-anchor": "middle", "font-size": 10, fill: css("--muted") }, F.svg).textContent = v;
+  }
+  el("text", { x: (x0 + x1) / 2, y: h - 2, "text-anchor": "middle", "font-size": 12, fill: css("--ink-2") }, F.svg).textContent = many ? `Observable x, same window in every toy` : "Observable x";
+  el("text", { x: x0, y: 12, "font-size": 11, fill: css("--muted") }, F.svg).textContent = many ? "toy counts per bin" : toy ? "toy #1 counts per bin" : "events per bin";
+}
+
+// ---------- 4. histogram ----------
+function drawHist(idx) {
+  const S = D.scan[idx], Q = D.qedges, N = D.n_toys;
+  $("mu-val").textContent = "μ = " + fmt(S.mu, 3);
+  const F = frame($("c-hist"), { h: 300 });
+  const xs = lin(0, 15, F.x0, F.x1), ys = logs(0.5, 5000, F.y0, F.y1);
+  axes(F, xs, ys, [0, 3, 6, 9, 12, 15], [1, 10, 100, 1000], "q<tspan font-size='9' dy='3'>μ</tspan>", "Toys per bin", v => v.toLocaleString("en-US"));
+  for (let i = 0; i < S.hist.length; i++) {
+    const c = S.hist[i];
+    const xa = xs(Q[i]) + 1, bw = xs(Q[i + 1]) - xs(Q[i]) - 2;
+    if (c > 0) el("path", { d: roundTop(xa, ys(c), bw, F.y0 - ys(c)), fill: css("--bkg"), opacity: Q[i] >= S.qobs ? 1 : 0.5 }, F.svg);
+  }
+  // asymptotic expected counts per bin: ½δ(0) in first bin + ½χ²₁
+  let d = "";
+  for (let i = 0; i < Q.length - 1; i++) {
+    const e = N * (0.5 * (chi2cdf1(Q[i + 1]) - chi2cdf1(Q[i])) + (i === 0 ? 0.5 : 0));
+    const y = ys(Math.max(e, 0.5));
+    d += `${i ? "L" : "M"}${xs(Q[i])},${y}H${xs(Q[i + 1])}`;
+  }
+  el("path", { d, fill: "none", stroke: css("--asym"), "stroke-width": 2 }, F.svg);
+  const qx = xs(Math.min(S.qobs, 15));
+  el("line", { x1: qx, x2: qx, y1: F.y1, y2: F.y0, stroke: css("--ref"), "stroke-width": 2, "stroke-dasharray": "6 4" }, F.svg);
+  const lt = el("text", { x: qx + 6, y: F.y1 + 12, "font-size": 12, fill: css("--ink") }, F.svg);
+  lt.textContent = "q_obs = " + fmt(S.qobs, 2);
+  if (qx > F.x1 - 90) { lt.setAttribute("x", qx - 6); lt.setAttribute("text-anchor", "end"); }
+  for (let i = 0; i < S.hist.length; i++) {
+    const c = S.hist[i], e = N * (0.5 * (chi2cdf1(Q[i + 1]) - chi2cdf1(Q[i])) + (i === 0 ? 0.5 : 0));
+    const hit = el("rect", { x: xs(Q[i]), y: F.y1, width: xs(Q[i + 1]) - xs(Q[i]), height: F.y0 - F.y1, fill: "transparent" }, F.svg);
+    hover(F, hit, `q ∈ [${fmt(Q[i], 2)}, ${fmt(Q[i + 1], 2)})<br>toys: ${c}<br>Wilks: ${fmt(e, 1)}`, (xs(Q[i]) + xs(Q[i + 1])) / 2, ys(Math.max(c, e, 0.5)));
+  }
+  const excl = S.pval < 0.05;
+  $("hist-readout").innerHTML =
+    `<span>toy p = <b>${fmt(S.pval, 4)}</b></span><span>Wilks p = <b>${fmt(S.pasym, 4)}</b></span>` +
+    `<span>q = 0: <b>${(S.zero / N * 100).toFixed(1)}%</b> of toys</span>` +
+    `<span class="pill ${excl ? "excl" : "ok"}">${excl ? "excluded at 95% CL" : "allowed at 95% CL"}</span>`;
+}
+
+// ---------- 5. p-values ----------
+function drawP() {
+  const F = frame($("c-p"), { h: 290 });
+  const logY = $("p-plog").checked, N = D.n_toys, floor = logY ? 1e-4 : 0;
+  const xs = lin(0.97, 2.03, F.x0, F.x1), ys = logY ? logs(floor, 0.2, F.y0, F.y1) : lin(0, 0.1, F.y0, F.y1);
+  axes(F, xs, ys, [1, 1.2, 1.4, 1.6, 1.8, 2], logY ? [1e-4, 1e-3, 1e-2, 0.1] : [0, 0.02, 0.04, 0.06, 0.08, 0.1], "Tested μ", "p-value",
+    v => !logY ? fmt(v, 2) : v >= 0.01 ? String(v) : v.toExponential(0));
+  $("p-cap").innerHTML = logY
+    ? "Log scale, which shows the tail where both methods keep falling. Toy p-values of zero, when no toy exceeds q<sub>obs</sub>, are drawn on the lower edge as open markers."
+    : "Linear scale, which shows the region around p = 0.05 where the limit is set. Above μ ≈ 1.5 the p-values are too small to tell apart here; switch to log to see them. Toy p-values of zero are drawn as open markers.";
+  const y05 = ys(0.05);
+  el("line", { x1: F.x0, x2: F.x1, y1: y05, y2: y05, stroke: css("--ref"), "stroke-width": 1.5, "stroke-dasharray": "6 4" }, F.svg);
+  const t05 = el("text", { x: F.x1 - 4, y: y05 - 6, "text-anchor": "end", "font-size": 11, fill: css("--ink-2") }, F.svg); t05.textContent = "p = 0.05";
+  el("path", { d: D.scan.map((s, i) => `${i ? "L" : "M"}${xs(s.mu)},${ys(Math.max(s.pasym, floor))}`).join(""), fill: "none", stroke: css("--asym"), "stroke-width": 2 }, F.svg);
+  const ux = xs(UL);
+  el("line", { x1: ux, x2: ux, y1: y05, y2: F.y0, stroke: css("--ink-2"), "stroke-width": 1 }, F.svg);
+  const ut = el("text", { x: ux + 6, y: F.y0 - 8, "font-size": 12, fill: css("--ink") }, F.svg); ut.textContent = "μ_up = " + fmt(UL, 2);
+  for (const s of D.scan) {
+    const x = xs(s.mu), zero = s.pval <= 0;
+    const p = Math.max(s.pval, floor), err = Math.sqrt(Math.max(s.pval * (1 - s.pval), 0) / N);
+    if (!zero && err > 0) el("line", { x1: x, x2: x, y1: ys(Math.max(s.pval - err, floor)), y2: ys(s.pval + err), stroke: css("--bkg"), "stroke-width": 1.5 }, F.svg);
+    el("circle", { cx: x, cy: ys(p), r: 4, fill: zero ? css("--panel") : css("--bkg"), stroke: zero ? css("--bkg") : css("--panel"), "stroke-width": zero ? 1.5 : 1.5 }, F.svg);
+    const hit = el("rect", { x: x - 6, y: F.y1, width: 12, height: F.y0 - F.y1, fill: "transparent" }, F.svg);
+    hover(F, hit, `μ = ${fmt(s.mu, 3)}  q_obs = ${fmt(s.qobs, 2)}<br>toys  p = ${fmt(s.pval, 4)} ± ${fmt(err, 4)}<br>Wilks p = ${fmt(s.pasym, 4)}`, x, ys(Math.max(p, s.pasym, floor)));
+  }
+}
+
+function table() {
+  const N = D.n_toys;
+  let h = "<tr><th>μ</th><th>q_obs</th><th>toy p</th><th>± stat</th><th>Wilks p</th><th>q = 0</th></tr>";
+  for (const s of D.scan) h += `<tr><td>${fmt(s.mu, 3)}</td><td>${fmt(s.qobs, 3)}</td><td>${fmt(s.pval, 4)}</td><td>${fmt(Math.sqrt(s.pval * (1 - s.pval) / N), 4)}</td><td>${fmt(s.pasym, 4)}</td><td>${(s.zero / N * 100).toFixed(1)}%</td></tr>`;
+  $("p-table").innerHTML = h;
+}
+
+const slider = $("mu-slider");
+function drawAll() { drawModel(); drawResid(); drawToys(); drawHist(+slider.value); drawP(); }
+slider.addEventListener("input", () => drawHist(+slider.value));
+for (const [k] of PAR) $("p-" + k).addEventListener("input", rebuildModel);
+$("p-log").addEventListener("change", drawModel);
+$("p-plog").addEventListener("change", drawP);
+$("toy-redraw").addEventListener("click", () => { toySeed = (Math.random() * 2 ** 31) | 0; TOYS = null; drawToys(); });
+$("p-redraw").addEventListener("click", () => { seed = (Math.random() * 2 ** 31) | 0; rebuildModel(); });
+$("p-reset").addEventListener("click", () => { for (const [k] of PAR) $("p-" + k).value = DEF[k]; seed = 124; rebuildModel(); });
+// ---------- 4a. stepper: reveal columns 2-5 one at a time ----------
+const COLS = [...document.querySelectorAll(".mugrid .mucol")];
+let step = 1;
+COLS.forEach((c, i) => {
+  if (!i) return;
+  const ph = document.createElement("button");
+  ph.type = "button"; ph.className = "ph";
+  ph.innerHTML = `<span class="phn">${i + 1}</span><span class="pht">Click to reveal</span>`;
+  ph.addEventListener("click", () => setStep(i + 1));
+  c.appendChild(ph);
+});
+COLS.forEach((_, i) => {
+  const d = document.createElement("button");
+  d.type = "button"; d.className = "dot"; d.textContent = i + 1;
+  d.setAttribute("aria-label", `Show columns 1 to ${i + 1}`);
+  d.addEventListener("click", () => setStep(i + 1));
+  $("st-dots").appendChild(d);
+});
+function setStep(k) {
+  const prev = step;
+  step = Math.max(1, Math.min(COLS.length, k));
+  COLS.forEach((c, i) => {
+    const hid = i >= step;
+    // columns revealed together come in one after another
+    c.style.setProperty("--d", !hid && i >= prev ? `${(i - prev) * 0.35}s` : "0s");
+    c.classList.toggle("hid", hid);
+    for (const ch of c.children) if (!ch.classList.contains("ph")) ch.inert = hid;
+    const ph = c.querySelector(".ph");
+    if (ph) { ph.classList.toggle("next", i === step); ph.tabIndex = hid ? 0 : -1; }
+  });
+  [...$("st-dots").children].forEach((d, i) => { d.classList.toggle("on", i < step); d.setAttribute("aria-pressed", i < step); });
+  $("st-back").disabled = $("st-reset").disabled = step === 1;
+  $("st-next").disabled = $("st-all").disabled = step === COLS.length;
+  // one caption line per column, revealed with it
+  document.querySelectorAll(".mulines li").forEach((li, i) => {
+    li.style.setProperty("--d", i < step && i >= prev ? `${(i - prev) * 0.35 + 0.3}s` : "0s");
+    li.classList.toggle("hid", i >= step);
+  });
+}
+$("st-back").addEventListener("click", () => setStep(step - 1));
+$("st-next").addEventListener("click", () => setStep(step + 1));
+$("st-all").addEventListener("click", () => setStep(COLS.length));
+$("st-reset").addEventListener("click", () => setStep(1));
+setStep(1);
+
+showParams(readParams());
+table();
+drawAll();
+rebuildModel();
+let rt; window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(drawAll, 120); });
+try { matchMedia("(prefers-color-scheme: dark)").addEventListener("change", drawAll); } catch (e) {}
+new MutationObserver(drawAll).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+if (document.fonts) document.fonts.ready.then(drawAll);
+</script>
+
+
+</html>
