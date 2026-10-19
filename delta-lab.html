@@ -1,0 +1,1439 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Delta Lab: five interactive experiments in option pricing and hedging, covering geometric Brownian motion, Black-Scholes and the Greeks, delta hedging, early exercise, and hedging P&amp;L under volatility mismatch.">
+<style>body{margin:0}[hidden]{display:none!important}</style>
+<title>Delta Lab</title>
+<style>
+  :root{
+    color-scheme: light;
+    --bg:        #f9f9f7;
+    --surface:   #fcfcfb;
+    --surface-2: #f2f1ec;
+    --ink:       #0b0b0b;
+    --ink-2:     #52514e;
+    --ink-muted: #898781;
+    --grid:      #e1e0d9;
+    --axis:      #c3c2b7;
+    --border:    rgba(11,11,11,0.10);
+    --accent:    #2a78d6;
+    --accent-ink:#ffffff;
+    --s1: #2a78d6; /* blue   */
+    --s2: #eb6834; /* orange */
+    --s3: #1baf7a; /* aqua   */
+    --s4: #eda100; /* yellow */
+    --s8: #e34948; /* red    */
+    --good:  #0ca30c;
+    --crit:  #d03b3b;
+    --shadow: 0 1px 2px rgba(11,11,11,0.06), 0 6px 20px -8px rgba(11,11,11,0.12);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      color-scheme: dark;
+      --bg:        #0d0d0d;
+      --surface:   #1a1a19;
+      --surface-2: #1f1f1d;
+      --ink:       #ffffff;
+      --ink-2:     #c3c2b7;
+      --ink-muted: #898781;
+      --grid:      #2c2c2a;
+      --axis:      #383835;
+      --border:    rgba(255,255,255,0.10);
+      --accent:    #3987e5;
+      --accent-ink:#08111c;
+      --s1: #3987e5;
+      --s2: #d95926;
+      --s3: #199e70;
+      --s4: #c98500;
+      --s8: #e66767;
+      --good:  #0ca30c;
+      --crit:  #e66767;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 10px 30px -10px rgba(0,0,0,0.5);
+    }
+  }
+  :root[data-theme="dark"]{
+    color-scheme: dark;
+    --bg:        #0d0d0d;
+    --surface:   #1a1a19;
+    --surface-2: #1f1f1d;
+    --ink:       #ffffff;
+    --ink-2:     #c3c2b7;
+    --ink-muted: #898781;
+    --grid:      #2c2c2a;
+    --axis:      #383835;
+    --border:    rgba(255,255,255,0.10);
+    --accent:    #3987e5;
+    --accent-ink:#08111c;
+    --s1: #3987e5;
+    --s2: #d95926;
+    --s3: #199e70;
+    --s4: #c98500;
+    --s8: #e66767;
+    --good:  #0ca30c;
+    --crit:  #e66767;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 10px 30px -10px rgba(0,0,0,0.5);
+  }
+
+  * { box-sizing: border-box; }
+  body{
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    padding-inline: 16px;
+    max-width: 980px;
+    margin-inline: auto;
+  }
+  .mono{ font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace; }
+  h1,h2,h3{ text-wrap: balance; font-family: "IBM Plex Mono", ui-monospace, monospace; margin: 0; }
+  p{ margin: 0; }
+
+  header.top{
+    position: sticky;
+    top: env(safe-area-inset-top, 0px);
+    background: var(--bg);
+    padding-block: 16px 10px;
+    z-index: 20;
+    border-bottom: 1px solid var(--border);
+  }
+  .eyebrow{
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: var(--ink-muted);
+    text-transform: uppercase;
+  }
+  h1.title{ font-size: clamp(24px, 5vw, 32px); font-weight: 600; margin-top: 4px; }
+  .lede{ color: var(--ink-2); font-size: 14px; margin-top: 6px; max-width: 62ch; line-height: 1.5; }
+
+  .top-row{ display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .theme-toggle{
+    flex: none;
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--ink-2);
+    border-radius: 999px;
+    cursor: pointer;
+  }
+  .theme-toggle:hover{ background: var(--surface-2); color: var(--ink); }
+  .theme-toggle svg{ width: 16px; height: 16px; }
+  .theme-toggle .icon-sun{ display: none; }
+  :root[data-theme="dark"] .theme-toggle .icon-sun{ display: block; }
+  :root[data-theme="dark"] .theme-toggle .icon-moon{ display: none; }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]) .theme-toggle .icon-sun{ display: block; }
+    :root:not([data-theme="light"]) .theme-toggle .icon-moon{ display: none; }
+  }
+
+  nav.tabs{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 14px;
+  }
+  nav.tabs button{
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12.5px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--ink-2);
+    padding: 7px 12px;
+    border-radius: 999px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  nav.tabs button[aria-selected="true"]{
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-ink);
+    font-weight: 600;
+  }
+  nav.tabs button:focus-visible, button:focus-visible, input:focus-visible{
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  main{ padding-block: 20px 48px; }
+  section.panel{ display: none; flex-direction: column; gap: 16px; }
+  section.panel.active{ display: flex; }
+
+  .intro h2{ font-size: 19px; font-weight: 600; }
+  .intro p{ color: var(--ink-2); font-size: 13.5px; line-height: 1.55; margin-top: 6px; max-width: 68ch; }
+
+  .card{
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+    padding: 16px;
+  }
+  .card > h3{ font-size: 13px; font-weight: 600; color: var(--ink-2); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 12px; }
+
+  .controls{
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 14px 18px;
+  }
+  .ctrl label{
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--ink-2);
+    margin-bottom: 6px;
+  }
+  .ctrl label .val{ font-family: "IBM Plex Mono", monospace; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .ctrl input[type=range]{
+    width: 100%;
+    accent-color: var(--accent);
+  }
+  .ctrl-actions{ display: flex; align-items: end; }
+  button.btn{
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12.5px;
+    font-weight: 600;
+    background: var(--accent);
+    color: var(--accent-ink);
+    border: none;
+    border-radius: 8px;
+    padding: 9px 14px;
+    cursor: pointer;
+  }
+  button.btn.ghost{
+    background: transparent;
+    color: var(--ink);
+    border: 1px solid var(--border);
+  }
+
+  .chart-grid{
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+  }
+  .chart-card{ position: relative; }
+  .chart-card .chart-title{ font-size: 12.5px; color: var(--ink-2); margin-bottom: 8px; display:flex; justify-content: space-between; gap: 8px; flex-wrap: wrap;}
+  .chart-wrap{ position: relative; width: 100%; }
+  .chart-wrap canvas{ display: block; width: 100%; }
+  .legend{ display: flex; gap: 12px; flex-wrap: wrap; font-size: 11.5px; color: var(--ink-2); }
+  .legend .dot{ display:inline-block; width:9px; height:9px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+  .tooltip{
+    position: absolute;
+    pointer-events: none;
+    background: var(--ink);
+    color: var(--bg);
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    line-height: 1.5;
+    white-space: nowrap;
+    opacity: 0;
+    transform: translate(-50%, calc(-100% - 10px));
+    z-index: 5;
+    box-shadow: var(--shadow);
+  }
+
+  .stat-row{
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 10px;
+  }
+  .stat{
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+  .stat .k{ font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-muted); }
+  .stat .v{ font-family: "IBM Plex Mono", monospace; font-size: 18px; font-weight: 600; margin-top: 3px; font-variant-numeric: tabular-nums; }
+  .stat .v.good{ color: var(--good); }
+  .stat .v.crit{ color: var(--crit); }
+
+  .note{ font-size: 12px; color: var(--ink-muted); line-height: 1.5; }
+  .note code{ font-family: "IBM Plex Mono", monospace; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
+
+  footer.foot{
+    padding-block: 8px calc(24px + env(safe-area-inset-bottom, 0px));
+    color: var(--ink-muted);
+    font-size: 11.5px;
+    border-top: 1px solid var(--border);
+    margin-top: 8px;
+  }
+
+  @media (prefers-reduced-motion: reduce){ * { transition: none !important; animation: none !important; } }
+</style>
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+
+<header class="top">
+  <div class="top-row">
+    <div class="eyebrow">Quant Finance &mdash; Interactive Notebook</div>
+    <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle dark theme" aria-pressed="false">
+      <svg class="icon-sun" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><circle cx="8" cy="8" r="3.2"></circle><path d="M8 0.75v2M8 13.25v2M15.25 8h-2M2.75 8h-2M13.13 2.87l-1.42 1.42M4.29 11.71l-1.42 1.42M13.13 13.13l-1.42-1.42M4.29 4.29L2.87 2.87"></path></svg>
+      <svg class="icon-moon" viewBox="0 0 16 16" fill="currentColor"><path d="M13.5 9.5A6 6 0 0 1 6.5 2.5a6 6 0 1 0 7 7Z"></path></svg>
+    </button>
+  </div>
+  <h1 class="title">Delta Lab</h1>
+  <p class="lede">Five hands-on experiments in option pricing and hedging &mdash; geometric Brownian motion, Black-Scholes &amp; the Greeks, delta-hedge bookkeeping, early exercise, and hedging P&amp;L under vol mismatch. Drag a slider, watch the market move.</p>
+  <nav class="tabs" role="tablist" aria-label="Experiments">
+    <button role="tab" data-tab="paths" aria-selected="true">01 Stock Paths</button>
+    <button role="tab" data-tab="bs" aria-selected="false">02 Black-Scholes &amp; Greeks</button>
+    <button role="tab" data-tab="hedge" aria-selected="false">03 Delta Hedging</button>
+    <button role="tab" data-tab="amvseu" aria-selected="false">04 American vs European</button>
+    <button role="tab" data-tab="pnl" aria-selected="false">05 Hedging P&amp;L</button>
+  </nav>
+</header>
+
+<main>
+
+  <!-- ============================= TAB 1: STOCK PATHS ============================= -->
+  <section class="panel active" id="panel-paths">
+    <div class="intro">
+      <h2>Geometric Brownian motion</h2>
+      <p>Each path is one possible future for the stock, drawn from <span class="mono">S(t+dt) = S(t)&middot;exp[(&mu; &minus; &frac12;&sigma;&sup2;)dt + &sigma;&radic;dt&middot;Z]</span>. Turn up drift &mu; to tilt the fan upward, or volatility &sigma; to spread it out.</p>
+    </div>
+
+    <div class="card">
+      <h3>Parameters</h3>
+      <div class="controls">
+        <div class="ctrl"><label for="paths-s0">S&#8320; (initial price) <span class="val" id="paths-s0-val">100</span></label>
+          <input type="range" id="paths-s0" min="20" max="250" step="1" value="100"></div>
+        <div class="ctrl"><label for="paths-mu">&mu; (drift, /yr) <span class="val" id="paths-mu-val">8%</span></label>
+          <input type="range" id="paths-mu" min="-20" max="30" step="1" value="8"></div>
+        <div class="ctrl"><label for="paths-sigma">&sigma; (volatility, /yr) <span class="val" id="paths-sigma-val">20%</span></label>
+          <input type="range" id="paths-sigma" min="5" max="70" step="1" value="20"></div>
+        <div class="ctrl"><label for="paths-T">T (years) <span class="val" id="paths-T-val">1.0</span></label>
+          <input type="range" id="paths-T" min="1" max="30" step="1" value="10"></div>
+        <div class="ctrl"><label for="paths-M">M (number of paths) <span class="val" id="paths-M-val">30</span></label>
+          <input type="range" id="paths-M" min="1" max="100" step="1" value="30"></div>
+        <div class="ctrl ctrl-actions"><button class="btn ghost" id="paths-resample">&#8635; Resample paths</button></div>
+      </div>
+    </div>
+
+    <div class="chart-grid">
+      <div class="card chart-card" style="grid-column: 1 / -1;">
+        <div class="chart-title">
+          <span>Simulated price paths</span>
+          <span class="legend"><span><span class="dot" style="background:var(--s1); opacity:.5"></span>path</span><span><span class="dot" style="background:var(--s2)"></span>highlighted path</span><span><span class="dot" style="background:var(--ink-muted)"></span>S&#8320;</span></span>
+        </div>
+        <div class="chart-wrap" id="paths-chart-wrap"><canvas id="paths-chart"></canvas><div class="tooltip" id="paths-tip"></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Terminal distribution at T</h3>
+      <div class="stat-row">
+        <div class="stat"><div class="k">Mean S(T)</div><div class="v" id="paths-stat-mean">&mdash;</div></div>
+        <div class="stat"><div class="k">Std dev S(T)</div><div class="v" id="paths-stat-std">&mdash;</div></div>
+        <div class="stat"><div class="k">Min S(T)</div><div class="v" id="paths-stat-min">&mdash;</div></div>
+        <div class="stat"><div class="k">Max S(T)</div><div class="v" id="paths-stat-max">&mdash;</div></div>
+      </div>
+      <p class="note" style="margin-top:10px;">Theory: E[S(T)] = S&#8320;&middot;e<sup>&mu;T</sup>. Because the walk is log-normal, the mean path sits above the median &mdash; a few paths compound much higher than they fall.</p>
+    </div>
+  </section>
+
+  <!-- ============================= TAB 2: BLACK-SCHOLES ============================= -->
+  <section class="panel" id="panel-bs">
+    <div class="intro">
+      <h2>Black-Scholes price &amp; the Greeks</h2>
+      <p>The European call price, its sensitivities, and a live check that <span class="mono">&Theta; + &frac12;&sigma;&sup2;S&sup2;&Gamma; + rS&Delta; &minus; rV = 0</span> &mdash; the Black-Scholes PDE itself, evaluated term by term.</p>
+    </div>
+
+    <div class="card">
+      <h3>Parameters</h3>
+      <div class="controls">
+        <div class="ctrl"><label for="bs-K">K (strike) <span class="val" id="bs-K-val">100</span></label>
+          <input type="range" id="bs-K" min="50" max="150" step="1" value="100"></div>
+        <div class="ctrl"><label for="bs-tau">&tau; (time to maturity) <span class="val" id="bs-tau-val">0.50</span></label>
+          <input type="range" id="bs-tau" min="5" max="200" step="1" value="50"></div>
+        <div class="ctrl"><label for="bs-r">r (risk-free rate) <span class="val" id="bs-r-val">5%</span></label>
+          <input type="range" id="bs-r" min="0" max="12" step="0.5" value="5"></div>
+        <div class="ctrl"><label for="bs-sigma">&sigma; (volatility) <span class="val" id="bs-sigma-val">20%</span></label>
+          <input type="range" id="bs-sigma" min="5" max="70" step="1" value="20"></div>
+      </div>
+    </div>
+
+    <div class="chart-grid">
+      <div class="card chart-card" style="grid-column: 1 / -1;">
+        <div class="chart-title"><span>Call price V(S)</span><span class="legend"><span><span class="dot" style="background:var(--s1)"></span>V(S)</span><span><span class="dot" style="background:var(--ink-muted)"></span>K</span></span></div>
+        <div class="chart-wrap" id="bs-price-wrap"><canvas id="bs-price-chart"></canvas><div class="tooltip" id="bs-price-tip"></div></div>
+      </div>
+      <div class="card chart-card">
+        <div class="chart-title"><span>Delta &Delta;(S)</span><span class="legend"><span><span class="dot" style="background:var(--s2)"></span>&Delta;</span></span></div>
+        <div class="chart-wrap" id="bs-delta-wrap"><canvas id="bs-delta-chart"></canvas><div class="tooltip" id="bs-delta-tip"></div></div>
+      </div>
+      <div class="card chart-card">
+        <div class="chart-title"><span>Gamma &Gamma;(S)</span><span class="legend"><span><span class="dot" style="background:var(--s3)"></span>&Gamma;</span></span></div>
+        <div class="chart-wrap" id="bs-gamma-wrap"><canvas id="bs-gamma-chart"></canvas><div class="tooltip" id="bs-gamma-tip"></div></div>
+      </div>
+      <div class="card chart-card" style="grid-column: 1 / -1;">
+        <div class="chart-title">
+          <span>Terms of the Black-Scholes PDE</span>
+          <span class="legend">
+            <span><span class="dot" style="background:var(--s1)"></span>&Theta;</span>
+            <span><span class="dot" style="background:var(--s2)"></span>&frac12;&sigma;&sup2;S&sup2;&Gamma;</span>
+            <span><span class="dot" style="background:var(--s3)"></span>rS&Delta;</span>
+            <span><span class="dot" style="background:var(--s4)"></span>&minus;rV</span>
+            <span><span class="dot" style="background:var(--ink-muted)"></span>sum</span>
+          </span>
+        </div>
+        <div class="chart-wrap" id="bs-pde-wrap"><canvas id="bs-pde-chart"></canvas><div class="tooltip" id="bs-pde-tip"></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Numerical check at S = K</h3>
+      <div class="stat-row">
+        <div class="stat"><div class="k">Option value V</div><div class="v" id="bs-stat-V">&mdash;</div></div>
+        <div class="stat"><div class="k">Delta &Delta;</div><div class="v" id="bs-stat-delta">&mdash;</div></div>
+        <div class="stat"><div class="k">Gamma &Gamma;</div><div class="v" id="bs-stat-gamma">&mdash;</div></div>
+        <div class="stat"><div class="k">PDE residual</div><div class="v good" id="bs-stat-pde">&mdash;</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================= TAB 3: DELTA HEDGING ============================= -->
+  <section class="panel" id="panel-hedge">
+    <div class="intro">
+      <h2>Delta hedging, one path at a time</h2>
+      <p>Sell a call, buy &Delta; shares against it, and rebalance daily. The bank account earns r; the hedge is repriced with an <em>implied</em> volatility that may not match how the stock actually moves.</p>
+    </div>
+
+    <div class="card">
+      <h3>Parameters</h3>
+      <div class="controls">
+        <div class="ctrl"><label for="hg-s0">S&#8320; <span class="val" id="hg-s0-val">100</span></label>
+          <input type="range" id="hg-s0" min="50" max="150" step="1" value="100"></div>
+        <div class="ctrl"><label for="hg-K">K (strike) <span class="val" id="hg-K-val">100</span></label>
+          <input type="range" id="hg-K" min="50" max="150" step="1" value="100"></div>
+        <div class="ctrl"><label for="hg-T">T (years) <span class="val" id="hg-T-val">1.0</span></label>
+          <input type="range" id="hg-T" min="1" max="20" step="1" value="10"></div>
+        <div class="ctrl"><label for="hg-r">r (risk-free) <span class="val" id="hg-r-val">3%</span></label>
+          <input type="range" id="hg-r" min="0" max="10" step="0.5" value="3"></div>
+        <div class="ctrl"><label for="hg-mu">&mu; (actual drift) <span class="val" id="hg-mu-val">10%</span></label>
+          <input type="range" id="hg-mu" min="-15" max="25" step="1" value="10"></div>
+        <div class="ctrl"><label for="hg-sigA">&sigma; actual <span class="val" id="hg-sigA-val">20%</span></label>
+          <input type="range" id="hg-sigA" min="5" max="60" step="1" value="20"></div>
+        <div class="ctrl"><label for="hg-sigI">&sigma; implied (used to price/hedge) <span class="val" id="hg-sigI-val">25%</span></label>
+          <input type="range" id="hg-sigI" min="5" max="60" step="1" value="25"></div>
+        <div class="ctrl ctrl-actions"><button class="btn ghost" id="hg-resample">&#8635; New path</button></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>At inception</h3>
+      <div class="stat-row">
+        <div class="stat"><div class="k">Call sold for V&#8320;</div><div class="v" id="hg-stat-V0">&mdash;</div></div>
+        <div class="stat"><div class="k">Shares bought (&Delta;&#8320;)</div><div class="v" id="hg-stat-d0">&mdash;</div></div>
+        <div class="stat"><div class="k">Final payoff</div><div class="v" id="hg-stat-payoff">&mdash;</div></div>
+        <div class="stat"><div class="k">Final hedging P&amp;L</div><div class="v" id="hg-stat-pnl">&mdash;</div></div>
+      </div>
+    </div>
+
+    <div class="chart-grid">
+      <div class="card chart-card">
+        <div class="chart-title"><span>Stock path</span><span class="legend"><span><span class="dot" style="background:var(--s1)"></span>S(t)</span><span><span class="dot" style="background:var(--ink-muted)"></span>K</span></span></div>
+        <div class="chart-wrap" id="hg-stock-wrap"><canvas id="hg-stock-chart"></canvas><div class="tooltip" id="hg-stock-tip"></div></div>
+      </div>
+      <div class="card chart-card">
+        <div class="chart-title"><span>Option value V(t)</span><span class="legend"><span><span class="dot" style="background:var(--s2)"></span>V</span></span></div>
+        <div class="chart-wrap" id="hg-V-wrap"><canvas id="hg-V-chart"></canvas><div class="tooltip" id="hg-V-tip"></div></div>
+      </div>
+      <div class="card chart-card">
+        <div class="chart-title"><span>Delta &Delta;(t)</span><span class="legend"><span><span class="dot" style="background:var(--s3)"></span>&Delta;</span></span></div>
+        <div class="chart-wrap" id="hg-delta-wrap"><canvas id="hg-delta-chart"></canvas><div class="tooltip" id="hg-delta-tip"></div></div>
+      </div>
+      <div class="card chart-card" style="grid-column: 1 / -1;">
+        <div class="chart-title"><span>Hedged vs. unhedged portfolio value</span><span class="legend"><span><span class="dot" style="background:var(--s1)"></span>delta-hedged</span><span><span class="dot" style="background:var(--s2)"></span>unhedged (sold call, held cash)</span></span></div>
+        <div class="chart-wrap" id="hg-port-wrap"><canvas id="hg-port-chart"></canvas><div class="tooltip" id="hg-port-tip"></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Why hedging works: one-step P&amp;L</h3>
+      <p class="note" style="margin-bottom:10px;">Ignoring interest, each step's option move splits into a hedged part <span class="mono">dV &minus; &Delta;&middot;dS</span> and the raw, unhedged move <span class="mono">dV</span>. The hedge cancels almost all the randomness.</p>
+      <div class="stat-row">
+        <div class="stat"><div class="k">Std dev, unhedged dV</div><div class="v" id="hg-stat-stdU">&mdash;</div></div>
+        <div class="stat"><div class="k">Std dev, hedged dV&minus;&Delta;dS</div><div class="v" id="hg-stat-stdH">&mdash;</div></div>
+        <div class="stat"><div class="k">Volatility removed</div><div class="v good" id="hg-stat-ratio">&mdash;</div></div>
+      </div>
+      <div class="chart-wrap" id="hg-step-wrap" style="margin-top:12px;"><canvas id="hg-step-chart"></canvas><div class="tooltip" id="hg-step-tip"></div></div>
+    </div>
+  </section>
+
+  <!-- ============================= TAB 4: AMERICAN VS EUROPEAN ============================= -->
+  <section class="panel" id="panel-amvseu">
+    <div class="intro">
+      <h2>When does early exercise start to matter?</h2>
+      <p>A European call can be worth <em>less</em> than exercising right now &mdash; something no rational American holder would accept. With dividends (q &gt; 0), that crossing point actually exists.</p>
+    </div>
+
+    <div class="card">
+      <h3>Parameters</h3>
+      <div class="controls">
+        <div class="ctrl"><label for="ae-K">K (strike) <span class="val" id="ae-K-val">100</span></label>
+          <input type="range" id="ae-K" min="50" max="150" step="1" value="100"></div>
+        <div class="ctrl"><label for="ae-T">T (years) <span class="val" id="ae-T-val">1.0</span></label>
+          <input type="range" id="ae-T" min="1" max="30" step="1" value="10"></div>
+        <div class="ctrl"><label for="ae-r">r (risk-free) <span class="val" id="ae-r-val">3%</span></label>
+          <input type="range" id="ae-r" min="0" max="10" step="0.5" value="3"></div>
+        <div class="ctrl"><label for="ae-sigma">&sigma; (volatility) <span class="val" id="ae-sigma-val">25%</span></label>
+          <input type="range" id="ae-sigma" min="5" max="70" step="1" value="25"></div>
+        <div class="ctrl"><label for="ae-q">q (dividend yield) <span class="val" id="ae-q-val">5%</span></label>
+          <input type="range" id="ae-q" min="0" max="10" step="0.5" value="5"></div>
+      </div>
+    </div>
+
+    <div class="chart-grid">
+      <div class="card chart-card" style="grid-column: 1 / -1;">
+        <div class="chart-title">
+          <span>European call vs. immediate exercise</span>
+          <span class="legend">
+            <span><span class="dot" style="background:var(--s1)"></span>European call</span>
+            <span><span class="dot" style="background:var(--s2)"></span>max(S&minus;K, 0)</span>
+            <span><span class="dot" style="background:var(--s8)"></span>violation zone</span>
+          </span>
+        </div>
+        <div class="chart-wrap" id="ae-value-wrap"><canvas id="ae-value-chart"></canvas><div class="tooltip" id="ae-value-tip"></div></div>
+      </div>
+      <div class="card chart-card" style="grid-column: 1 / -1;">
+        <div class="chart-title"><span>C&#8320; European &minus; max(S&minus;K, 0)</span><span class="legend"><span><span class="dot" style="background:var(--s3)"></span>difference</span></span></div>
+        <div class="chart-wrap" id="ae-diff-wrap"><canvas id="ae-diff-chart"></canvas><div class="tooltip" id="ae-diff-tip"></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Reading the crossing point</h3>
+      <div class="stat-row">
+        <div class="stat"><div class="k">Violation starts at S &asymp;</div><div class="v" id="ae-stat-scrit">&mdash;</div></div>
+        <div class="stat"><div class="k">At S = 1.2&middot;K, continuation value</div><div class="v" id="ae-stat-cont">&mdash;</div></div>
+      </div>
+      <p class="note" style="margin-top:10px;">With no dividends the European price always sits above the payoff &mdash; there is no early-exercise premium for a call. Turn q up and, past some deep-in-the-money point, holding the option costs more (in missed dividends) than it's worth.</p>
+    </div>
+  </section>
+
+  <!-- ============================= TAB 5: HEDGING P&L DISTRIBUTION ============================= -->
+  <section class="panel" id="panel-pnl">
+    <div class="intro">
+      <h2>What vol mismatch costs you</h2>
+      <p>Run the same delta-hedge strategy over many random paths. The stock always moves with &sigma;<sub>actual</sub>; the hedge is priced and rebalanced using three different guesses at implied vol.</p>
+    </div>
+
+    <div class="card">
+      <h3>Parameters</h3>
+      <div class="controls">
+        <div class="ctrl"><label for="pn-sigA">&sigma; actual <span class="val" id="pn-sigA-val">20%</span></label>
+          <input type="range" id="pn-sigA" min="5" max="50" step="1" value="20"></div>
+        <div class="ctrl"><label for="pn-spread">Implied-vol spread (&plusmn;) <span class="val" id="pn-spread-val">5pp</span></label>
+          <input type="range" id="pn-spread" min="1" max="15" step="1" value="5"></div>
+        <div class="ctrl"><label for="pn-N">Paths per scenario <span class="val" id="pn-N-val">300</span></label>
+          <input type="range" id="pn-N" min="50" max="1000" step="10" value="300"></div>
+        <div class="ctrl ctrl-actions"><button class="btn ghost" id="pn-resample">&#8635; Re-run simulation</button></div>
+      </div>
+    </div>
+
+    <div class="chart-grid">
+      <div class="card chart-card" style="grid-column: 1 / -1;">
+        <div class="chart-title">
+          <span>Final hedging P&amp;L, by implied vol used</span>
+          <span class="legend" id="pn-hist-legend"></span>
+        </div>
+        <div class="chart-wrap" id="pn-hist-wrap"><canvas id="pn-hist-chart"></canvas><div class="tooltip" id="pn-hist-tip"></div></div>
+      </div>
+      <div class="card chart-card" style="grid-column: 1 / -1;">
+        <div class="chart-title"><span>Mean final P&amp;L vs. implied vol used</span><span class="legend"><span><span class="dot" style="background:var(--s1)"></span>mean P&amp;L</span><span><span class="dot" style="background:var(--ink-muted)"></span>&sigma; actual</span></span></div>
+        <div class="chart-wrap" id="pn-mean-wrap"><canvas id="pn-mean-chart"></canvas><div class="tooltip" id="pn-mean-tip"></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Per-scenario summary</h3>
+      <div class="stat-row" id="pn-stat-row"></div>
+      <p class="note" style="margin-top:10px;">Overpricing the hedge (implied &gt; actual) tends to leave the seller with a profit cushion; underpricing it (implied &lt; actual) tends to leave a shortfall &mdash; on average. Either way, the spread of outcomes narrows the more precisely implied vol matches reality.</p>
+    </div>
+  </section>
+
+</main>
+
+<footer class="foot">Built from the option-pricing &amp; delta-hedging scripts in this repo &mdash; Black-Scholes, GBM simulation, and Monte Carlo hedging P&amp;L, all recomputed live in the browser.</footer>
+
+<script>
+(function(){
+"use strict";
+
+/* ============================================================
+   THEME
+   ============================================================ */
+var THEME_KEY = "delta-lab-theme";
+var root = document.documentElement;
+function getStoredTheme(){
+  try{ return localStorage.getItem(THEME_KEY); } catch(e){ return null; }
+}
+function setStoredTheme(v){
+  try{ localStorage.setItem(THEME_KEY, v); } catch(e){}
+}
+var storedTheme = getStoredTheme();
+if(storedTheme === "dark" || storedTheme === "light") root.setAttribute("data-theme", storedTheme);
+
+/* ============================================================
+   MATH LIBRARY
+   ============================================================ */
+function erf(x){
+  var sign = x < 0 ? -1 : 1;
+  x = Math.abs(x);
+  var a1=0.254829592,a2=-0.284496736,a3=1.421413741,a4=-1.453152027,a5=1.061405429,p=0.3275911;
+  var t = 1/(1+p*x);
+  var y = 1-(((((a5*t+a4)*t)+a3)*t+a2)*t+a1)*t*Math.exp(-x*x);
+  return sign*y;
+}
+function normCdf(x){ return 0.5*(1+erf(x/Math.SQRT2)); }
+function normPdf(x){ return Math.exp(-0.5*x*x)/Math.sqrt(2*Math.PI); }
+
+function d1(S,K,tau,r,sigma){ return (Math.log(S/K)+(r+0.5*sigma*sigma)*tau)/(sigma*Math.sqrt(tau)); }
+function d2(S,K,tau,r,sigma){ return d1(S,K,tau,r,sigma)-sigma*Math.sqrt(tau); }
+
+function callPrice(S,K,tau,r,sigma,q){
+  q = q||0;
+  if(tau<=0) return Math.max(S-K,0);
+  var D1=(Math.log(S/K)+(r-q+0.5*sigma*sigma)*tau)/(sigma*Math.sqrt(tau));
+  var D2=D1-sigma*Math.sqrt(tau);
+  return S*Math.exp(-q*tau)*normCdf(D1)-K*Math.exp(-r*tau)*normCdf(D2);
+}
+function callDelta(S,K,tau,r,sigma){
+  if(tau<=0) return S>K?1:0;
+  return normCdf(d1(S,K,tau,r,sigma));
+}
+function callGamma(S,K,tau,r,sigma){
+  if(tau<=0) return 0;
+  return normPdf(d1(S,K,tau,r,sigma))/(S*sigma*Math.sqrt(tau));
+}
+function callTheta(S,K,tau,r,sigma){
+  var D1=d1(S,K,tau,r,sigma), D2=d2(S,K,tau,r,sigma);
+  return -S*normPdf(D1)*sigma/(2*Math.sqrt(tau)) - r*K*Math.exp(-r*tau)*normCdf(D2);
+}
+
+function mulberry32(seed){
+  var a = seed >>> 0;
+  return function(){
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    var t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function makeGauss(rng){
+  var spare = null;
+  return function(){
+    if(spare !== null){ var s = spare; spare = null; return s; }
+    var u1, u2;
+    do { u1 = rng(); } while(u1 <= 1e-12);
+    u2 = rng();
+    var r = Math.sqrt(-2*Math.log(u1));
+    var z0 = r*Math.cos(2*Math.PI*u2), z1 = r*Math.sin(2*Math.PI*u2);
+    spare = z1;
+    return z0;
+  };
+}
+
+function mean(arr){ var s=0; for(var i=0;i<arr.length;i++) s+=arr[i]; return s/arr.length; }
+function stdev(arr){ var m=mean(arr), s=0; for(var i=0;i<arr.length;i++) s+=(arr[i]-m)*(arr[i]-m); return Math.sqrt(s/arr.length); }
+function median(arr){ var a=arr.slice().sort(function(x,y){return x-y;}); var n=a.length; return n%2? a[(n-1)/2] : (a[n/2-1]+a[n/2])/2; }
+
+function fmt(x, d){
+  if(x===null||x===undefined||isNaN(x)) return "—";
+  d = d===undefined?2:d;
+  return x.toLocaleString(undefined,{minimumFractionDigits:d, maximumFractionDigits:d});
+}
+function fmtPct(x, d){ d=d===undefined?0:d; return (x*100).toFixed(d)+"%"; }
+
+/* ============================================================
+   CHART ENGINE (canvas, DPR-aware, hover crosshair/tooltip)
+   ============================================================ */
+
+function setupCanvas(canvas){
+  if(!canvas) return null;
+  var wrap = canvas.parentElement;
+  var dpr = Math.max(1, window.devicePixelRatio||1);
+  var cssW = wrap.clientWidth;
+  var cssH = Math.max(160, Math.round(cssW * 0.46));
+  canvas.style.height = cssH+"px";
+  canvas.width = Math.round(cssW*dpr);
+  canvas.height = Math.round(cssH*dpr);
+  var ctx = canvas.getContext("2d");
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {ctx:ctx, w:cssW, h:cssH};
+}
+
+function niceTicks(min, max, count){
+  if(min===max){ min -= 1; max += 1; }
+  var span = max-min;
+  var step0 = span/count;
+  var mag = Math.pow(10, Math.floor(Math.log10(step0)));
+  var norm = step0/mag;
+  var step;
+  if(norm < 1.5) step = 1*mag;
+  else if(norm < 3) step = 2*mag;
+  else if(norm < 7) step = 5*mag;
+  else step = 10*mag;
+  var start = Math.ceil(min/step)*step;
+  var ticks = [];
+  for(var v=start; v<=max+1e-9; v+=step) ticks.push(Math.round(v*1e9)/1e9);
+  return ticks;
+}
+
+function css(name){
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+function hexToRgba(hex, alpha){
+  var h = hex.replace('#','');
+  if(h.length===3) h = h.split('').map(function(c){return c+c;}).join('');
+  var r = parseInt(h.slice(0,2),16), g = parseInt(h.slice(2,4),16), b = parseInt(h.slice(4,6),16);
+  return 'rgba('+r+','+g+','+b+','+alpha+')';
+}
+
+// generic line chart. series: [{x:[...], y:[...], color, width, dash, alpha}]
+// opts: {refLinesY:[{v,label}], refLinesX:[{v,label,color}], yFmt, xFmt, xLabel, yLabel, shadeRegion:{x0,x1,color}, pad}
+function drawLineChart(state, opts){
+  var canvas = state.canvas, tip = state.tip;
+  var dims = setupCanvas(canvas);
+  if(!dims) return;
+  var ctx = dims.ctx, w = dims.w, h = dims.h;
+  var padL = 46, padR = 10, padT = 10, padB = 26;
+  ctx.clearRect(0,0,w,h);
+
+  var allX = [], allY = [];
+  opts.series.forEach(function(s){
+    for(var i=0;i<s.x.length;i++){ allX.push(s.x[i]); allY.push(s.y[i]); }
+  });
+  if(opts.forceY0!==undefined) allY.push(opts.forceY0);
+  if(opts.forceY1!==undefined) allY.push(opts.forceY1);
+
+  var xMin = Math.min.apply(null, allX), xMax = Math.max.apply(null, allX);
+  var yMin = Math.min.apply(null, allY), yMax = Math.max.apply(null, allY);
+  if(yMin === yMax){ yMin -= 1; yMax += 1; }
+  var yPad = (yMax-yMin)*0.08;
+  yMin -= yPad; yMax += yPad;
+
+  var plotW = w - padL - padR, plotH = h - padT - padB;
+  function px(x){ return padL + (x-xMin)/(xMax-xMin||1) * plotW; }
+  function py(y){ return padT + plotH - (y-yMin)/(yMax-yMin||1) * plotH; }
+
+  var gridColor = css('--grid'), axisColor = css('--axis'), inkMuted = css('--ink-muted'), ink2 = css('--ink-2');
+
+  // shaded region
+  if(opts.shadeRegion){
+    var r = opts.shadeRegion;
+    ctx.fillStyle = r.color;
+    var x0 = Math.max(px(r.x0), padL), x1 = Math.min(px(r.x1), padL+plotW);
+    if(x1>x0) ctx.fillRect(x0, padT, x1-x0, plotH);
+  }
+
+  // gridlines (y)
+  var yTicks = niceTicks(yMin, yMax, 5);
+  ctx.strokeStyle = gridColor; ctx.lineWidth = 1;
+  ctx.font = "11px 'IBM Plex Mono', monospace";
+  ctx.fillStyle = inkMuted;
+  ctx.textAlign = "right"; ctx.textBaseline = "middle";
+  yTicks.forEach(function(t){
+    var y = py(t);
+    ctx.beginPath(); ctx.moveTo(padL, Math.round(y)+0.5); ctx.lineTo(padL+plotW, Math.round(y)+0.5); ctx.stroke();
+    ctx.fillText(opts.yFmt? opts.yFmt(t) : fmt(t,1), padL-6, y);
+  });
+
+  // x ticks
+  var xTicks = niceTicks(xMin, xMax, 5);
+  ctx.textAlign = "center"; ctx.textBaseline = "top";
+  xTicks.forEach(function(t){
+    var x = px(t);
+    ctx.fillText(opts.xFmt? opts.xFmt(t) : fmt(t,2), x, padT+plotH+6);
+  });
+
+  // axis baseline
+  ctx.strokeStyle = axisColor;
+  ctx.beginPath(); ctx.moveTo(padL, padT+plotH+0.5); ctx.lineTo(padL+plotW, padT+plotH+0.5); ctx.stroke();
+
+  // ref lines (horizontal)
+  (opts.refLinesY||[]).forEach(function(rl){
+    var y = py(rl.v);
+    ctx.save();
+    ctx.strokeStyle = rl.color || inkMuted;
+    ctx.setLineDash([4,4]); ctx.lineWidth = 1.25;
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL+plotW, y); ctx.stroke();
+    ctx.restore();
+  });
+  // ref lines (vertical)
+  (opts.refLinesX||[]).forEach(function(rl){
+    var x = px(rl.v);
+    if(x<padL || x>padL+plotW) return;
+    ctx.save();
+    ctx.strokeStyle = rl.color || inkMuted;
+    ctx.setLineDash([4,4]); ctx.lineWidth = 1.25;
+    ctx.beginPath(); ctx.moveTo(x, padT); ctx.lineTo(x, padT+plotH); ctx.stroke();
+    ctx.restore();
+  });
+
+  // series
+  opts.series.forEach(function(s){
+    ctx.save();
+    ctx.globalAlpha = s.alpha===undefined?1:s.alpha;
+    ctx.strokeStyle = s.color;
+    ctx.lineWidth = s.width || 2;
+    ctx.lineJoin = "round"; ctx.lineCap = "round";
+    if(s.dash) ctx.setLineDash(s.dash); else ctx.setLineDash([]);
+    ctx.beginPath();
+    for(var i=0;i<s.x.length;i++){
+      var X = px(s.x[i]), Y = py(s.y[i]);
+      if(i===0) ctx.moveTo(X,Y); else ctx.lineTo(X,Y);
+    }
+    ctx.stroke();
+    ctx.restore();
+  });
+
+  state._geom = {px:px, py:py, xMin:xMin, xMax:xMax, padL:padL, plotW:plotW, padT:padT, plotH:plotH};
+  state.opts = opts;
+  state.ctx = ctx;
+
+  // interaction
+  if(!state._bound){
+    state._bound = true;
+    canvas.addEventListener("mousemove", function(e){ handleHover(state, e); });
+    canvas.addEventListener("mouseleave", function(){ tip.style.opacity = 0; });
+    canvas.addEventListener("touchstart", function(e){ handleHover(state, e.touches[0]); }, {passive:true});
+    canvas.addEventListener("touchmove", function(e){ handleHover(state, e.touches[0]); }, {passive:true});
+  }
+}
+
+function handleHover(state, e){
+  var storedOpts = state.opts;
+  if(!storedOpts) return;
+  var canvas = state.canvas, tip = state.tip;
+  var rect = canvas.getBoundingClientRect();
+  var mx = e.clientX - rect.left;
+
+  // clean redraw first so a previous crosshair never lingers
+  drawLineChart(state, storedOpts);
+  var opts = state.opts;
+  var g = state._geom;
+  if(!g) return;
+  if(mx < g.padL-4 || mx > g.padL+g.plotW+4){ tip.style.opacity = 0; return; }
+  var xVal = g.xMin + (mx-g.padL)/g.plotW * (g.xMax-g.xMin);
+
+  // nearest index on first series
+  var s0 = opts.series[0];
+  if(!s0 || !s0.x.length) return;
+  var lo = 0, hi = s0.x.length-1;
+  // binary search nearest
+  while(hi-lo>1){
+    var mid=(lo+hi)>>1;
+    if(s0.x[mid] < xVal) lo=mid; else hi=mid;
+  }
+  var idx = Math.abs(s0.x[lo]-xVal) < Math.abs(s0.x[hi]-xVal) ? lo : hi;
+
+  var ctx = state.ctx;
+  var xPix = g.px(s0.x[idx]);
+  ctx.save();
+  ctx.strokeStyle = css('--ink-muted');
+  ctx.setLineDash([3,3]); ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(xPix, g.padT); ctx.lineTo(xPix, g.padT+g.plotH); ctx.stroke();
+  ctx.restore();
+
+  var lines = [ (opts.xLabel||"x") + " = " + (opts.xFmt? opts.xFmt(s0.x[idx]) : fmt(s0.x[idx],2)) ];
+  opts.series.forEach(function(s){
+    if(s.hideTip) return;
+    var yv = s.y[Math.min(idx, s.y.length-1)];
+    var yPix = g.py(yv);
+    ctx.save();
+    ctx.fillStyle = s.color;
+    ctx.beginPath(); ctx.arc(xPix, yPix, 3.5, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+    lines.push((s.label? s.label+": " : "") + (opts.yFmt? opts.yFmt(yv) : fmt(yv,3)));
+  });
+  tip.innerHTML = lines.map(function(l){return escapeHtml(l);}).join("<br>");
+  tip.style.left = xPix+"px";
+  tip.style.top = "0px";
+  tip.style.opacity = 1;
+}
+
+function escapeHtml(s){ return String(s).replace(/[&<>]/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;"}[c]; }); }
+
+// histogram chart. datasets: [{values:[...], color, label}]
+function drawHistogram(state, opts){
+  var canvas = state.canvas, tip = state.tip;
+  var dims = setupCanvas(canvas);
+  if(!dims) return;
+  var ctx = dims.ctx, w = dims.w, h = dims.h;
+  var padL = 46, padR = 10, padT = 10, padB = 26;
+  ctx.clearRect(0,0,w,h);
+
+  var allVals = [];
+  opts.datasets.forEach(function(d){ allVals = allVals.concat(d.values); });
+  var vMin = Math.min.apply(null, allVals), vMax = Math.max.apply(null, allVals);
+  if(opts.includeZero){ vMin = Math.min(vMin,0); vMax = Math.max(vMax,0); }
+  var vPad = (vMax-vMin)*0.04 || 1;
+  vMin -= vPad; vMax += vPad;
+
+  var nbins = opts.bins || 30;
+  var binW = (vMax-vMin)/nbins;
+
+  var plotW = w - padL - padR, plotH = h - padT - padB;
+  function px(v){ return padL + (v-vMin)/(vMax-vMin) * plotW; }
+
+  var maxDensity = 0;
+  var binned = opts.datasets.map(function(d){
+    var counts = new Array(nbins).fill(0);
+    d.values.forEach(function(v){
+      var bi = Math.min(nbins-1, Math.max(0, Math.floor((v-vMin)/binW)));
+      counts[bi]++;
+    });
+    var dens = counts.map(function(c){ return c/(d.values.length*binW); });
+    maxDensity = Math.max(maxDensity, Math.max.apply(null, dens));
+    return dens;
+  });
+  maxDensity *= 1.12;
+
+  function py(d){ return padT + plotH - (d/maxDensity)*plotH; }
+
+  var gridColor = css('--grid'), axisColor = css('--axis'), inkMuted = css('--ink-muted');
+
+  var yTicks = niceTicks(0, maxDensity, 4);
+  ctx.strokeStyle = gridColor; ctx.lineWidth = 1;
+  ctx.font = "11px 'IBM Plex Mono', monospace";
+  ctx.fillStyle = inkMuted;
+  ctx.textAlign = "right"; ctx.textBaseline = "middle";
+  yTicks.forEach(function(t){
+    var y = py(t);
+    ctx.beginPath(); ctx.moveTo(padL, Math.round(y)+0.5); ctx.lineTo(padL+plotW, Math.round(y)+0.5); ctx.stroke();
+    ctx.fillText(fmt(t,2), padL-6, y);
+  });
+
+  var xTicks = niceTicks(vMin, vMax, 5);
+  ctx.textAlign = "center"; ctx.textBaseline = "top";
+  xTicks.forEach(function(t){
+    ctx.fillText(opts.xFmt? opts.xFmt(t) : fmt(t,1), px(t), padT+plotH+6);
+  });
+
+  ctx.strokeStyle = axisColor;
+  ctx.beginPath(); ctx.moveTo(padL, padT+plotH+0.5); ctx.lineTo(padL+plotW, padT+plotH+0.5); ctx.stroke();
+
+  if(opts.includeZero){
+    ctx.save();
+    ctx.strokeStyle = inkMuted; ctx.setLineDash([4,4]); ctx.lineWidth = 1.25;
+    var x0 = px(0);
+    ctx.beginPath(); ctx.moveTo(x0, padT); ctx.lineTo(x0, padT+plotH); ctx.stroke();
+    ctx.restore();
+  }
+
+  opts.datasets.forEach(function(d, di){
+    ctx.save();
+    ctx.globalAlpha = 0.55;
+    ctx.fillStyle = d.color;
+    for(var bi=0; bi<nbins; bi++){
+      var v0 = vMin+bi*binW, v1 = v0+binW;
+      var x0 = px(v0), x1 = px(v1);
+      var y0 = py(binned[di][bi]), y1 = py(0);
+      if(binned[di][bi] <= 0) continue;
+      ctx.fillRect(x0, y0, Math.max(1,x1-x0-1), y1-y0);
+    }
+    ctx.restore();
+  });
+
+  state._geom = {px:px, vMin:vMin, vMax:vMax, padL:padL, plotW:plotW, padT:padT, plotH:plotH, binned:binned, binW:binW, nbins:nbins, maxDensity:maxDensity};
+  state.opts = opts;
+  state.ctx = ctx;
+
+  if(!state._bound){
+    state._bound = true;
+    canvas.addEventListener("mousemove", function(e){ handleHistHover(state, e); });
+    canvas.addEventListener("mouseleave", function(){ tip.style.opacity = 0; });
+  }
+}
+
+function handleHistHover(state, e){
+  var storedOpts = state.opts;
+  if(!storedOpts) return;
+  var canvas = state.canvas, tip = state.tip;
+  var rect = canvas.getBoundingClientRect();
+  var mx = e.clientX - rect.left;
+
+  drawHistogram(state, storedOpts);
+  var opts = state.opts;
+  var g = state._geom;
+  if(!g) return;
+  if(mx < g.padL || mx > g.padL+g.plotW){ tip.style.opacity = 0; return; }
+  var v = g.vMin + (mx-g.padL)/g.plotW*(g.vMax-g.vMin);
+  var bi = Math.min(g.nbins-1, Math.max(0, Math.floor((v-g.vMin)/g.binW)));
+
+  var ctx = state.ctx;
+  var xBand0 = g.px(g.vMin+bi*g.binW), xBand1 = g.px(g.vMin+(bi+1)*g.binW);
+  ctx.save();
+  ctx.fillStyle = css('--ink');
+  ctx.globalAlpha = 0.06;
+  ctx.fillRect(xBand0, g.padT, Math.max(1,xBand1-xBand0), g.plotH);
+  ctx.restore();
+
+  var lines = [ "range: " + fmt(g.vMin+bi*g.binW,1) + " to " + fmt(g.vMin+(bi+1)*g.binW,1) ];
+  opts.datasets.forEach(function(d, di){
+    lines.push(d.label + ": " + fmt(g.binned[di][bi],4) + " density");
+  });
+  tip.innerHTML = lines.map(function(l){return escapeHtml(l);}).join("<br>");
+  tip.style.left = mx+"px";
+  tip.style.top = "0px";
+  tip.style.opacity = 1;
+}
+
+function chartState(idPrefix){
+  return {
+    canvas: document.getElementById(idPrefix),
+    tip: document.getElementById(idPrefix.replace(/-chart$/, "-tip"))
+  };
+}
+
+/* ============================================================
+   TABS
+   ============================================================ */
+var tabButtons = document.querySelectorAll('nav.tabs button');
+var panels = {
+  paths: document.getElementById('panel-paths'),
+  bs: document.getElementById('panel-bs'),
+  hedge: document.getElementById('panel-hedge'),
+  amvseu: document.getElementById('panel-amvseu'),
+  pnl: document.getElementById('panel-pnl')
+};
+tabButtons.forEach(function(btn){
+  btn.addEventListener('click', function(){
+    tabButtons.forEach(function(b){ b.setAttribute('aria-selected', b===btn ? 'true':'false'); });
+    Object.keys(panels).forEach(function(k){ panels[k].classList.remove('active'); });
+    panels[btn.dataset.tab].classList.add('active');
+    requestAnimationFrame(function(){ redrawAll(btn.dataset.tab); });
+  });
+});
+
+/* ============================================================
+   THEME TOGGLE
+   ============================================================ */
+var themeToggleBtn = document.getElementById('theme-toggle');
+function isDarkNow(){
+  var explicit = root.getAttribute('data-theme');
+  if(explicit === 'dark') return true;
+  if(explicit === 'light') return false;
+  return !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+}
+themeToggleBtn.setAttribute('aria-pressed', isDarkNow() ? 'true' : 'false');
+themeToggleBtn.addEventListener('click', function(){
+  var next = isDarkNow() ? 'light' : 'dark';
+  root.setAttribute('data-theme', next);
+  setStoredTheme(next);
+  themeToggleBtn.setAttribute('aria-pressed', next === 'dark' ? 'true' : 'false');
+  Object.keys(panels).forEach(function(k){
+    if(panels[k].classList.contains('active')) redrawAll(k);
+  });
+});
+
+function bindSlider(id, valId, formatter, onChange){
+  var el = document.getElementById(id);
+  var out = document.getElementById(valId);
+  function update(){
+    var v = parseFloat(el.value);
+    out.textContent = formatter(v);
+    onChange(v);
+  }
+  el.addEventListener('input', update);
+  update();
+  return {el:el, update:update};
+}
+
+/* ============================================================
+   TAB 1: STOCK PATHS
+   ============================================================ */
+var P1 = { s0:100, mu:0.08, sigma:0.20, T:1, M:30, seed: 12345 };
+var chPaths = chartState('paths-chart');
+
+function computeAndDrawPaths(){
+  var steps = 252;
+  var dt = P1.T/steps;
+  var rng = mulberry32(P1.seed);
+  var gauss = makeGauss(rng);
+  var t = [];
+  for(var i=0;i<=steps;i++) t.push(i*dt);
+
+  var series = [];
+  var finals = [];
+  for(var m=0;m<P1.M;m++){
+    var y = new Array(steps+1);
+    y[0] = P1.s0;
+    for(var i2=1;i2<=steps;i2++){
+      var Z = gauss();
+      y[i2] = y[i2-1]*Math.exp((P1.mu-0.5*P1.sigma*P1.sigma)*dt + P1.sigma*Math.sqrt(dt)*Z);
+    }
+    finals.push(y[steps]);
+    series.push({x:t, y:y, color: m===0? css('--s2') : css('--s1'), width: m===0?2.25:1.25, alpha: m===0?1:0.35, label: m===0?"highlighted path":"path", hideTip: m!==0});
+  }
+
+  drawLineChart(chPaths, {
+    series: series,
+    refLinesY: [{v:P1.s0, color: css('--ink-muted')}],
+    xLabel: "t (yr)",
+    xFmt: function(v){ return fmt(v,2); },
+    yFmt: function(v){ return fmt(v,0); }
+  });
+
+  document.getElementById('paths-stat-mean').textContent = fmt(mean(finals),2);
+  document.getElementById('paths-stat-std').textContent = fmt(stdev(finals),2);
+  document.getElementById('paths-stat-min').textContent = fmt(Math.min.apply(null,finals),2);
+  document.getElementById('paths-stat-max').textContent = fmt(Math.max.apply(null,finals),2);
+}
+
+bindSlider('paths-s0','paths-s0-val', function(v){return fmt(v,0);}, function(v){ P1.s0=v; computeAndDrawPaths(); });
+bindSlider('paths-mu','paths-mu-val', function(v){return v+"%";}, function(v){ P1.mu=v/100; computeAndDrawPaths(); });
+bindSlider('paths-sigma','paths-sigma-val', function(v){return v+"%";}, function(v){ P1.sigma=v/100; computeAndDrawPaths(); });
+bindSlider('paths-T','paths-T-val', function(v){return fmt(v/10,1);}, function(v){ P1.T=v/10; computeAndDrawPaths(); });
+bindSlider('paths-M','paths-M-val', function(v){return fmt(v,0);}, function(v){ P1.M=v; computeAndDrawPaths(); });
+document.getElementById('paths-resample').addEventListener('click', function(){ P1.seed = (Math.random()*1e9)|0; computeAndDrawPaths(); });
+
+/* ============================================================
+   TAB 2: BLACK-SCHOLES & GREEKS
+   ============================================================ */
+var P2 = { K:100, tau:0.5, r:0.05, sigma:0.20 };
+var chPrice = chartState('bs-price-chart');
+var chDelta = chartState('bs-delta-chart');
+var chGamma = chartState('bs-gamma-chart');
+var chPde = chartState('bs-pde-chart');
+
+function computeAndDrawBS(){
+  var K=P2.K, tau=P2.tau, r=P2.r, sigma=P2.sigma;
+  var Smin = K*0.5, Smax = K*1.5;
+  var N = 200;
+  var Sarr=[], Varr=[], Darr=[], Garr=[], Tarr=[];
+  var thetaTerm=[], gammaTerm=[], deltaTerm=[], discTerm=[], sumTerm=[];
+  for(var i=0;i<=N;i++){
+    var S = Smin + (Smax-Smin)*i/N;
+    var V = callPrice(S,K,tau,r,sigma);
+    var D = callDelta(S,K,tau,r,sigma);
+    var G = callGamma(S,K,tau,r,sigma);
+    var Th = callTheta(S,K,tau,r,sigma);
+    Sarr.push(S); Varr.push(V); Darr.push(D); Garr.push(G); Tarr.push(Th);
+    var gt = 0.5*sigma*sigma*S*S*G;
+    var dt2 = r*S*D;
+    var dc = -r*V;
+    thetaTerm.push(Th); gammaTerm.push(gt); deltaTerm.push(dt2); discTerm.push(dc);
+    sumTerm.push(Th+gt+dt2+dc);
+  }
+
+  drawLineChart(chPrice, {
+    series: [{x:Sarr, y:Varr, color:css('--s1'), label:"V"}],
+    refLinesX: [{v:K, color: css('--ink-muted')}],
+    xLabel:"S", xFmt:function(v){return fmt(v,0);}, yFmt:function(v){return fmt(v,2);}
+  });
+  drawLineChart(chDelta, {
+    series: [{x:Sarr, y:Darr, color:css('--s2'), label:"Δ"}],
+    refLinesX: [{v:K, color: css('--ink-muted')}],
+    xLabel:"S", xFmt:function(v){return fmt(v,0);}, yFmt:function(v){return fmt(v,3);}
+  });
+  drawLineChart(chGamma, {
+    series: [{x:Sarr, y:Garr, color:css('--s3'), label:"Γ"}],
+    refLinesX: [{v:K, color: css('--ink-muted')}],
+    xLabel:"S", xFmt:function(v){return fmt(v,0);}, yFmt:function(v){return fmt(v,4);}
+  });
+  drawLineChart(chPde, {
+    series: [
+      {x:Sarr, y:thetaTerm, color:css('--s1'), label:"Θ"},
+      {x:Sarr, y:gammaTerm, color:css('--s2'), label:"½σ²S²Γ"},
+      {x:Sarr, y:deltaTerm, color:css('--s3'), label:"rSΔ"},
+      {x:Sarr, y:discTerm, color:css('--s4'), label:"-rV"},
+      {x:Sarr, y:sumTerm, color:css('--ink-muted'), label:"sum", width:2, dash:[5,4]}
+    ],
+    refLinesX: [{v:K, color: css('--ink-muted')}],
+    xLabel:"S", xFmt:function(v){return fmt(v,0);}, yFmt:function(v){return fmt(v,2);}
+  });
+
+  var Vk = callPrice(K,K,tau,r,sigma), Dk = callDelta(K,K,tau,r,sigma), Gk = callGamma(K,K,tau,r,sigma), Thk = callTheta(K,K,tau,r,sigma);
+  var pdeSum = Thk + 0.5*sigma*sigma*K*K*Gk + r*K*Dk - r*Vk;
+  document.getElementById('bs-stat-V').textContent = fmt(Vk,3);
+  document.getElementById('bs-stat-delta').textContent = fmt(Dk,4);
+  document.getElementById('bs-stat-gamma').textContent = fmt(Gk,5);
+  document.getElementById('bs-stat-pde').textContent = pdeSum.toExponential(2);
+}
+
+bindSlider('bs-K','bs-K-val', function(v){return fmt(v,0);}, function(v){ P2.K=v; computeAndDrawBS(); });
+bindSlider('bs-tau','bs-tau-val', function(v){return fmt(v/100,2);}, function(v){ P2.tau=v/100; computeAndDrawBS(); });
+bindSlider('bs-r','bs-r-val', function(v){return v+"%";}, function(v){ P2.r=v/100; computeAndDrawBS(); });
+bindSlider('bs-sigma','bs-sigma-val', function(v){return v+"%";}, function(v){ P2.sigma=v/100; computeAndDrawBS(); });
+
+/* ============================================================
+   TAB 3: DELTA HEDGING (single path)
+   ============================================================ */
+var P3 = { s0:100, K:100, T:1, r:0.03, mu:0.10, sigA:0.20, sigI:0.25, seed: 4242 };
+var chStock = chartState('hg-stock-chart');
+var chV = chartState('hg-V-chart');
+var chD = chartState('hg-delta-chart');
+var chPort = chartState('hg-port-chart');
+var chStep = chartState('hg-step-chart');
+
+function computeAndDrawHedge(){
+  var steps = 252;
+  var dt = P3.T/steps;
+  var rng = mulberry32(P3.seed);
+  var gauss = makeGauss(rng);
+
+  var times = []; for(var i=0;i<=steps;i++) times.push(i*dt);
+  var S = new Array(steps+1); S[0]=P3.s0;
+  for(var i2=1;i2<=steps;i2++){
+    var Z = gauss();
+    S[i2] = S[i2-1]*Math.exp((P3.mu-0.5*P3.sigA*P3.sigA)*dt + P3.sigA*Math.sqrt(dt)*Z);
+  }
+
+  var V0 = callPrice(P3.s0, P3.K, P3.T, P3.r, P3.sigI);
+  var delta0 = callDelta(P3.s0, P3.K, P3.T, P3.r, P3.sigI);
+
+  var Vt = new Array(steps+1), Dt = new Array(steps+1), cash = new Array(steps+1), stockPos = new Array(steps+1);
+  Vt[0]=V0; Dt[0]=delta0; stockPos[0]=delta0; cash[0] = V0 - delta0*P3.s0;
+
+  for(var i3=1;i3<=steps;i3++){
+    var tau = P3.T - times[i3];
+    cash[i3] = cash[i3-1]*Math.exp(P3.r*dt);
+    stockPos[i3] = stockPos[i3-1];
+    Vt[i3] = tau>0 ? callPrice(S[i3], P3.K, tau, P3.r, P3.sigI) : Math.max(S[i3]-P3.K,0);
+    var newDelta = tau>0 ? callDelta(S[i3], P3.K, tau, P3.r, P3.sigI) : (S[i3]>P3.K?1:0);
+    if(i3<steps){
+      var sharesToBuy = newDelta - stockPos[i3];
+      cash[i3] -= sharesToBuy*S[i3];
+      stockPos[i3] = newDelta;
+    }
+    Dt[i3] = newDelta;
+  }
+
+  var payoff = Math.max(S[steps]-P3.K, 0);
+  var portfolio = new Array(steps+1);
+  for(var i4=0;i4<=steps;i4++) portfolio[i4] = stockPos[i4]*S[i4] + cash[i4] - Vt[i4];
+  var cashUnhedged = new Array(steps+1);
+  for(var i5=0;i5<=steps;i5++) cashUnhedged[i5] = V0*Math.exp(P3.r*times[i5]);
+  var portfolioUnhedged = new Array(steps+1);
+  for(var i6=0;i6<=steps;i6++) portfolioUnhedged[i6] = cashUnhedged[i6] - Vt[i6];
+
+  var finalHedgeValue = stockPos[steps]*S[steps] + cash[steps];
+  var finalPnl = finalHedgeValue - payoff;
+
+  drawLineChart(chStock, {
+    series: [{x:times, y:S, color:css('--s1')}],
+    refLinesY: [{v:P3.K, color:css('--ink-muted')}],
+    xLabel:"t", xFmt:function(v){return fmt(v,2);}, yFmt:function(v){return fmt(v,1);}
+  });
+  drawLineChart(chV, {
+    series: [{x:times, y:Vt, color:css('--s2')}],
+    xLabel:"t", xFmt:function(v){return fmt(v,2);}, yFmt:function(v){return fmt(v,2);}
+  });
+  drawLineChart(chD, {
+    series: [{x:times, y:Dt, color:css('--s3')}],
+    xLabel:"t", xFmt:function(v){return fmt(v,2);}, yFmt:function(v){return fmt(v,3);}
+  });
+  drawLineChart(chPort, {
+    series: [
+      {x:times, y:portfolio, color:css('--s1'), label:"hedged"},
+      {x:times, y:portfolioUnhedged, color:css('--s2'), label:"unhedged"}
+    ],
+    refLinesY: [{v:0, color:css('--ink-muted')}],
+    xLabel:"t", xFmt:function(v){return fmt(v,2);}, yFmt:function(v){return fmt(v,2);}
+  });
+
+  document.getElementById('hg-stat-V0').textContent = fmt(V0,3);
+  document.getElementById('hg-stat-d0').textContent = fmt(delta0,4);
+  document.getElementById('hg-stat-payoff').textContent = fmt(payoff,3);
+  var pnlEl = document.getElementById('hg-stat-pnl');
+  pnlEl.textContent = (finalPnl>=0?"+":"")+fmt(finalPnl,3);
+  pnlEl.className = "v "+(finalPnl>=0?"good":"crit");
+
+  // step-level P&L (ignoring interest), from script 2
+  var dV = [], dPiHedged = [], tMid = [];
+  for(var i7=0;i7<steps;i7++){
+    var dVi = Vt[i7+1]-Vt[i7];
+    var dSi = S[i7+1]-S[i7];
+    dV.push(dVi);
+    dPiHedged.push(dVi - Dt[i7]*dSi);
+    tMid.push(times[i7]);
+  }
+  var stdU = stdev(dV), stdH = stdev(dPiHedged);
+  document.getElementById('hg-stat-stdU').textContent = fmt(stdU,3);
+  document.getElementById('hg-stat-stdH').textContent = fmt(stdH,3);
+  document.getElementById('hg-stat-ratio').textContent = fmtPct(1-stdH/stdU,0);
+
+  drawHistogram(chStep, {
+    datasets: [
+      {values:dV, color:css('--s2'), label:"dV (unhedged)"},
+      {values:dPiHedged, color:css('--s1'), label:"dV − ΔdS (hedged)"}
+    ],
+    bins: 36, includeZero:true
+  });
+}
+
+bindSlider('hg-s0','hg-s0-val', function(v){return fmt(v,0);}, function(v){ P3.s0=v; computeAndDrawHedge(); });
+bindSlider('hg-K','hg-K-val', function(v){return fmt(v,0);}, function(v){ P3.K=v; computeAndDrawHedge(); });
+bindSlider('hg-T','hg-T-val', function(v){return fmt(v/10,1);}, function(v){ P3.T=v/10; computeAndDrawHedge(); });
+bindSlider('hg-r','hg-r-val', function(v){return v+"%";}, function(v){ P3.r=v/100; computeAndDrawHedge(); });
+bindSlider('hg-mu','hg-mu-val', function(v){return v+"%";}, function(v){ P3.mu=v/100; computeAndDrawHedge(); });
+bindSlider('hg-sigA','hg-sigA-val', function(v){return v+"%";}, function(v){ P3.sigA=v/100; computeAndDrawHedge(); });
+bindSlider('hg-sigI','hg-sigI-val', function(v){return v+"%";}, function(v){ P3.sigI=v/100; computeAndDrawHedge(); });
+document.getElementById('hg-resample').addEventListener('click', function(){ P3.seed = (Math.random()*1e9)|0; computeAndDrawHedge(); });
+
+/* ============================================================
+   TAB 4: AMERICAN VS EUROPEAN
+   ============================================================ */
+var P4 = { K:100, T:1, r:0.03, sigma:0.25, q:0.05 };
+var chAeVal = chartState('ae-value-chart');
+var chAeDiff = chartState('ae-diff-chart');
+
+function computeAndDrawAmEu(){
+  var K=P4.K, T=P4.T, r=P4.r, sigma=P4.sigma, q=P4.q;
+  var Smax = K*4;
+  var N = 300;
+  var Sarr=[], callArr=[], exArr=[], diffArr=[];
+  for(var i=0;i<=N;i++){
+    var S = 1 + (Smax-1)*i/N;
+    var c = callPrice(S,K,T,r,sigma,q);
+    var ex = Math.max(S-K,0);
+    Sarr.push(S); callArr.push(c); exArr.push(ex); diffArr.push(c-ex);
+  }
+  var sCrit = null;
+  for(var j=0;j<diffArr.length;j++){ if(diffArr[j] < 0){ sCrit = Sarr[j]; break; } }
+
+  drawLineChart(chAeVal, {
+    series: [
+      {x:Sarr, y:callArr, color:css('--s1'), label:"European call"},
+      {x:Sarr, y:exArr, color:css('--s2'), label:"max(S-K,0)"}
+    ],
+    refLinesX: sCrit!==null ? [{v:sCrit, color:css('--s8')}] : [],
+    xLabel:"S", xFmt:function(v){return fmt(v,0);}, yFmt:function(v){return fmt(v,1);}
+  });
+  drawLineChart(chAeDiff, {
+    series: [{x:Sarr, y:diffArr, color:css('--s3'), label:"C - exercise"}],
+    refLinesY: [{v:0, color:css('--ink-muted')}],
+    refLinesX: sCrit!==null ? [{v:sCrit, color:css('--s8')}] : [],
+    shadeRegion: sCrit!==null ? {x0:sCrit, x1:Smax, color: hexToRgba(css('--s8'), 0.12)} : null,
+    xLabel:"S", xFmt:function(v){return fmt(v,0);}, yFmt:function(v){return fmt(v,2);}
+  });
+
+  document.getElementById('ae-stat-scrit').textContent = sCrit!==null ? ("≈ "+fmt(sCrit,1)) : "no violation in range";
+  var Spt = 1.2*K;
+  var cAtPt = callPrice(Spt,K,T,r,sigma,q);
+  var exAtPt = Math.max(Spt-K,0);
+  document.getElementById('ae-stat-cont').textContent = fmt(cAtPt-exAtPt,3);
+}
+
+bindSlider('ae-K','ae-K-val', function(v){return fmt(v,0);}, function(v){ P4.K=v; computeAndDrawAmEu(); });
+bindSlider('ae-T','ae-T-val', function(v){return fmt(v/10,1);}, function(v){ P4.T=v/10; computeAndDrawAmEu(); });
+bindSlider('ae-r','ae-r-val', function(v){return v+"%";}, function(v){ P4.r=v/100; computeAndDrawAmEu(); });
+bindSlider('ae-sigma','ae-sigma-val', function(v){return v+"%";}, function(v){ P4.sigma=v/100; computeAndDrawAmEu(); });
+bindSlider('ae-q','ae-q-val', function(v){return v+"%";}, function(v){ P4.q=v/100; computeAndDrawAmEu(); });
+
+/* ============================================================
+   TAB 5: HEDGING P&L DISTRIBUTION
+   ============================================================ */
+var P5 = { sigA:0.20, spread:0.05, N:300, seed: 99 };
+var chHist = chartState('pn-hist-chart');
+var chMean = chartState('pn-mean-chart');
+var S0_5=100, K5=100, T5=1, r5=0.03;
+
+function simulateHedgePnl(sigActual, sigImplied, rng, gauss){
+  var steps=252, dt=T5/steps;
+  var V0 = callPrice(S0_5,K5,T5,r5,sigImplied);
+  var delta = callDelta(S0_5,K5,T5,r5,sigImplied);
+  var stockPos = delta;
+  var cash = V0 - delta*S0_5;
+  var S = S0_5;
+  for(var i=1;i<=steps;i++){
+    var Z = gauss();
+    S = S*Math.exp((r5-0.5*sigActual*sigActual)*dt + sigActual*Math.sqrt(dt)*Z);
+    cash = cash*Math.exp(r5*dt);
+    var tau = T5 - i*dt;
+    if(i<steps){
+      var newDelta = callDelta(S,K5,tau,r5,sigImplied);
+      var sharesToBuy = newDelta - stockPos;
+      cash -= sharesToBuy*S;
+      stockPos = newDelta;
+    }
+  }
+  var payoff = Math.max(S-K5,0);
+  return stockPos*S + cash - payoff;
+}
+
+function computeAndDrawPnl(){
+  var sigActual = P5.sigA;
+  var impliedList = [sigActual-P5.spread, sigActual, sigActual+P5.spread].map(function(v){ return Math.max(0.02, v); });
+  var colors = [css('--s2'), css('--s1'), css('--s3')];
+  var rng = mulberry32(P5.seed);
+  var gauss = makeGauss(rng);
+
+  var datasets = [];
+  var stats = [];
+  impliedList.forEach(function(sigI, idx){
+    var pnl = new Array(P5.N);
+    for(var j=0;j<P5.N;j++) pnl[j] = simulateHedgePnl(sigActual, sigI, rng, gauss);
+    datasets.push({values:pnl, color:colors[idx], label:"σimpl="+fmtPct(sigI,0)});
+    stats.push({sigI:sigI, mean:mean(pnl), std:stdev(pnl), median:median(pnl)});
+  });
+
+  drawHistogram(chHist, {
+    datasets: datasets, bins:40, includeZero:true
+  });
+
+  document.getElementById('pn-hist-legend').innerHTML = datasets.map(function(d){
+    return '<span><span class="dot" style="background:'+d.color+'"></span>'+escapeHtml(d.label)+'</span>';
+  }).join('');
+
+  drawLineChart(chMean, {
+    series: [{x: stats.map(function(s){return s.sigI;}), y: stats.map(function(s){return s.mean;}), color: css('--s1'), width:2}],
+    refLinesY: [{v:0, color:css('--ink-muted')}],
+    refLinesX: [{v:sigActual, color:css('--ink-muted')}],
+    xLabel:"σ implied", xFmt:function(v){return fmtPct(v,0);}, yFmt:function(v){return fmt(v,2);}
+  });
+
+  var rowsHtml = stats.map(function(s){
+    return '<div class="stat"><div class="k">σ implied = '+fmtPct(s.sigI,0)+'</div>'+
+      '<div class="v" style="font-size:14px;">mean '+fmt(s.mean,2)+'</div>'+
+      '<div class="note">std '+fmt(s.std,2)+' &middot; median '+fmt(s.median,2)+'</div></div>';
+  }).join('');
+  document.getElementById('pn-stat-row').innerHTML = rowsHtml;
+}
+
+bindSlider('pn-sigA','pn-sigA-val', function(v){return v+"%";}, function(v){ P5.sigA=v/100; computeAndDrawPnl(); });
+bindSlider('pn-spread','pn-spread-val', function(v){return v+"pp";}, function(v){ P5.spread=v/100; computeAndDrawPnl(); });
+bindSlider('pn-N','pn-N-val', function(v){return fmt(v,0);}, function(v){ P5.N=v; computeAndDrawPnl(); });
+document.getElementById('pn-resample').addEventListener('click', function(){ P5.seed=(Math.random()*1e9)|0; computeAndDrawPnl(); });
+
+/* ============================================================
+   INIT + RESIZE
+   ============================================================ */
+function safely(fn){
+  try{ fn(); } catch(e){ if(window.console) console.error(e); }
+}
+
+function redrawAll(tab){
+  if(tab==='paths') safely(computeAndDrawPaths);
+  else if(tab==='bs') safely(computeAndDrawBS);
+  else if(tab==='hedge') safely(computeAndDrawHedge);
+  else if(tab==='amvseu') safely(computeAndDrawAmEu);
+  else if(tab==='pnl') safely(computeAndDrawPnl);
+}
+
+safely(computeAndDrawPaths);
+safely(computeAndDrawBS);
+safely(computeAndDrawHedge);
+safely(computeAndDrawAmEu);
+safely(computeAndDrawPnl);
+
+var resizeTimer;
+window.addEventListener('resize', function(){
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(function(){
+    Object.keys(panels).forEach(function(k){
+      if(panels[k].classList.contains('active')) redrawAll(k);
+    });
+  }, 120);
+});
+
+})();
+</script>
+
+</body>
+</html>
