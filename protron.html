@@ -1,0 +1,1893 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>ProTron</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Collide protons at 13.6 TeV, zoom into the parton-level hard scatter, tune the parton distributions and fill invariant-mass histograms. In English and Argentinean Spanish.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: control-room bench. Event display dominates, forces + event readout in a side rail, process collection below. Deliberately single dark theme, like a detector event display. */
+:root {
+  color-scheme: dark;
+  --bg: #0a1017;
+  --panel: #101923;
+  --panel-2: #142030;
+  --line: #233244;
+  --ink: #e5ecf4;
+  --muted: #8b9cb1;
+  --faint: #56677c;
+  --strong: #ff7b54;
+  --em: #ffd84d;
+  --weak: #a78bfa;
+  --higgs: #6ee7d8;
+  --lep-e: #57e39b;
+  --lep-mu: #ff6fa3;
+  --nu: #93a3b8;
+  --jet: #cfe0ff;
+  --hcal: #4f9dff;
+  /* histogram fills: deeper steps of the force colours, validated per chart against --panel */
+  --h-strong: #e5484d;
+  --h-em: #b38f00;
+  --h-weak: #7c5ce0;
+  --h-higgs: #1f9c8f;
+  --font-display: "Archivo", "Arial Narrow", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+* { box-sizing: border-box; }
+html, body { background: var(--bg); color: var(--ink); }
+body {
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 48px;
+}
+.wrap { max-width: 1240px; margin: 0 auto; display: grid; gap: 28px; }
+
+header { display: grid; gap: 10px; }
+.eyebrow {
+  font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--muted); margin: 0;
+}
+h1 {
+  font-family: var(--font-display); font-stretch: 125%; font-weight: 800;
+  font-size: clamp(2.2rem, 6vw, 3.6rem); line-height: 0.95; margin: 0;
+  letter-spacing: -0.01em; text-wrap: balance;
+}
+h1 .sl { color: var(--strong); }
+.lede { margin: 0; color: var(--muted); max-width: 64ch; }
+.lede b { color: var(--ink); font-weight: 500; }
+
+.bench { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; align-items: start; }
+@media (max-width: 920px) { .bench { grid-template-columns: minmax(0, 1fr); } }
+
+.stage { display: grid; gap: 12px; min-width: 0; }
+.screen {
+  position: relative; border: 1px solid var(--line); border-radius: 6px;
+  background: radial-gradient(ellipse at center, #0f1a26 0%, #070c12 75%);
+  overflow: hidden; aspect-ratio: 16 / 10; max-width: 100%;
+}
+@media (max-width: 560px) { .screen { aspect-ratio: 4 / 3.4; } }
+#det { display: block; width: 100%; height: 100%; cursor: crosshair; touch-action: manipulation; }
+#det:focus-visible { outline: 2px solid var(--em); outline-offset: -2px; }
+.hint {
+  position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%);
+  font-family: var(--font-mono); font-size: 12px; color: var(--ink);
+  background: rgba(10,16,23,0.82); border: 1px solid var(--line);
+  padding: 6px 12px; border-radius: 999px; pointer-events: none; white-space: nowrap;
+  animation: pulse 2.2s ease-in-out infinite;
+}
+@keyframes pulse { 50% { border-color: var(--em); } }
+.readout {
+  position: absolute; top: 10px; right: 12px; text-align: right;
+  font-family: var(--font-mono); font-size: 11px; color: var(--muted); pointer-events: none;
+  font-variant-numeric: tabular-nums; line-height: 1.45;
+}
+.readout b { color: var(--ink); font-weight: 500; }
+
+.controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+button { font: inherit; color: inherit; }
+.btn {
+  border: 1px solid var(--line); background: var(--panel); color: var(--ink);
+  padding: 9px 16px; border-radius: 6px; cursor: pointer; font-weight: 500;
+}
+.btn:hover { border-color: var(--muted); }
+.btn:focus-visible, .seg button:focus-visible, .sw-row:focus-visible { outline: 2px solid var(--em); outline-offset: 2px; }
+.btn.primary {
+  background: var(--ink); color: var(--bg); border-color: var(--ink);
+  font-family: var(--font-display); font-stretch: 112%; font-weight: 700; letter-spacing: 0.02em;
+}
+.btn.primary:hover { background: #fff; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; margin-left: auto; }
+.seg button { border: 0; background: transparent; padding: 8px 12px; cursor: pointer; color: var(--muted); font-size: 13px; }
+.seg button[aria-pressed="true"] { background: var(--panel-2); color: var(--ink); }
+.seg-label { font-family: var(--font-mono); font-size: 11px; color: var(--faint); text-transform: uppercase; letter-spacing: 0.08em; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12.5px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.lg { width: 16px; height: 3px; border-radius: 2px; display: inline-block; }
+.lg.dot { width: 10px; height: 10px; border-radius: 50%; }
+.lg.ring { width: 10px; height: 10px; border-radius: 50%; border: 2px solid #ff5d6c; background: transparent; }
+.lg.glu { width: 10px; height: 10px; border-radius: 50%; background: #3fd68f; box-shadow: 0 0 0 2px #5b8dff; }
+.lg.dash { background: repeating-linear-gradient(90deg, var(--nu) 0 4px, transparent 4px 7px); }
+.lg.ydash { background: repeating-linear-gradient(90deg, var(--em) 0 4px, transparent 4px 7px); }
+
+.rail { display: grid; gap: 16px; min-width: 0; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 16px; display: grid; gap: 12px; min-width: 0; }
+.panel h2 {
+  font-family: var(--font-mono); font-size: 11.5px; font-weight: 500; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--muted); margin: 0;
+}
+.switches { display: grid; gap: 8px; }
+.sw-row {
+  display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 12px;
+  text-align: left; background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px;
+  padding: 10px 12px; cursor: pointer; width: 100%;
+}
+.sw-name { font-family: var(--font-display); font-stretch: 110%; font-weight: 700; font-size: 15px; }
+.sw-meta { grid-column: 1; font-family: var(--font-mono); font-size: 11.5px; color: var(--muted); }
+.toggle {
+  grid-row: 1 / span 2; grid-column: 2; width: 40px; height: 22px; border-radius: 999px;
+  background: var(--line); position: relative; transition: background .2s;
+}
+.toggle::after {
+  content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%;
+  background: var(--muted); transition: transform .2s, background .2s;
+}
+.sw-row[aria-checked="true"] .toggle::after { transform: translateX(18px); background: var(--bg); }
+.sw-row[data-f="S"][aria-checked="true"] .toggle { background: var(--strong); }
+.sw-row[data-f="EM"][aria-checked="true"] .toggle { background: var(--em); }
+.sw-row[data-f="W"][aria-checked="true"] .toggle { background: var(--weak); }
+.sw-row[aria-checked="false"] .sw-name { color: var(--muted); }
+.footnote { font-size: 12.5px; color: var(--muted); margin: 0; }
+
+.ev-head { display: grid; gap: 2px; }
+.ev-name { font-family: var(--font-display); font-stretch: 115%; font-weight: 700; font-size: 20px; margin: 0; text-wrap: balance; }
+.rxn { font-family: var(--font-mono); font-size: 14px; color: var(--ink); margin: 0; overflow-wrap: anywhere; }
+.diag { background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 6px; }
+.diag svg { display: block; width: 100%; height: auto; }
+.diag .empty { font-size: 13px; color: var(--muted); padding: 30px 8px; text-align: center; }
+.blurb { margin: 0; font-size: 14px; color: var(--ink); }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0; }
+.stats div { background: var(--panel-2); border-radius: 4px; padding: 6px 8px; min-width: 0; }
+.stats dt { font-size: 11px; color: var(--muted); font-family: var(--font-mono); }
+.stats dd { margin: 0; font-family: var(--font-mono); font-size: 14px; font-variant-numeric: tabular-nums; }
+.objs { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 13.5px; }
+.objs li { display: grid; grid-template-columns: 14px 1fr auto; gap: 8px; align-items: center; }
+.objs .v { font-family: var(--font-mono); font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.objs .sq { width: 10px; height: 10px; border-radius: 2px; }
+.note { margin: 0; font-size: 13px; color: var(--muted); border-left: 2px solid var(--line); padding-left: 10px; }
+
+.collection { display: grid; gap: 14px; }
+.col-head { display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: baseline; }
+.col-head h2 { font-family: var(--font-display); font-stretch: 120%; font-weight: 800; font-size: 22px; margin: 0; }
+.col-head p { margin: 0; color: var(--muted); font-size: 14px; }
+.col-head .count { font-family: var(--font-mono); color: var(--ink); }
+.grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+.pc { border: 1px dashed var(--line); border-radius: 6px; padding: 12px; display: grid; gap: 6px; align-content: start; min-width: 0; }
+.pc.found { border-style: solid; background: var(--panel); }
+.pc.new { animation: found 1.4s ease-out; }
+@keyframes found { 0% { box-shadow: 0 0 0 0 var(--em); border-color: var(--em); } 100% { box-shadow: 0 0 0 10px transparent; } }
+.pc-top { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.pc-name { font-weight: 600; font-size: 14.5px; }
+.pc:not(.found) .pc-name { color: var(--faint); }
+.pc-n { font-family: var(--font-mono); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.pc-rxn { font-family: var(--font-mono); font-size: 12.5px; color: var(--muted); overflow-wrap: anywhere; }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.chip { font-family: var(--font-mono); font-size: 10.5px; padding: 1px 6px; border-radius: 3px; border: 1px solid currentColor; letter-spacing: 0.04em; }
+.c-S { color: var(--strong); } .c-EM { color: var(--em); } .c-W { color: var(--weak); }
+
+/* Feynman diagram strokes */
+.fd-f { stroke: var(--ink); stroke-width: 1.6; fill: none; }
+.fd-ar { fill: var(--ink); }
+.fd-g { stroke: var(--strong); stroke-width: 1.5; fill: none; }
+.fd-a { stroke: var(--em); stroke-width: 1.5; fill: none; }
+.fd-w { stroke: var(--weak); stroke-width: 1.5; fill: none; }
+.fd-h { stroke: var(--higgs); stroke-width: 1.8; fill: none; stroke-dasharray: 5 4; }
+.fd-v { fill: var(--ink); }
+.fd-blob { fill: var(--panel-2); stroke: var(--higgs); stroke-width: 1.4; }
+.fd-t { fill: var(--ink); font-family: var(--font-mono); font-size: 13px; }
+.fd-tp { fill: var(--muted); font-family: var(--font-mono); font-size: 12px; }
+
+/* histograms */
+.hists { display: grid; gap: 14px; }
+.hist-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 12px; }
+.hc { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 14px 14px 10px; display: grid; gap: 6px; min-width: 0; position: relative; }
+.hc-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.hc h3 { margin: 0; font-size: 14.5px; font-weight: 600; }
+.hc h3 span { font-family: var(--font-mono); font-weight: 400; color: var(--muted); font-size: 12.5px; margin-left: 6px; }
+.hc-n { font-family: var(--font-mono); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.hc-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--muted); min-height: 18px; }
+.hc-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.hc-legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+.hc svg { display: block; width: 100%; height: auto; overflow: visible; }
+.hc .cap { margin: 0; font-size: 12.5px; color: var(--muted); }
+.ax { stroke: var(--line); stroke-width: 1; }
+.grid-l { stroke: var(--line); stroke-width: 1; opacity: 0.45; }
+.tk { fill: var(--muted); font-family: var(--font-mono); font-size: 10px; }
+.axl { fill: var(--muted); font-family: var(--font-mono); font-size: 10.5px; }
+.bar { stroke: var(--panel); stroke-width: 1; }
+.empty-t { fill: var(--faint); font-size: 12px; font-family: var(--font-body); }
+.last-mk { fill: var(--ink); }
+.hit { fill: transparent; cursor: crosshair; }
+.hit:hover { fill: rgba(229,236,244,0.06); }
+.tip {
+  position: fixed; z-index: 20; pointer-events: none; background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 4px; padding: 6px 9px; font-size: 12px; font-family: var(--font-mono); color: var(--ink);
+  font-variant-numeric: tabular-nums; box-shadow: 0 6px 18px rgba(0,0,0,0.4); max-width: 240px;
+}
+.tip div { display: flex; align-items: center; gap: 6px; }
+.tip i { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
+.btn.small { padding: 6px 12px; font-size: 13px; }
+.btn[aria-pressed="true"] { background: var(--panel-2); border-color: var(--muted); }
+
+/* tabs, fire row, view toggle */
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+.tabs button {
+  background: transparent; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px;
+  padding: 10px 14px; cursor: pointer; color: var(--muted); white-space: nowrap;
+  font-family: var(--font-display); font-stretch: 110%; font-weight: 700; font-size: 15px;
+}
+.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--em); }
+.tabs button:focus-visible, .view button:focus-visible { outline: 2px solid var(--em); outline-offset: -2px; }
+.tabpanel { display: grid; gap: 28px; min-width: 0; }
+.fire { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+.fire .btn { font-variant-numeric: tabular-nums; }
+.btn:disabled { opacity: 0.5; cursor: progress; }
+.view {
+  position: absolute; top: 10px; left: 12px; display: inline-flex; border: 1px solid var(--line);
+  border-radius: 6px; overflow: hidden; background: rgba(10,16,23,0.85);
+}
+.view button { border: 0; background: transparent; color: var(--muted); padding: 6px 11px; font-size: 12.5px; cursor: pointer; }
+.view button[aria-pressed="true"] { background: var(--panel-2); color: var(--ink); }
+.readout { top: auto; bottom: 10px; }
+
+/* explainer tab */
+.how { max-width: 1040px; }
+.how-sec { display: grid; gap: 12px; min-width: 0; }
+.how-sec h2 { font-family: var(--font-display); font-stretch: 120%; font-weight: 800; font-size: 22px; margin: 0; text-wrap: balance; }
+.how-sec h3 { margin: 6px 0 0; font-size: 15px; font-weight: 600; }
+.how-sec p { margin: 0; max-width: 72ch; }
+.how-sec p.muted { color: var(--muted); font-size: 13.5px; }
+.eq { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; overflow-x: auto; display: grid; gap: 12px; }
+.eq math { font-size: 1.18em; color: var(--ink); }
+.eq .where { font-size: 13px; color: var(--muted); margin: 0; }
+.tbl-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; }
+table.wt { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+.wt th, .wt td { padding: 7px 10px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; vertical-align: top; }
+.wt tr:last-child td { border-bottom: 0; }
+.wt th { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 500; background: var(--panel); }
+.wt .n { text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.wt td.src { color: var(--muted); white-space: normal; min-width: 180px; font-size: 12.5px; }
+.plots { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr)); gap: 12px; }
+.tiles { display: flex; flex-wrap: wrap; gap: 10px; }
+.tile { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 10px 14px; min-width: 130px; }
+.tile b { display: block; font-family: var(--font-mono); font-size: 20px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.tile span { font-size: 12px; color: var(--muted); }
+.crossl { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; }
+.curve { fill: none; stroke-width: 2; stroke-linejoin: round; }
+.rowl { fill: var(--ink); font-family: var(--font-body); font-size: 12px; }
+
+/* language toggle, sub-tabs, PDF tuner */
+.head-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.lang { margin-left: 0; }
+.tabs.sub button { font-size: 13.5px; padding: 8px 12px; font-stretch: 105%; }
+.linkbtn { background: none; border: 0; padding: 0; color: var(--em); cursor: pointer; font-size: 13px; text-align: left; text-decoration: underline; text-underline-offset: 3px; }
+.linkbtn:focus-visible { outline: 2px solid var(--em); outline-offset: 2px; }
+.tune { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 880px) { .tune { grid-template-columns: minmax(0, 1fr); } }
+.tune-out { display: grid; gap: 12px; min-width: 0; }
+.presets { display: flex; flex-wrap: wrap; gap: 6px; }
+.tg { display: grid; gap: 8px; border-top: 1px solid var(--line); padding-top: 12px; }
+.tg h3 { display: flex; align-items: center; gap: 8px; font-size: 14px; margin: 0; }
+.tg h3 i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+.sl { display: grid; gap: 2px; }
+.sl label { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--muted); }
+.sl output { font-family: var(--font-mono); color: var(--ink); font-variant-numeric: tabular-nums; }
+.sl input[type="range"] { width: 100%; accent-color: var(--em); }
+
+@media (prefers-reduced-motion: reduce) {
+  .hint, .pc.new { animation: none; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="head-row">
+      <p class="eyebrow" data-i18n="eyebrow">Proton–proton collisions · √s = 13.6 TeV</p>
+      <div class="seg lang" role="group" aria-label="Language / Idioma">
+        <button type="button" id="lEN" aria-pressed="true">EN</button>
+        <button type="button" id="lES" aria-pressed="false" lang="es">ES</button>
+      </div>
+    </div>
+    <h1>Pro<span class="sl">Tron</span></h1>
+    <p class="lede" data-i18n="lede">Each proton is a bag of quarks and gluons, called <b>partons</b>, each carrying a fraction <b>x</b> of the proton's momentum. When two protons collide, one parton from each meets in the <b>hard interaction</b>. Click the detector to collide them. Switch forces on and off to change what can come out.</p>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Sections">
+    <button role="tab" type="button" id="tab-play" aria-selected="true" aria-controls="play" data-i18n="tabPlay">Collider</button>
+    <button role="tab" type="button" id="tab-how" aria-selected="false" aria-controls="how" data-i18n="tabHow">How it works</button>
+  </nav>
+
+  <div class="tabpanel" id="play" role="tabpanel" aria-labelledby="tab-play">
+  <section class="bench">
+    <div class="stage">
+      <div class="screen">
+        <canvas id="det" tabindex="0" aria-label="Event display. Click or press Enter to collide two protons."></canvas>
+        <div class="readout" id="readout"></div>
+        <div class="view" role="group" aria-label="View">
+          <button type="button" id="vDet" aria-pressed="true">Detector</button>
+          <button type="button" id="vZoom" aria-pressed="false" data-i18n="vZoom">Zoom in</button>
+        </div>
+        <div class="hint" id="hint" data-i18n="hint">Click the detector to collide</div>
+      </div>
+      <div class="controls">
+        <div class="fire" role="group" aria-label="Collisions to fire">
+          <button class="btn primary" data-n="1" type="button" data-i18n="collide">Collide</button>
+          <button class="btn" data-n="10" type="button">×10</button>
+          <button class="btn" data-n="100" type="button">×100</button>
+          <button class="btn" data-n="1000" type="button">×1k</button>
+          <button class="btn" data-n="10000" type="button">×10k</button>
+          <button class="btn" data-n="100000" type="button">×100k</button>
+        </div>
+        <span class="seg-label" style="margin-left:auto" data-i18n="rates">Rates</span>
+        <div class="seg" role="group" aria-label="Process rates" style="margin-left:0">
+          <button type="button" id="mShow" aria-pressed="true" data-i18n="mShow">Showcase</button>
+          <button type="button" id="mLhc" aria-pressed="false" data-i18n="mLhc">LHC-like</button>
+        </div>
+      </div>
+      <div class="legend" aria-label="Legend" data-i18n="legend">
+        <span><i class="lg dot" style="background:#ff5d6c"></i>quark (QCD colour)</span>
+        <span><i class="lg ring"></i>antiquark</span>
+        <span><i class="lg glu"></i>gluon</span>
+        <span><i class="lg" style="background:var(--jet)"></i>jet tracks</span>
+        <span><i class="lg" style="background:var(--hcal)"></i>hadron calorimeter</span>
+        <span><i class="lg" style="background:var(--lep-e)"></i>electron</span>
+        <span><i class="lg" style="background:var(--lep-mu)"></i>muon</span>
+        <span><i class="lg ydash"></i>photon</span>
+        <span><i class="lg dash"></i>neutrino (unseen)</span>
+      </div>
+      <p class="footnote" id="modeNote"></p>
+    </div>
+
+    <aside class="rail">
+      <div class="panel">
+        <h2 data-i18n="forces">Forces</h2>
+        <div class="switches">
+          <button class="sw-row" role="switch" aria-checked="true" data-f="S" id="fS" type="button">
+            <span class="sw-name" data-i18n="swS">Strong</span><span class="toggle" aria-hidden="true"></span>
+            <span class="sw-meta" data-i18n="mS">gluon g · α<sub>s</sub> ≈ 0.118</span>
+          </button>
+          <button class="sw-row" role="switch" aria-checked="true" data-f="EM" id="fEM" type="button">
+            <span class="sw-name" data-i18n="swEM">Electromagnetic</span><span class="toggle" aria-hidden="true"></span>
+            <span class="sw-meta" data-i18n="mEM">photon γ · α ≈ 1/137</span>
+          </button>
+          <button class="sw-row" role="switch" aria-checked="true" data-f="W" id="fW" type="button">
+            <span class="sw-name" data-i18n="swW">Weak</span><span class="toggle" aria-hidden="true"></span>
+            <span class="sw-meta" data-i18n="mW">W<sup>±</sup>, Z (and the Higgs) · α<sub>W</sub> ≈ 1/30</span>
+          </button>
+        </div>
+        <button class="linkbtn" id="tuneLink" type="button" data-i18n="tuneLink">Tune the parton distributions →</button>
+        <p class="footnote" id="pdfNote" hidden data-i18n="pdfNote">Collisions are using your tuned parton distributions.</p>
+        <p class="footnote" id="forceNote" hidden data-i18n="forceNote">With the strong force off, quarks would not stay bound inside protons, and jets could not form. The display keeps both so you can still see what the other forces do.</p>
+      </div>
+
+      <div class="panel" aria-live="polite">
+        <h2 data-i18n="thisEv">This event</h2>
+        <div class="ev-head">
+          <p class="ev-name" id="evName">Waiting for a collision</p>
+          <p class="rxn" id="evRxn">p p → ?</p>
+        </div>
+        <div class="diag" id="evDiag"><div class="empty">The Feynman diagram of the hard interaction appears here.</div></div>
+        <p class="blurb" id="evBlurb"></p>
+        <dl class="stats">
+          <div><dt data-i18n="x1l">x₁ (left p)</dt><dd id="sx1">–</dd></div>
+          <div><dt data-i18n="x2l">x₂ (right p)</dt><dd id="sx2">–</dd></div>
+          <div><dt>√ŝ</dt><dd id="sss">–</dd></div>
+        </dl>
+        <ul class="objs" id="evObjs"></ul>
+        <p class="note" id="evNote" hidden></p>
+      </div>
+    </aside>
+  </section>
+
+  <section class="collection">
+    <div class="col-head">
+      <h2 data-i18n="procLog">Process log</h2>
+      <p data-i18n="procP"><span class="count" id="foundN">0 / 11</span> processes found · <span class="count" id="totN">0</span> collisions</p>
+    </div>
+    <ul class="grid" id="grid"></ul>
+  </section>
+
+  <section class="hists">
+    <div class="col-head">
+      <h2 data-i18n="massH">Mass spectra</h2>
+      <p data-i18n="massP">Every collision fills the histogram for its final state. Fire a few hundred and watch the peaks grow out of the background. The ▼ marks the latest event.</p>
+    </div>
+    <div class="controls">
+      <div class="fire" role="group" aria-label="Collisions to fire">
+          <button class="btn" data-n="1" type="button">×1</button>
+          <button class="btn" data-n="10" type="button">×10</button>
+          <button class="btn" data-n="100" type="button">×100</button>
+          <button class="btn" data-n="1000" type="button">×1k</button>
+          <button class="btn" data-n="10000" type="button">×10k</button>
+          <button class="btn" data-n="100000" type="button">×100k</button>
+        </div>
+      <button class="btn small" id="logy" type="button" aria-pressed="false" data-i18n="logy">Log scale (y)</button>
+      <button class="btn small" id="clearH" type="button" data-i18n="clearH">Clear histograms</button>
+    </div>
+    <div class="hist-grid" id="hgrid"></div>
+  </section>
+  </div>
+
+  <div class="tabpanel how" id="how" role="tabpanel" aria-labelledby="tab-how" hidden>
+    <nav class="tabs sub" role="tablist" aria-label="How it works">
+      <button role="tab" type="button" id="st-model" aria-selected="true" aria-controls="how-model" data-i18n="stModel">The model</button>
+      <button role="tab" type="button" id="st-tune" aria-selected="false" aria-controls="how-tune" data-i18n="stTune">Tune the PDFs (QCD)</button>
+    </nav>
+    <div class="tabpanel" id="how-model" role="tabpanel" aria-labelledby="st-model">
+    <section class="how-sec">
+      <h2 data-i18n="whichH">Which process happens</h2>
+      <p data-i18n="whichP">Every click picks exactly one hard process. Each process <i>i</i> has a fixed weight <i>w<sub>i</sub></i>, one value per rate mode. Processes that cannot happen in this event get zero weight, and the rest share the probability in proportion to their weights.</p>
+      <div class="eq">
+        <math display="block"><mi>P</mi><mo>(</mo><mi>i</mi><mo>)</mo><mo>=</mo><mfrac><mrow><msub><mi>w</mi><mi>i</mi></msub><mspace width="0.15em"/><msub><mi>Θ</mi><mi>i</mi></msub></mrow><mrow><munder><mo>∑</mo><mi>j</mi></munder><msub><mi>w</mi><mi>j</mi></msub><mspace width="0.15em"/><msub><mi>Θ</mi><mi>j</mi></msub></mrow></mfrac></math>
+        <p class="where" data-i18n="thetaP"><i>Θ<sub>i</sub></i> = 1 if every force that process <i>i</i> needs is switched on and the two protons contain a parton pair it can start from (with enough √ŝ for a top pair); otherwise 0.</p>
+      </div>
+      <h3 data-i18n="weightsH">The weights</h3>
+      <p class="muted" data-i18n="weightsP">LHC-like weights are rough cross-sections in picobarns at √s = 13.6 TeV. Several depend on cuts that are not fixed here, so read them as orders of magnitude. The probabilities assume all three forces are on.</p>
+      <div class="tbl-wrap"><table class="wt" id="wtable"></table></div>
+      <div class="hc">
+        <div class="hc-top"><h3 data-i18n="probH">Probability per collision, all forces on</h3><span class="hc-n" data-i18n="logscale">log scale</span></div>
+        <div class="hc-legend" data-i18n="probLeg"><span><i style="background:var(--h-weak)"></i>Showcase</span><span><i style="background:var(--h-higgs)"></i>LHC-like</span></div>
+        <div id="pchart"></div>
+      </div>
+    </section>
+
+    <section class="how-sec">
+      <h2 data-i18n="sampH">Sampling the parton momenta</h2>
+      <p data-i18n="sampP">Each proton gets three valence quarks (u u d), four to six gluons, and sea quark–antiquark pairs (u ū and d d̄ always, s s̄ in 60% of protons). Every parton draws a raw momentum fraction from a Beta distribution, a simple stand-in for a real parton distribution function:</p>
+      <div class="eq">
+        <math display="block"><msub><mover><mi>x</mi><mo>~</mo></mover><mi>k</mi></msub><mo>∼</mo><mi>f</mi><mo>(</mo><mi>x</mi><mo>)</mo><mo>∝</mo><msup><mi>x</mi><mrow><mi>α</mi><mo>−</mo><mn>1</mn></mrow></msup><msup><mrow><mo>(</mo><mn>1</mn><mo>−</mo><mi>x</mi><mo>)</mo></mrow><mrow><mi>β</mi><mo>−</mo><mn>1</mn></mrow></msup></math>
+        <p class="where" data-i18n="betaW">Defaults: valence α = 0.75, β = 3.6 · gluon α = 0.5, β = 4.5 · sea α = 0.3, β = 9. Each draw uses inverse-CDF sampling: <i>x̃</i> = F⁻¹(<i>u</i>) with <i>u</i> uniform in [0, 1] and F tabulated on a 2048-point grid.</p>
+      </div>
+      <p data-i18n="sumP">The raw fractions are then rescaled so the partons carry exactly the proton's momentum, the momentum sum rule:</p>
+      <div class="eq">
+        <math display="block"><msub><mi>x</mi><mi>k</mi></msub><mo>=</mo><mfrac><msub><mover><mi>x</mi><mo>~</mo></mover><mi>k</mi></msub><mrow><munder><mo>∑</mo><mi>m</mi></munder><msub><mover><mi>x</mi><mo>~</mo></mover><mi>m</mi></msub></mrow></mfrac><mspace width="1.2em"/><mo>⇒</mo><mspace width="1.2em"/><munder><mo>∑</mo><mi>k</mi></munder><msub><mi>x</mi><mi>k</mi></msub><mo>=</mo><mn>1</mn></math>
+      </div>
+      <div class="tiles" id="tiles"></div>
+      <div class="plots">
+        <div class="hc">
+          <div class="hc-top"><h3 data-i18n="inH">Input shapes<span>x·f(x)</span></h3></div>
+          <div class="hc-legend" id="lgA"></div>
+          <div id="pdfA"></div>
+          <p class="cap" data-i18n="inCap">Each Beta distribution normalised to one parton, before rescaling.</p>
+        </div>
+        <div class="hc">
+          <div class="hc-top"><h3 data-i18n="carryH">What a proton carries<span>x·f(x)</span></h3><span class="hc-n" id="mcN"></span></div>
+          <div class="hc-legend" id="lgB"></div>
+          <div id="pdfB"></div>
+          <p class="cap" data-i18n="carryCap">Sampled from simulated protons after the sum rule, summed over all partons of each kind. The area under each curve (on the log-x axis) is that kind's share of the momentum.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="how-sec">
+      <h2 data-i18n="fromH">From partons to the hard process</h2>
+      <p data-i18n="fromP1">The two colliding partons fix the energy available for the hard interaction and how the final state is boosted along the beam:</p>
+      <div class="eq">
+        <math display="block"><mover><mi>s</mi><mo>^</mo></mover><mo>=</mo><msub><mi>x</mi><mn>1</mn></msub><msub><mi>x</mi><mn>2</mn></msub><mspace width="0.1em"/><mi>s</mi><mo>,</mo><mspace width="1.5em"/><msub><mi>y</mi><mn>0</mn></msub><mo>=</mo><mfrac><mn>1</mn><mn>2</mn></mfrac><mi>ln</mi><mfrac><msub><mi>x</mi><mn>1</mn></msub><msub><mi>x</mi><mn>2</mn></msub></mfrac></math>
+      </div>
+      <p data-i18n="fromP2">Jets, tops and the exchange processes use the most energetic pair of partons that can start them:</p>
+      <div class="eq">
+        <math display="block"><mo>(</mo><mi>i</mi><mo>,</mo><mi>j</mi><mo>)</mo><mo>=</mo><munder><mrow><mo>arg max</mo></mrow><mrow><mo>(</mo><mi>i</mi><mo>,</mo><mi>j</mi><mo>)</mo><mspace width="0.2em"/><mtext data-i18n="mAllowed">allowed</mtext></mrow></munder><mspace width="0.3em"/><msub><mi>x</mi><mi>i</mi></msub><mspace width="0.1em"/><msub><mi>x</mi><mi>j</mi></msub></math>
+      </div>
+      <p data-i18n="fromP3">The Z, W, Higgs, Drell–Yan and diphoton processes instead fix the mass <i>m</i> of the produced system first. It comes from a Breit–Wigner for the Z and W, is fixed at 125 GeV for the Higgs, and falls steeply for the Drell–Yan and diphoton continua. Two allowed partons are then given exactly the momentum fractions needed:</p>
+      <div class="eq">
+        <math display="block"><msub><mi>x</mi><mrow><mn>1</mn><mo>,</mo><mn>2</mn></mrow></msub><mo>=</mo><mfrac><mi>m</mi><msqrt><mi>s</mi></msqrt></mfrac><mspace width="0.1em"/><msup><mi>e</mi><mrow><mo>±</mo><mi>y</mi></mrow></msup><mo>,</mo><mspace width="1.5em"/><mfrac><mrow><mi>d</mi><mi>σ</mi></mrow><mrow><mi>d</mi><mi>m</mi></mrow></mfrac><mo>∝</mo><msup><mi>m</mi><mrow><mo>−</mo><mn>3</mn></mrow></msup><mspace width="0.6em"/><mtext data-i18n="mCont">(continua)</mtext></math>
+        <p class="where" data-i18n="yW"><i>y</i> is uniform in [−1.6, 1.6]. Outgoing particles are emitted back to back in the partonic rest frame and then boosted by <i>y</i>₀ along the beam.</p>
+      </div>
+    </section>
+    </div>
+
+    <div class="tabpanel" id="how-tune" role="tabpanel" aria-labelledby="st-tune" hidden>
+      <section class="how-sec">
+        <h2 data-i18n="tuneH">Tune the parton distributions</h2>
+        <p data-i18n="tuneP">Inside a proton, QCD decides how the momentum is shared between quarks and gluons. Move the sliders to reshape each Beta distribution or change how many partons a proton holds. Every new collision in the Collider tab uses these settings.</p>
+        <div class="tune">
+          <div class="panel" id="tuneCtl"></div>
+          <div class="tune-out">
+            <div class="tiles" id="tTiles"></div>
+            <div class="hc">
+              <div class="hc-top"><h3 data-i18n="pdfOutH">What a proton carries<span>x·f(x)</span></h3></div>
+              <div class="hc-legend" id="lgT"></div>
+              <div id="tunePdf"></div>
+              <p class="cap" data-i18n="pdfOutCap">Solid lines: your tune. Dashed lines: the default model.</p>
+            </div>
+            <div class="hc">
+              <div class="hc-top"><h3 data-i18n="rsH">Energy of the hardest pair<span>√ŝ</span></h3></div>
+              <div class="hc-legend" id="lgR"></div>
+              <div id="tuneRs"></div>
+              <p class="cap" data-i18n="rsCap">Share of collisions by the √ŝ of their two most energetic partons. Harder partons push the curve right: more energy to make heavy particles.</p>
+            </div>
+          </div>
+        </div>
+        <p class="muted" data-i18n="tuneNote">The histograms mix events from before and after a change. Clear them to compare tunes.</p>
+      </section>
+    </div>
+  </div>
+</div>
+<div class="tip" id="tip" hidden></div>
+
+<script>
+(() => {
+const SQRTS = 13600, MZ = 91.19, MW = 80.38, MH = 125.1, MT = 172.5;
+const QCOL = ['#ff5d6c', '#3fd68f', '#5b8dff'];
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const C = {};
+['--strong','--em','--weak','--higgs','--lep-e','--lep-mu','--nu','--jet','--hcal','--ink','--muted','--faint','--line'].forEach(k => C[k.slice(2)] = css(k));
+
+const state = { lang: 'en', sub: 'model', forces: { S: true, EM: true, W: true }, mode: 'show', view: 'det', busy: false, counts: {}, total: 0, ev: null, t0: 0, touched: false, lastNew: null };
+
+/* ---------- language ---------- */
+const L = (en, es) => state.lang === 'es' ? es : en;
+const dec = v => state.lang === 'es' ? String(v).replace(/(\d)\.(\d)/g, '$1,$2') : String(v);
+const LOC = () => state.lang === 'es' ? 'es-AR' : 'en';
+
+/* ---------- random helpers ---------- */
+const rnd = (a, b) => a + Math.random() * (b - a);
+const ri = n => Math.floor(Math.random() * n);
+const pick = a => a[ri(a.length)];
+function randn() { let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+// Beta(a, b) by inverse-CDF lookup: fast enough to fire 100k events
+function betaSampler(a, b) {
+  const N = 2048, xs = new Float64Array(N + 1), cdf = new Float64Array(N + 1);
+  for (let k = 0; k <= N; k++) xs[k] = Math.pow(k / N, 3);
+  const pdf = x => Math.pow(x, a - 1) * Math.pow(1 - x, b - 1);
+  cdf[1] = Math.pow(xs[1], a) / a;
+  for (let k = 2; k <= N; k++) cdf[k] = cdf[k - 1] + 0.5 * (pdf(xs[k - 1]) + pdf(xs[k])) * (xs[k] - xs[k - 1]);
+  const tot = cdf[N];
+  const draw = () => {
+    const u = Math.random() * tot; let lo = 0, hi = N;
+    while (hi - lo > 1) { const m = (lo + hi) >> 1; if (cdf[m] < u) lo = m; else hi = m; }
+    return xs[lo] + (xs[hi] - xs[lo]) * (u - cdf[lo]) / ((cdf[hi] - cdf[lo]) || 1);
+  };
+  return Object.assign(draw, { a, b, norm: tot });
+}
+const PDF_DEF = { va: 0.75, vb: 3.6, ga: 0.5, gb: 4.5, sa: 0.3, sb: 9, ng: 5, ss: 0.6 };
+const PDFP = Object.assign({}, PDF_DEF);
+const samplersFor = p => ({ v: betaSampler(p.va, p.vb), g: betaSampler(p.ga, p.gb), s: betaSampler(p.sa, p.sb) });
+const SMP_DEF = samplersFor(PDF_DEF);
+let SMP = SMP_DEF;
+function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = ri(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+/* ---------- partons ---------- */
+const BAR = { u: 'ū', d: 'd̄', s: 's̄' };
+const pname = p => p.f === 'g' ? 'g' : p.anti ? BAR[p.f] : p.f;
+const charge = p => p.f === 'g' ? 0 : (p.f === 'u' ? 2 / 3 : -1 / 3) * (p.anti ? -1 : 1);
+const isQ = p => p.f !== 'g';
+const pkind = p => p.f === 'g' ? 'g' : p.anti ? 'qb' : 'q';
+
+function makeProton(par = PDFP, sm = SMP) {
+  const ps = [];
+  const cols = shuffle([0, 1, 2]);
+  ['u', 'u', 'd'].forEach((f, i) => ps.push({ f, anti: false, x: sm.v(), c: cols[i], t: 'v' }));
+  const ng = Math.max(1, Math.round(par.ng) - 1 + ri(3));
+  for (let i = 0; i < ng; i++) { const c = ri(3); ps.push({ f: 'g', x: sm.g(), c, c2: (c + 1 + ri(2)) % 3, t: 'g' }); }
+  const sea = ['u', 'd']; if (Math.random() < par.ss) sea.push('s');
+  sea.forEach(f => { const c = ri(3); ps.push({ f, anti: false, x: sm.s(), c, t: 's' }); ps.push({ f, anti: true, x: sm.s(), c, t: 's' }); });
+  const sum = ps.reduce((s, p) => s + p.x, 0);
+  ps.forEach(p => p.x /= sum);
+  const n = ps.length, slots = shuffle([...Array(n)].map((_, i) => -0.86 + 1.72 * (i + 0.5) / n));
+  ps.forEach((p, i) => { p.oy = slots[i] + rnd(-0.03, 0.03); p.ox = rnd(-0.55, 0.55); });
+  return ps;
+}
+
+/* ---------- processes ---------- */
+const sameQQbar = (a, b) => isQ(a) && isQ(b) && a.f === b.f && a.anti !== b.anti;
+const wPair = (a, b) => isQ(a) && isQ(b) && a.anti !== b.anti && Math.abs(Math.abs(charge(a) + charge(b)) - 1) < 1e-6;
+const gg = (a, b) => a.f === 'g' && b.f === 'g';
+const qg = (a, b) => (isQ(a) && b.f === 'g') || (a.f === 'g' && isQ(b));
+const qq = (a, b) => isQ(a) && isQ(b);
+
+const lepK = () => Math.random() < 0.5 ? 'e' : 'mu';
+const LAB = { e: ['e⁻', 'e⁺'], mu: ['μ⁻', 'μ⁺'] };
+const lab = (k, sign) => LAB[k][sign > 0 ? 1 : 0];
+// pair mass with dσ/dm ∝ 1/m³ between lo and hi
+const falling = (lo, hi) => lo / Math.sqrt(1 - Math.random() * (1 - (lo / hi) ** 2));
+const breitWigner = (M, G, lo, hi) => { for (;;) { const m = M + (G / 2) * Math.tan(Math.PI * (Math.random() - 0.5)); if (m > lo && m < hi) return m; } };
+function twoBody(M, fwd) {
+  let c = fwd ? rnd(0.45, 0.93) * (Math.random() < 0.5 ? -1 : 1) : rnd(-0.92, 0.92);
+  return { ys: Math.atanh(c), pt: (M / 2) * Math.sqrt(1 - c * c) };
+}
+const O = (k, label, y, up, pt) => ({ k, label, y, up, pt });
+const flip = p => ({ u: 'd', d: 'u', s: 'u' })[p.f];
+const flipName = p => p.f === 'g' ? 'g' : p.anti ? BAR[flip(p)] : flip(p);
+
+const PROCS = [
+  { id: 'qcd', name: 'QCD dijet', rxn: 'q g → q g', needs: ['S'], w: { show: 5, lhc: 1e6 }, match: () => true, thr: 40,
+    init: 'any two partons',
+    blurb: 'The two partons exchange a gluon and fly apart. Each outgoing quark or gluon turns into a spray of hadrons, a jet. This is by far the most common hard collision at the LHC.',
+    build(e) { const { ys, pt } = twoBody(e.rs, true);
+      return { outs: [O('jet', 'jet', e.y0 + ys, 1, pt), O('jet', 'jet', e.y0 - ys, -1, pt)],
+        rxn: `${pname(e.a)} ${pname(e.b)} → ${pname(e.a)} ${pname(e.b)}`,
+        diag: { topo: 't', i: [[pkind(e.a), pname(e.a)], [pkind(e.b), pname(e.b)]], o: [[pkind(e.a), pname(e.a)], [pkind(e.b), pname(e.b)]], p: ['g', 'g'] } }; } },
+  { id: 'emjj', name: 'Photon exchange', rxn: 'q q → q q  (via γ)', needs: ['EM'], w: { show: 2, lhc: 3e3 }, match: qq, thr: 40,
+    init: 'two quarks, since gluons have no electric charge',
+    blurb: 'Quarks are electrically charged, so they can also scatter by swapping a photon. The detector sees the same two jets, but this happens about a thousand times less often than gluon exchange.',
+    build(e) { const { ys, pt } = twoBody(e.rs, true);
+      return { outs: [O('jet', 'jet', e.y0 + ys, 1, pt), O('jet', 'jet', e.y0 - ys, -1, pt)],
+        rxn: `${pname(e.a)} ${pname(e.b)} → ${pname(e.a)} ${pname(e.b)}`,
+        diag: { topo: 't', i: [[pkind(e.a), pname(e.a)], [pkind(e.b), pname(e.b)]], o: [[pkind(e.a), pname(e.a)], [pkind(e.b), pname(e.b)]], p: ['a', 'γ'] } }; } },
+  { id: 'weakjj', name: 'W exchange', rxn: 'u d → d u  (via W)', needs: ['W'], w: { show: 2, lhc: 1e3 }, match: (a, b) => qq(a, b) && (charge(a) > 0) !== (charge(b) > 0), thr: 40,
+    init: 'an up-type and a down-type quark line',
+    blurb: 'Swapping a W boson changes quark flavour: an up becomes a down and the other way round. The W is 80 times heavier than a proton, which is why the weak force is so feeble at everyday distances.',
+    build(e) { const { ys, pt } = twoBody(e.rs, true);
+      return { outs: [O('jet', 'jet', e.y0 + ys, 1, pt), O('jet', 'jet', e.y0 - ys, -1, pt)],
+        rxn: `${pname(e.a)} ${pname(e.b)} → ${flipName(e.a)} ${flipName(e.b)}`,
+        diag: { topo: 't', i: [[pkind(e.a), pname(e.a)], [pkind(e.b), pname(e.b)]], o: [[pkind(e.a), flipName(e.a)], [pkind(e.b), flipName(e.b)]], p: ['W', 'W'] } }; } },
+  { id: 'dy', name: 'Drell–Yan', rxn: 'q q̄ → γ* → ℓ⁺ℓ⁻', needs: ['EM'], w: { show: 3, lhc: 1e3 }, match: sameQQbar, mgen: () => falling(15, 3000),
+    init: 'a quark and an antiquark of the same flavour',
+    blurb: 'A quark and an antiquark annihilate into a virtual photon, which becomes a lepton pair. The ϒ (upsilon) meson was discovered in this channel in 1977.',
+    build(e) { const { ys, pt } = twoBody(e.rs); const k = lepK();
+      return { outs: [O(k, lab(k, -1), e.y0 + ys, 1, pt), O(k, lab(k, 1), e.y0 - ys, -1, pt)],
+        rxn: `${pname(e.a)} ${pname(e.b)} → γ* → ${lab(k, 1)} ${lab(k, -1)}`,
+        diag: { topo: 's', i: [[pkind(e.a), pname(e.a)], [pkind(e.b), pname(e.b)]], o: [['q', lab(k, -1)], ['qb', lab(k, 1)]], p: ['a', 'γ*'] } }; } },
+  { id: 'z', name: 'Z boson', rxn: 'q q̄ → Z → ℓ⁺ℓ⁻', needs: ['W'], w: { show: 3, lhc: 4e3 }, match: sameQQbar, res: MZ, mgen: () => breitWigner(MZ, 2.5, 70, 110),
+    init: 'a quark and an antiquark of the same flavour',
+    blurb: 'When a quark–antiquark pair collides at √ŝ ≈ 91 GeV it can make a real Z boson. Its two leptons have an invariant mass right at the Z peak.',
+    build(e) { const { ys, pt } = twoBody(e.rs); const k = lepK();
+      return { outs: [O(k, lab(k, -1), e.y0 + ys, 1, pt), O(k, lab(k, 1), e.y0 - ys, -1, pt)],
+        rxn: `${pname(e.a)} ${pname(e.b)} → Z → ${lab(k, 1)} ${lab(k, -1)}`,
+        diag: { topo: 's', i: [[pkind(e.a), pname(e.a)], [pkind(e.b), pname(e.b)]], o: [['q', lab(k, -1)], ['qb', lab(k, 1)]], p: ['W', 'Z'] } }; } },
+  { id: 'w', name: 'W boson', rxn: 'u d̄ → W⁺ → ℓ⁺ν', needs: ['W'], w: { show: 3, lhc: 4e4 }, match: wPair, res: MW, mgen: () => breitWigner(MW, 2.1, 60, 100),
+    init: 'an up-type quark with an anti-down-type quark (or the reverse)',
+    blurb: 'Two partons whose charges add to ±1 fuse into a W boson. It decays to a charged lepton and a neutrino, which escapes the detector and shows up only as missing transverse momentum.',
+    build(e) { const { ys, pt } = twoBody(e.rs); const k = lepK(); const s = charge(e.a) + charge(e.b) > 0 ? 1 : -1;
+      const W = s > 0 ? 'W⁺' : 'W⁻', nu = s > 0 ? 'ν' : 'ν̄';
+      return { outs: [O(k, lab(k, s), e.y0 + ys, 1, pt), O('nu', nu, e.y0 - ys, -1, pt)],
+        rxn: `${pname(e.a)} ${pname(e.b)} → ${W} → ${lab(k, s)} ${nu}`,
+        diag: { topo: 's', i: [[pkind(e.a), pname(e.a)], [pkind(e.b), pname(e.b)]], o: [[s > 0 ? 'qb' : 'q', lab(k, s)], [s > 0 ? 'q' : 'qb', nu]], p: ['W', W] } }; } },
+  { id: 'aa', name: 'Diphoton', rxn: 'q q̄ → γ γ', needs: ['EM'], w: { show: 2, lhc: 50 }, match: sameQQbar, mgen: () => falling(60, 1000),
+    init: 'a quark and an antiquark of the same flavour',
+    blurb: 'A quark and antiquark annihilate into two photons. Photons leave no track; each one shows up only as a deposit in the electromagnetic calorimeter.',
+    build(e) { const { ys, pt } = twoBody(e.rs);
+      return { outs: [O('gam', 'γ', e.y0 + ys, 1, pt), O('gam', 'γ', e.y0 - ys, -1, pt)],
+        rxn: `${pname(e.a)} ${pname(e.b)} → γ γ`,
+        diag: { topo: 't', i: [[pkind(e.a), pname(e.a)], [pkind(e.b), pname(e.b)]], o: [['a', 'γ'], ['a', 'γ']], p: ['q', 'q'] } }; } },
+  { id: 'gj', name: 'Prompt photon', rxn: 'q g → q γ', needs: ['S', 'EM'], w: { show: 3, lhc: 2e4 }, match: qg, thr: 30,
+    init: 'a quark and a gluon',
+    blurb: 'A quark absorbs a gluon and radiates a photon, so one jet recoils against one isolated photon. It takes the strong and the electromagnetic force together.',
+    build(e) { const { ys, pt } = twoBody(e.rs); const q = isQ(e.a) ? e.a : e.b; const u = Math.random() < 0.5 ? 1 : -1;
+      return { outs: [O('jet', 'jet', e.y0 + ys, u, pt), O('gam', 'γ', e.y0 - ys, -u, pt)],
+        rxn: `${pname(e.a)} ${pname(e.b)} → ${pname(q)} γ`,
+        diag: { topo: 's', i: [[pkind(e.a), pname(e.a)], [pkind(e.b), pname(e.b)]], o: [[pkind(q), pname(q)], ['a', 'γ']], p: [pkind(q), pname(q)] } }; } },
+  { id: 'tt', name: 'Top pair', rxn: 'g g → t t̄', needs: ['S', 'W'], w: { show: 3, lhc: 900 }, match: (a, b) => gg(a, b) || sameQQbar(a, b), thr: 2 * MT + 5,
+    init: 'two gluons or a quark–antiquark pair, with √ŝ above 345 GeV',
+    blurb: 'Gluons fuse into the heaviest known particle, the top quark (173 GeV). It lives about 5×10⁻²⁵ s and decays through the weak force, t → b W, before it can form a hadron. Here one W gives a lepton and a neutrino, the other two jets.',
+    build(e) {
+      const c = rnd(-0.85, 0.85), ys = Math.atanh(c), ptT = Math.sqrt(Math.max(0, (e.rs / 2) ** 2 - MT * MT)) * Math.sqrt(1 - c * c);
+      const lepUp = Math.random() < 0.5 ? 1 : -1, k = lepK(), outs = [];
+      [[e.y0 + ys, 1], [e.y0 - ys, -1]].forEach(([yt, up]) => {
+        const sp = ptT > 300 ? 0.35 : 0.8, bpt = 0.35 * ptT + rnd(40, 70), wpt = 0.6 * ptT + rnd(30, 60);
+        if (up === lepUp) {
+          outs.push(O('bjet', up > 0 ? 'b-jet' : 'b̄-jet', yt + rnd(-sp, sp), up, bpt));
+          outs.push(O(k, lab(k, up > 0 ? 1 : -1), yt + rnd(-sp, sp), up, wpt * rnd(0.4, 0.6)));
+          outs.push(O('nu', up > 0 ? 'ν' : 'ν̄', yt + rnd(-sp, sp), up, wpt * rnd(0.4, 0.6)));
+        } else {
+          outs.push(O('bjet', up > 0 ? 'b-jet' : 'b̄-jet', yt + rnd(-sp, sp), up, bpt));
+          outs.push(O('jet', 'jet', yt + rnd(-sp, sp), up, wpt * rnd(0.4, 0.6)));
+          outs.push(O('jet', 'jet', yt + rnd(-sp, sp), up, wpt * rnd(0.4, 0.6)));
+        }
+      });
+      return { outs, rxn: `${pname(e.a)} ${pname(e.b)} → t t̄ → b W⁺ b̄ W⁻`,
+        diag: { topo: 's', i: [[pkind(e.a), pname(e.a)], [pkind(e.b), pname(e.b)]], o: [['q', 't'], ['qb', 't̄']], p: ['g', 'g'] } }; } },
+  { id: 'hgg', name: 'Higgs → γγ', rxn: 'g g → H → γ γ', needs: ['S', 'W', 'EM'], w: { show: 2, lhc: 0.13 }, match: gg, res: MH, mgen: () => MH,
+    init: 'two gluons',
+    blurb: 'Gluons do not touch the Higgs directly; they make one through a loop of top quarks. The Higgs then decays to two photons through another loop. One of the two channels of the 2012 discovery.',
+    build(e) { const { ys, pt } = twoBody(e.rs);
+      return { outs: [O('gam', 'γ', e.y0 + ys, 1, pt), O('gam', 'γ', e.y0 - ys, -1, pt)],
+        rxn: 'g g → H → γ γ', diag: { topo: 'hgg' } }; } },
+  { id: 'h4l', name: 'Higgs → 4ℓ', rxn: 'g g → H → Z Z* → 4ℓ', needs: ['S', 'W'], w: { show: 2, lhc: 0.006 }, match: gg, res: MH, mgen: () => MH,
+    init: 'two gluons',
+    blurb: 'The other 2012 discovery channel. The Higgs decays to two Z bosons, one of them off-shell, and each Z gives a lepton pair. Very rare, but almost free of background.',
+    build(e) { const c = rnd(-0.8, 0.8), ys = Math.atanh(c), k1 = lepK(), k2 = lepK(), outs = [];
+      [[e.y0 + ys, 1, k1, rnd(25, 45)], [e.y0 - ys, -1, k2, rnd(12, 30)]].forEach(([yz, up, k, pt]) => {
+        outs.push(O(k, lab(k, -1), yz + rnd(0.25, 0.8), up, pt * rnd(0.8, 1.3)));
+        outs.push(O(k, lab(k, 1), yz - rnd(0.25, 0.8), up, pt * rnd(0.7, 1.1)));
+      });
+      const L = k => k === 'e' ? 'e⁺e⁻' : 'μ⁺μ⁻';
+      return { outs, rxn: `g g → H → Z Z* → ${L(k1)} ${L(k2)}`, diag: { topo: 'h4l', l: [k1, k2] } }; } },
+];
+PROCS.forEach(P => state.counts[P.id] = 0);
+const PES = {
+ "qcd": {
+  "name": "Dijet de QCD",
+  "init": "dos partones cualesquiera",
+  "blurb": "Los dos partones intercambian un gluón y salen despedidos. Cada quark o gluón saliente se convierte en una lluvia de hadrones: un jet. Es, por lejos, la colisión dura más común en el LHC."
+ },
+ "emjj": {
+  "name": "Intercambio de fotón",
+  "init": "dos quarks, porque los gluones no tienen carga eléctrica",
+  "blurb": "Los quarks tienen carga eléctrica, así que también pueden dispersarse intercambiando un fotón. El detector ve los mismos dos jets, pero esto pasa unas mil veces menos que el intercambio de gluones."
+ },
+ "weakjj": {
+  "name": "Intercambio de W",
+  "init": "una línea de quark tipo up y otra tipo down",
+  "blurb": "Al intercambiar un bosón W cambia el sabor del quark: un up se vuelve down y al revés. El W es 80 veces más pesado que un protón; por eso la fuerza débil es tan débil a distancias cotidianas."
+ },
+ "dy": {
+  "name": "Drell–Yan",
+  "init": "un quark y un antiquark del mismo sabor",
+  "blurb": "Un quark y un antiquark se aniquilan en un fotón virtual, que se convierte en un par de leptones. El mesón ϒ (ípsilon) se descubrió en este canal en 1977."
+ },
+ "z": {
+  "name": "Bosón Z",
+  "init": "un quark y un antiquark del mismo sabor",
+  "blurb": "Cuando un par quark–antiquark choca con √ŝ ≈ 91 GeV puede crear un bosón Z real. Sus dos leptones tienen una masa invariante justo en el pico del Z."
+ },
+ "w": {
+  "name": "Bosón W",
+  "init": "un quark tipo up con un antiquark tipo down (o al revés)",
+  "blurb": "Dos partones cuyas cargas suman ±1 se fusionan en un bosón W. Decae en un leptón cargado y un neutrino, que se escapa del detector y solo aparece como momento transverso faltante."
+ },
+ "aa": {
+  "name": "Difotón",
+  "init": "un quark y un antiquark del mismo sabor",
+  "blurb": "Un quark y un antiquark se aniquilan en dos fotones. Los fotones no dejan traza: cada uno aparece solo como un depósito en el calorímetro electromagnético."
+ },
+ "gj": {
+  "name": "Fotón directo",
+  "init": "un quark y un gluón",
+  "blurb": "Un quark absorbe un gluón e irradia un fotón: un jet retrocede contra un fotón aislado. Hacen falta la fuerza fuerte y la electromagnética juntas."
+ },
+ "tt": {
+  "name": "Par de tops",
+  "init": "dos gluones o un par quark–antiquark, con √ŝ mayor que 345 GeV",
+  "blurb": "Los gluones se fusionan en la partícula más pesada que se conoce, el quark top (173 GeV). Vive unos 5×10⁻²⁵ s y decae por la fuerza débil, t → b W, antes de poder formar un hadrón. Acá un W da un leptón y un neutrino, y el otro, dos jets."
+ },
+ "hgg": {
+  "name": "Higgs → γγ",
+  "init": "dos gluones",
+  "blurb": "Los gluones no tocan al Higgs directamente: lo producen a través de un lazo de quarks top. Después el Higgs decae en dos fotones a través de otro lazo. Es uno de los dos canales del descubrimiento de 2012."
+ },
+ "h4l": {
+  "name": "Higgs → 4ℓ",
+  "init": "dos gluones",
+  "blurb": "El otro canal del descubrimiento de 2012. El Higgs decae en dos bosones Z (uno fuera de capa de masa) y cada Z da un par de leptones. Muy raro, pero casi sin fondo."
+ }
+};
+const nm = P => L(P.name, PES[P.id].name), ini = P => L(P.init, PES[P.id].init), bl = P => L(P.blurb, PES[P.id].blurb);
+const fnm = k => ({ S: L('Strong', 'Fuerte'), EM: 'EM', W: L('Weak', 'Débil') })[k];
+
+
+/* ---------- event generation ---------- */
+function argmaxX(ps) { let b = 0; ps.forEach((p, i) => { if (p.x > ps[b].x) b = i; }); return b; }
+const sci = v => { const e = Math.floor(Math.log10(v)); return `${dec((v / 10 ** e).toFixed(1))}×10${String(e).replace('-', '⁻').replace(/\d/g, d => '⁰¹²³⁴⁵⁶⁷⁸⁹'[d])}`; };
+
+function generateEvent(full = true) {
+  const A = makeProton(), B = makeProton(), f = state.forces;
+  const hi = argmaxX(A), hj = argmaxX(B);
+  const cands = [];
+  for (const P of PROCS) {
+    if (!P.needs.every(n => f[n])) continue;
+    let sel = null;
+    if (P.mgen) {
+      let n = 0;  // reservoir-sample one matching pair without building a list
+      for (let i = 0; i < A.length; i++) for (let j = 0; j < B.length; j++) if (P.match(A[i], B[j]) && Math.random() * ++n < 1) sel = [i, j];
+    } else {
+      let best = (P.thr / SQRTS) ** 2;
+      for (let i = 0; i < A.length; i++) for (let j = 0; j < B.length; j++) {
+        const s = A[i].x * B[j].x;
+        if (s >= best && P.match(A[i], B[j])) { best = s; sel = [i, j]; }
+      }
+    }
+    if (sel) cands.push({ P, i: sel[0], j: sel[1] });
+  }
+  const ev = { A, B, id: Math.random(), shown: false };
+  if (!cands.length) {
+    Object.assign(ev, { P: null, i: hi, j: hj, x1: A[hi].x, x2: B[hj].x });
+    ev.rs = SQRTS * Math.sqrt(ev.x1 * ev.x2);
+    return ev;
+  }
+  const tot = cands.reduce((s, c) => s + c.P.w[state.mode], 0);
+  let r = Math.random() * tot, ch = cands[0];
+  for (const c of cands) { r -= c.P.w[state.mode]; if (r <= 0) { ch = c; break; } }
+  const { P, i, j } = ch;
+  if (P.mgen) {
+    const M = P.mgen(), ym = Math.min(1.6, Math.log(0.95 * SQRTS / M)), y = rnd(-ym, ym);
+    A[i].x = M / SQRTS * Math.exp(y); B[j].x = M / SQRTS * Math.exp(-y);
+  }
+  const a = A[i], b = B[j];
+  // colliding partons meet on the beam axis; nudge neighbours out of the way
+  [[A, a], [B, b]].forEach(([ps, p]) => { p.oy = 0; p.ox = 0; ps.forEach(q => { if (q !== p && Math.abs(q.oy) < 0.22) q.oy = (q.oy < 0 ? -1 : 1) * 0.24; }); });
+  const x1 = a.x, x2 = b.x, rs = SQRTS * Math.sqrt(x1 * x2), y0 = 0.5 * Math.log(x1 / x2);
+  const built = P.build({ a, b, rs, y0 });
+  Object.assign(ev, { P, i, j, x1, x2, rs, y0, ...built });
+  ev.fill = measure(ev);
+  if (!full) return ev;
+  ev.outs.forEach(prepOut);
+  const h1 = A[hi], h2 = B[hj], sOff = !f.S, hard = i === hi && j === hj;
+  ev.note = () => {
+    if (P.res) {
+      const n = nm(P).split(' →')[0];
+      return L(`${n} production needs √ŝ ≈ ${P.res.toFixed(0)} GeV, so x₁x₂ ≈ ${sci((P.res / SQRTS) ** 2)}. That takes low-momentum partons, not the hardest ones in the proton.`,
+        `Producir un ${n.charAt(0).toLowerCase() + n.slice(1)} requiere √ŝ ≈ ${P.res.toFixed(0)} GeV, así que x₁x₂ ≈ ${sci((P.res / SQRTS) ** 2)}. Eso lo hacen partones de poco momento, no los más duros del protón.`);
+    }
+    if (P.mgen) return L(`Low-mass pairs are far more common than high-mass ones (the rate falls roughly as 1/m³). This pair has m = ${fmtE(rs)}, so x₁x₂ ≈ ${sci((rs / SQRTS) ** 2)}: soft partons, not the hardest ones.`,
+      `Los pares de masa baja son mucho más comunes que los de masa alta (la tasa cae aproximadamente como 1/m³). Este par tiene m = ${fmtE(rs)}, así que x₁x₂ ≈ ${sci((rs / SQRTS) ** 2)}: partones blandos, no los más duros.`);
+    if (hard) return L('The two most energetic partons, one from each proton, made this collision.', 'Los dos partones más energéticos, uno de cada protón, hicieron esta colisión.');
+    let why = L(`${nm(P)} needs ${ini(P)}, so the most energetic pair that fits collides instead.`, `${nm(P)} necesita ${ini(P)}, así que choca el par más energético que cumple con eso.`);
+    if ((h1.f === 'g' || h2.f === 'g') && sOff) why = L('Gluons only feel the strong force, which is off. ', 'Los gluones solo sienten la fuerza fuerte, que está apagada. ') + why;
+    return L(`The hardest partons were ${pname(h1)} (x = ${h1.x.toFixed(2)}) and ${pname(h2)} (x = ${h2.x.toFixed(2)}). ${why}`,
+      `Los partones más duros eran ${pname(h1)} (x = ${dec(h1.x.toFixed(2))}) y ${pname(h2)} (x = ${dec(h2.x.toFixed(2))}). ${why}`);
+  };
+  return ev;
+}
+
+/* ---------- histograms ---------- */
+const HISTS = [
+  { id: 'mll', title: 'Dilepton mass', ax: 'm(ℓℓ)', lo: 10, hi: 3000, log: true, nb: 50,
+    ser: [['dy', 'Drell–Yan γ*', '--h-em'], ['z', 'Z boson', '--h-weak']],
+    cap: 'The Z peak stands on the steeply falling Drell–Yan continuum. Log axes, as in the classic dimuon spectrum.' },
+  { id: 'maa', title: 'Diphoton mass', ax: 'm(γγ)', lo: 60, hi: 300, nb: 48,
+    ser: [['aa', 'Diphoton', '--h-em'], ['h', 'Higgs', '--h-higgs']],
+    cap: 'A narrow bump at 125 GeV on a smooth background: the shape of the 2012 discovery plot.' },
+  { id: 'm4l', title: 'Four-lepton mass', ax: 'm(4ℓ)', lo: 80, hi: 200, nb: 40,
+    ser: [['h', 'Higgs', '--h-higgs']],
+    cap: 'A sharp peak at 125 GeV. In this game only the Higgs makes four leptons; the real plot also has a ZZ background.' },
+  { id: 'mt', title: 'W transverse mass', ax: 'm_T(ℓν)', lo: 0, hi: 120, nb: 40,
+    ser: [['w', 'W boson', '--h-weak']],
+    cap: 'The neutrino escapes, so only the transverse mass can be built. It piles up just below a sharp edge at the W mass.' },
+  { id: 'mjj', title: 'Dijet mass', ax: 'm(jj)', lo: 100, hi: 14000, log: true, nb: 40,
+    ser: [['qcd', 'Gluon exchange', '--h-strong'], ['ew', 'γ / W exchange', '--h-weak']],
+    cap: 'Dijets come from the hardest partons, so they reach several TeV.' },
+  { id: 'mbjj', title: 'Hadronic top mass', ax: 'm(bjj)', lo: 80, hi: 400, nb: 40,
+    ser: [['tt', 'Top quark', '--h-strong']],
+    cap: 'A b-jet plus the two jets from the W rebuild the top at 173 GeV. Wrong jet pairings make the broad tail.' },
+];
+const HES = {
+ "mll": {
+  "title": "Masa de dos leptones",
+  "cap": "El pico del Z se apoya sobre el continuo de Drell–Yan, que cae en picada. Ejes logarítmicos, como en el clásico espectro de dimuones.",
+  "ser": [
+   "Drell–Yan γ*",
+   "Bosón Z"
+  ]
+ },
+ "maa": {
+  "title": "Masa de dos fotones",
+  "cap": "Un pico angosto en 125 GeV sobre un fondo suave: la forma del gráfico del descubrimiento de 2012.",
+  "ser": [
+   "Difotón",
+   "Higgs"
+  ]
+ },
+ "m4l": {
+  "title": "Masa de cuatro leptones",
+  "cap": "Un pico bien marcado en 125 GeV. En este juego solo el Higgs produce cuatro leptones; el gráfico real también tiene fondo de ZZ.",
+  "ser": [
+   "Higgs"
+  ]
+ },
+ "mt": {
+  "title": "Masa transversa del W",
+  "cap": "El neutrino se escapa, así que solo se puede reconstruir la masa transversa. Se acumula justo debajo de un borde marcado en la masa del W.",
+  "ser": [
+   "Bosón W"
+  ]
+ },
+ "mjj": {
+  "title": "Masa de dos jets",
+  "cap": "Los dijets vienen de los partones más duros, así que llegan a varios TeV.",
+  "ser": [
+   "Intercambio de gluón",
+   "Intercambio de γ / W"
+  ]
+ },
+ "mbjj": {
+  "title": "Masa del top hadrónico",
+  "cap": "Un jet b más los dos jets del W reconstruyen el top en 173 GeV. Las combinaciones equivocadas de jets forman la cola ancha.",
+  "ser": [
+   "Quark top"
+  ]
+ }
+};
+const hx = H => state.lang === 'es' ? HES[H.id] : { title: H.title, cap: H.cap, ser: H.ser.map(x => x[1]) };
+const SER = { dy: 'dy', z: 'z', aa: 'aa', hgg: 'h', h4l: 'h', w: 'w', qcd: 'qcd', emjj: 'ew', weakjj: 'ew', tt: 'tt' };
+const HIST_OF = { dy: 'mll', z: 'mll', aa: 'maa', hgg: 'maa', h4l: 'm4l', w: 'mt', qcd: 'mjj', emjj: 'mjj', weakjj: 'mjj', tt: 'mbjj' };
+function measure(ev) {
+  const id = ev.P.id, h = HIST_OF[id];
+  if (!h) return null;
+  const r = ev.rs;
+  let m;
+  if (h === 'mll') m = r * (1 + 0.015 * randn());
+  else if (h === 'maa') m = r * (1 + 0.01 * randn());
+  else if (h === 'm4l') m = r * (1 + 0.012 * randn());
+  else if (h === 'mt') m = 2 * ev.outs.find(o => o.k !== 'nu').pt * (1 + 0.03 * randn());
+  else if (h === 'mjj') m = r * (1 + 0.06 * randn());
+  else m = Math.random() < 0.3 ? rnd(100, 400) : MT * (1 + 0.07 * randn());
+  return { h, s: SER[id], m };
+}
+const hdata = {};
+function clearHists() { HISTS.forEach(H => { hdata[H.id] = { last: -1 }; H.ser.forEach(([s]) => hdata[H.id][s] = new Array(H.nb).fill(0)); }); }
+clearHists();
+const binOf = (H, m) => {
+  const u = H.log ? Math.log(m / H.lo) / Math.log(H.hi / H.lo) : (m - H.lo) / (H.hi - H.lo);
+  return u >= 0 && u < 1 ? Math.floor(u * H.nb) : -1;
+};
+const edge = (H, k) => H.log ? H.lo * Math.pow(H.hi / H.lo, k / H.nb) : H.lo + (H.hi - H.lo) * k / H.nb;
+function fillHist(f) {
+  if (!f) return;
+  const H = HISTS.find(x => x.id === f.h), b = binOf(H, f.m);
+  if (b >= 0) { hdata[H.id][f.s][b]++; hdata[H.id].last = b; }
+}
+
+/* ---------- display geometry ---------- */
+const cv = document.getElementById('det'), g = cv.getContext('2d');
+let W = 0, H = 0, cx = 0, cy = 0, AX = 0, BY = 0;
+const TL = [0.1, 0.17, 0.25, 0.33, 0.4];
+const ECAL = [0.43, 0.54], HCAL = [0.57, 0.76], MU = [[0.80, 0.84], [0.875, 0.915], [0.95, 0.99]];
+
+function resize() {
+  const r = cv.getBoundingClientRect(), dpr = Math.min(2, window.devicePixelRatio || 1);
+  W = r.width; H = r.height; cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  cx = W / 2; cy = H / 2; AX = W * 0.46; BY = H * 0.43;
+  if (!anim) draw(state.ev ? 1e9 : 0);
+}
+function at(a, f) {
+  const dx = Math.cos(a), dy = Math.sin(a);
+  const T = Math.min(AX / Math.max(Math.abs(dx), 1e-6), BY / Math.max(Math.abs(dy), 1e-6));
+  return [cx + dx * T * f, cy - dy * T * f];
+}
+function seg(a, f1, f2, fmax, w, col, alpha = 1, dash) {
+  f2 = Math.min(f2, fmax); if (f2 <= f1) return;
+  const [x1, y1] = at(a, f1), [x2, y2] = at(a, f2);
+  g.save(); g.globalAlpha = alpha; g.strokeStyle = col; g.lineWidth = w; g.lineCap = 'butt';
+  if (dash) g.setLineDash(dash);
+  g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke(); g.restore();
+}
+function prepOut(o) {
+  const y = Math.max(-3.2, Math.min(3.2, o.y));
+  const th = 2 * Math.atan(Math.exp(-y));
+  o.a = o.up > 0 ? th : -th;
+  o.e = Math.max(0.25, Math.min(1, Math.log10(Math.max(o.pt, 10)) / 3.3));
+  if (o.k === 'jet' || o.k === 'bjet') {
+    const n = Math.round(6 + 9 * o.e), spread = 0.16 - 0.08 * o.e;
+    o.tracks = [...Array(n)].map(() => ({ da: randn() * spread * 0.55, end: rnd(0.3, 0.4), hits: Math.random() < 0.7 }));
+    o.spread = spread;
+  }
+}
+const OCOL = k => ({ jet: C.jet, bjet: C.jet, e: C['lep-e'], mu: C['lep-mu'], gam: C.em, nu: C.nu })[k];
+
+function drawDetector() {
+  const rect = f => { g.rect(cx - AX * f, cy - BY * f, 2 * AX * f, 2 * BY * f); };
+  const band = (f1, f2, col, a) => { g.save(); g.globalAlpha = a; g.fillStyle = col; g.beginPath(); rect(f2); rect(f1); g.fill('evenodd'); g.restore(); };
+  band(ECAL[0], ECAL[1], C['lep-e'], 0.07);
+  band(HCAL[0], HCAL[1], C.hcal, 0.08);
+  MU.forEach(([a, b]) => band(a, b, C['lep-mu'], 0.07));
+  g.save(); g.strokeStyle = C.line; g.lineWidth = 1;
+  TL.forEach(f => { g.globalAlpha = 0.55; g.beginPath(); rect(f); g.stroke(); });
+  [ECAL, HCAL].forEach(([a, b]) => { g.globalAlpha = 0.8; g.beginPath(); rect(a); g.stroke(); g.beginPath(); rect(b); g.stroke(); });
+  g.restore();
+  // beam pipe
+  g.save(); g.strokeStyle = C.faint; g.globalAlpha = 0.6; g.setLineDash([2, 4]);
+  g.beginPath(); g.moveTo(0, cy); g.lineTo(W, cy); g.stroke(); g.restore();
+  // layer labels
+  g.save(); g.font = '500 9.5px "IBM Plex Mono", monospace'; g.fillStyle = C.faint; g.textBaseline = 'top';
+  if (W > 420) {
+    g.textAlign = 'right';
+    [[L('TRACKER', 'TRAZAS'), TL[TL.length - 1]], ['ECAL', ECAL[1]], ['HCAL', HCAL[1]], [L('MUON', 'MUONES'), MU[2][1]]].forEach(([t, f]) => g.fillText(t, cx + AX * f - 5, cy - BY * f + 4));
+    g.textAlign = 'left';
+  }
+  g.fillText('z →', W - 34, cy + 6);
+  g.restore();
+}
+
+function drawOut(o, p) {
+  const fm = p * 1.06, col = OCOL(o.k);
+  if (o.k === 'jet' || o.k === 'bjet') {
+    // cone
+    if (fm > 0.05) {
+      const fc = Math.min(fm, HCAL[1]);
+      const [x0, y0] = at(o.a, 0), [xl, yl] = at(o.a + o.spread * 1.3, fc), [xr, yr] = at(o.a - o.spread * 1.3, fc);
+      g.save(); g.globalAlpha = 0.09; g.fillStyle = C.jet; g.beginPath(); g.moveTo(x0, y0); g.lineTo(xl, yl); g.lineTo(xr, yr); g.closePath(); g.fill(); g.restore();
+    }
+    const f0 = o.k === 'bjet' ? 0.035 : 0;
+    if (o.k === 'bjet') { seg(o.a, 0, f0, fm, 1, C.em, 0.9, [2, 2]); }
+    o.tracks.forEach(t => {
+      seg(o.a + t.da, f0, t.end, fm, 1.1, C.jet, 0.75);
+      if (t.hits) TL.forEach(f => { if (f <= t.end && f <= fm && f > f0) { const [x, y] = at(o.a + t.da, f); g.fillStyle = C.jet; g.fillRect(x - 1.2, y - 1.2, 2.4, 2.4); } });
+    });
+    if (o.k === 'bjet' && fm > f0) { const [x, y] = at(o.a, f0); g.save(); g.strokeStyle = C.em; g.lineWidth = 1.2; g.beginPath(); g.arc(x, y, 3, 0, 7); g.stroke(); g.restore(); }
+    seg(o.a, ECAL[0], ECAL[0] + 0.05 * o.e, fm, 9, C['lep-e'], 0.55);
+    seg(o.a, HCAL[0], HCAL[0] + (HCAL[1] - HCAL[0]) * o.e, fm, 7 + 10 * o.e, C.hcal, 0.85);
+  } else if (o.k === 'e') {
+    seg(o.a, 0, ECAL[0], fm, 1.8, col);
+    TL.forEach(f => { if (f <= fm) { const [x, y] = at(o.a, f); g.fillStyle = col; g.fillRect(x - 1.5, y - 1.5, 3, 3); } });
+    seg(o.a, ECAL[0], ECAL[0] + (ECAL[1] - ECAL[0]) * (0.5 + 0.5 * o.e), fm, 10, col, 0.9);
+  } else if (o.k === 'gam') {
+    seg(o.a, 0, ECAL[0], fm, 1.2, col, 0.55, [3, 4]);
+    seg(o.a, ECAL[0], ECAL[0] + (ECAL[1] - ECAL[0]) * (0.5 + 0.5 * o.e), fm, 10, col, 0.95);
+  } else if (o.k === 'mu') {
+    seg(o.a, 0, 1.0, fm, 1.8, col);
+    TL.forEach(f => { if (f <= fm) { const [x, y] = at(o.a, f); g.fillStyle = col; g.fillRect(x - 1.5, y - 1.5, 3, 3); } });
+    MU.forEach(([a, b]) => { const f = (a + b) / 2; if (f <= fm) { const [x, y] = at(o.a, f); g.fillStyle = col; g.fillRect(x - 3, y - 3, 6, 6); } });
+  } else if (o.k === 'nu') {
+    seg(o.a, 0, 0.98, fm, 1.4, col, 0.8, [5, 5]);
+    if (fm >= 0.98) {
+      const [x2, y2] = at(o.a, 1.0), [x1, y1] = at(o.a, 0.95), ang = Math.atan2(y2 - y1, x2 - x1);
+      g.save(); g.fillStyle = col; g.translate(x2, y2); g.rotate(ang); g.beginPath(); g.moveTo(0, 0); g.lineTo(-8, -4); g.lineTo(-8, 4); g.closePath(); g.fill(); g.restore();
+    }
+  }
+  if (p >= 1) {
+    const fl = { jet: 0.79, bjet: 0.79, e: 0.6, gam: 0.6, mu: 1.03, nu: 1.03 }[o.k];
+    let [x, y] = at(o.a, fl);
+    const right = Math.cos(o.a) >= 0;
+    g.save(); g.font = '500 11px "IBM Plex Mono", monospace'; g.fillStyle = col; g.textAlign = right ? 'left' : 'right';
+    g.textBaseline = o.up > 0 ? 'bottom' : 'top';
+    const txt = `${o.label} ${fmtE(o.pt)}`, tw = g.measureText(txt).width;
+    x = right ? Math.min(x + 4, W - tw - 6) : Math.max(x - 4, tw + 6);
+    y = Math.max(14, Math.min(H - 14, y));
+    g.fillText(txt, x, y); g.restore();
+  }
+}
+
+function drawPartons(ps, xc, hide, hl, alpha, side) {
+  const rx = Math.max(6, Math.min(14, W * 0.012)), ry = BY * 0.62;
+  g.save(); g.globalAlpha = alpha;
+  const gr = g.createRadialGradient(xc, cy, 0, xc, cy, ry);
+  gr.addColorStop(0, 'rgba(229,236,244,0.10)'); gr.addColorStop(1, 'rgba(229,236,244,0.02)');
+  g.fillStyle = gr; g.strokeStyle = 'rgba(229,236,244,0.35)'; g.lineWidth = 1;
+  g.beginPath(); g.ellipse(xc, cy, rx * 1.4, ry, 0, 0, 7); g.fill(); g.stroke();
+  g.font = '500 11px "IBM Plex Mono", monospace'; g.fillStyle = C.muted; g.textAlign = 'center';
+  g.fillText(`p  ${dec('6.8')} TeV`, xc, cy - ry - 8);
+  ps.forEach((p, k) => {
+    if (k === hide) return;
+    const x = xc + p.ox * rx, y = cy + p.oy * ry, r = 2.2 + 10 * Math.sqrt(p.x);
+    if (p.f === 'g') {
+      g.fillStyle = QCOL[p.c]; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill();
+      g.strokeStyle = QCOL[p.c2]; g.lineWidth = 1.8; g.beginPath(); g.arc(x, y, r + 1.4, 0, 7); g.stroke();
+    } else if (p.anti) {
+      g.fillStyle = '#0a1017'; g.strokeStyle = QCOL[p.c]; g.lineWidth = 2; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); g.stroke();
+    } else {
+      g.fillStyle = QCOL[p.c]; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill();
+    }
+    if (r > 4.5 || k === hl) {
+      g.fillStyle = C.ink; g.textAlign = side < 0 ? 'right' : 'left'; g.textBaseline = 'middle';
+      g.fillText(pname(p), x + side * (r + 5), y);
+    }
+    if (k === hl) {
+      g.strokeStyle = C.ink; g.lineWidth = 1; g.setLineDash([3, 3]);
+      g.beginPath(); g.arc(x, y, r + 6, 0, 7); g.stroke(); g.setLineDash([]);
+      g.fillStyle = C.ink; g.textAlign = side < 0 ? 'right' : 'left';
+      g.fillText(`x${side < 0 ? '₁' : '₂'} = ${p.x < 0.01 ? p.x.toFixed(4) : p.x.toFixed(2)}`, x + side * (r + 5), y + 16);
+    }
+  });
+  g.restore();
+}
+
+const T_A = 900, T_OUT = 1100;
+let anim = false;
+const ease = t => 1 - Math.pow(1 - t, 3);
+function draw(t) {
+  if (state.view === 'zoom') return drawZoom(t);
+  g.clearRect(0, 0, W, H);
+  drawDetector();
+  const ev = state.ev;
+  if (!ev) return;
+  const rx = Math.max(6, Math.min(14, W * 0.012));
+  const x0 = -rx * 2 - 40, v = (cx - x0) / T_A;
+  if (ev.P && t > T_A) {
+    const p = ease(Math.max(0, Math.min(1, (t - T_A - 60) / T_OUT)));
+    ev.outs.forEach(o => drawOut(o, p));
+  }
+  if (t < T_A) {
+    drawPartons(ev.A, x0 + v * t, -1, ev.P ? ev.i : -1, 1, -1);
+    drawPartons(ev.B, W - x0 - v * t, -1, ev.P ? ev.j : -1, 1, 1);
+  } else {
+    const dt = t - T_A, al = ev.P ? Math.max(0, 1 - dt / 650) : 1;
+    if (al > 0) {
+      drawPartons(ev.A, cx + v * dt, ev.P ? ev.i : -1, -1, al, -1);
+      drawPartons(ev.B, cx - v * dt, ev.P ? ev.j : -1, -1, al, 1);
+    }
+    if (ev.P && dt < 500) {
+      const k = dt / 500, R = 10 + 70 * k;
+      const gr = g.createRadialGradient(cx, cy, 0, cx, cy, R);
+      gr.addColorStop(0, `rgba(255,248,230,${0.95 * (1 - k)})`); gr.addColorStop(0.35, `rgba(255,170,90,${0.6 * (1 - k)})`); gr.addColorStop(1, 'rgba(255,120,60,0)');
+      g.fillStyle = gr; g.beginPath(); g.arc(cx, cy, R, 0, 7); g.fill();
+    }
+  }
+}
+function endTime(ev) { return ev.P ? T_A + 1900 : 2 * T_A + 200; }
+function frame(now) {
+  const ev = state.ev, t = now - state.t0;
+  if (!ev.shown && t >= T_A) { ev.shown = true; showEvent(ev); }
+  draw(t);
+  if (t < endTime(ev)) requestAnimationFrame(frame); else anim = false;
+}
+const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+
+/* ---------- interaction (zoom) view ---------- */
+// A pictorial close-up: partons as balls, propagators as Feynman lines, jets hadronising into sprays.
+const ZK = { jet: 'jet', bjet: 'jet', e: 'lep', mu: 'lep', gam: 'a', nu: 'nu' };
+const HAD = ['#cfe0ff', '#9fb4d0', '#ffb08a', '#ffd98a', '#9fe0c0'];
+const hadrons = o => [...Array(8 + Math.round(8 * o.e))].map(() => ({ da: randn() * 0.14, sp: rnd(0.65, 1.05), c: pick(HAD), r: rnd(1.6, 3.2) }));
+function buildZoom(ev) {
+  const Z = { segs: [], loops: [], verts: [], inA: [0, 0], inB: [0, 0] }, d = ev.diag;
+  const seg = (kind, a, b, t0, t1, x = {}) => Z.segs.push(Object.assign({ kind, a, b, t0, t1 }, x));
+  const dir = (a, len, from) => [from[0] + Math.cos(a) * len, from[1] - Math.sin(a) * len];
+  const outFrom = (o, from, t0, len = 1) => seg(ZK[o.k], from, dir(o.a, len, from), t0, t0 + 900, { o, had: ZK[o.k] === 'jet' ? hadrons(o) : null });
+  const mean = os => Math.atan2(os.reduce((s, o) => s + Math.sin(o.a), 0), os.reduce((s, o) => s + Math.cos(o.a), 0));
+  const pa = ev.A[ev.i], pb = ev.B[ev.j];
+  const inc = (p, from, to) => seg(pkind(p), from, to, -T_A, 0, { col: p.f === 'g' ? null : QCOL[p.c], label: pname(p) });
+  const sg = ev.y0 >= 0 ? 1 : -1;
+  if (d.topo === 't') {
+    const vA = [0, -0.13], vB = [0, 0.13]; Z.inA = vA; Z.inB = vB;
+    inc(pa, [-2.4, vA[1]], vA); inc(pb, [2.4, vB[1]], vB);
+    seg(d.p[0], vA, vB, 0, 160, { label: d.p[1] });
+    Z.verts.push({ p: vA, t: 0 }, { p: vB, t: 0 });
+    outFrom(ev.outs[0], vA, 160); outFrom(ev.outs[1], vB, 160);
+  } else if (d.topo === 's') {
+    const v1 = [0, 0], v2 = [sg * 0.26, 0];
+    inc(pa, [-2.4, 0], v1); inc(pb, [2.4, 0], v1);
+    seg(d.p[0], v1, v2, 0, 260, { label: d.p[0] === 'g' ? 'g*' : d.p[1] });
+    Z.verts.push({ p: v1, t: 0 }, { p: v2, t: 260 });
+    if (ev.P.id === 'tt') {
+      [1, -1].forEach(up => {
+        const os = ev.outs.filter(o => o.up === up), w = os.slice(1), vt = dir(mean(os), 0.3, v2), vw = dir(mean(w), 0.22, vt);
+        seg('top', v2, vt, 260, 560, { label: up > 0 ? 't' : 't̄', anti: up < 0 });
+        seg('W', vt, vw, 560, 740, { label: up > 0 ? 'W⁺' : 'W⁻' });
+        Z.verts.push({ p: vt, t: 560 }, { p: vw, t: 740 });
+        outFrom(os[0], vt, 560, 0.8);
+        w.forEach(o => outFrom(o, vw, 740, 0.62));
+      });
+    } else ev.outs.forEach(o => outFrom(o, v2, 260));
+  } else {
+    const v2 = [sg * 0.34, 0];
+    inc(pa, [-2.4, 0], [-0.07, 0]); inc(pb, [2.4, 0], [0.07, 0]);
+    Z.loops.push({ c: [0, 0], r: 0.07, t: 0, label: 't' });
+    seg('h', [sg * 0.07, 0], v2, 0, 300, { label: 'H' });
+    if (d.topo === 'hgg') {
+      Z.loops.push({ c: v2, r: 0.045, t: 300, blob: true });
+      ev.outs.forEach(o => outFrom(o, v2, 300));
+    } else {
+      Z.verts.push({ p: v2, t: 300 });
+      [1, -1].forEach((up, k) => {
+        const os = ev.outs.filter(o => o.up === up), vz = dir(mean(os), 0.24, v2);
+        seg('Z', v2, vz, 300, 470, { label: k ? 'Z*' : 'Z' });
+        Z.verts.push({ p: vz, t: 470 });
+        os.forEach(o => outFrom(o, vz, 470, 0.72));
+      });
+    }
+  }
+  return Z;
+}
+function polyline(pts) { g.beginPath(); g.moveTo(pts[0][0], pts[0][1]); for (let k = 1; k < pts.length; k++) g.lineTo(pts[k][0], pts[k][1]); g.stroke(); }
+function wavyC(x1, y1, x2, y2, amp, lam, ph) {
+  const dx = x2 - x1, dy = y2 - y1, L = Math.hypot(dx, dy); if (L < 1) return;
+  const ux = dx / L, uy = dy / L, n = Math.max(4, Math.ceil(L / 2)), pts = [];
+  for (let k = 0; k <= n; k++) {
+    const s = L * k / n, o = amp * Math.min(1, s / 8, (L - s) / 8) * Math.sin(2 * Math.PI * s / lam - ph);
+    pts.push([x1 + ux * s - uy * o, y1 + uy * s + ux * o]);
+  }
+  polyline(pts);
+}
+function curlyC(x1, y1, x2, y2, d, lam) {
+  const dx = x2 - x1, dy = y2 - y1, L = Math.hypot(dx, dy); if (L < 2) return;
+  const ux = dx / L, uy = dy / L, N = Math.max(2, Math.round(L / lam)), r = L / (2 * Math.PI * N), pts = [];
+  for (let ph = 0; ph <= 2 * Math.PI * N + 1e-6; ph += 0.2) {
+    const s = ph / (2 * Math.PI * N), ramp = Math.min(1, s * N, (1 - s) * N);
+    const al = r * ph - d * Math.sin(ph), pe = d * (1 - Math.cos(ph)) - d * ramp;
+    pts.push([x1 + ux * al - uy * pe, y1 + uy * al + ux * pe]);
+  }
+  pts.push([x2, y2]); polyline(pts);
+}
+function arrowC(x1, y1, x2, y2, col, rev) {
+  const L = Math.hypot(x2 - x1, y2 - y1); if (L < 24) return;
+  const sg = rev ? -1 : 1, ux = (x2 - x1) / L * sg, uy = (y2 - y1) / L * sg, mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+  g.fillStyle = col; g.beginPath(); g.moveTo(mx + ux * 6, my + uy * 6);
+  g.lineTo(mx - ux * 4 - uy * 5, my - uy * 4 + ux * 5); g.lineTo(mx - ux * 4 + uy * 5, my - uy * 4 - ux * 5); g.closePath(); g.fill();
+}
+function ball(x, y, r, col, alpha = 1) {
+  g.save(); g.globalAlpha *= alpha; g.shadowColor = col; g.shadowBlur = 10; g.fillStyle = col;
+  g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); g.restore();
+}
+function zText(txt, x, y, col, align = 'center') {
+  g.save(); g.font = '500 12px "IBM Plex Mono", monospace'; g.fillStyle = col; g.textAlign = align; g.textBaseline = 'middle';
+  const w = g.measureText(txt).width, lo = align === 'center' ? w / 2 + 4 : 4;
+  x = Math.max(lo, Math.min(W - lo, x)); y = Math.max(10, Math.min(H - 10, y));
+  g.fillText(txt, x, y); g.restore();
+}
+function zSeg(s, tau, S, t) {
+  const f = Math.max(0, Math.min(1, (tau - s.t0) / (s.t1 - s.t0))); if (f <= 0) return;
+  const e = s.t0 < 0 ? f : 1 - (1 - f) * (1 - f);
+  const ax = cx + s.a[0] * S, ay = cy + s.a[1] * S, fx = (s.b[0] - s.a[0]) * S, fy = (s.b[1] - s.a[1]) * S;
+  const bx = ax + fx * e, by = ay + fy * e, k = s.kind;
+  g.save(); g.lineCap = 'round'; g.lineJoin = 'round';
+  if (k === 'q' || k === 'qb' || k === 'top') {
+    const col = s.col || C.ink; g.strokeStyle = col; g.lineWidth = k === 'top' ? 3.2 : 2;
+    g.beginPath(); g.moveTo(ax, ay); g.lineTo(bx, by); g.stroke();
+    arrowC(ax, ay, bx, by, col, k === 'qb' || s.anti);
+  } else if (k === 'g') {
+    g.strokeStyle = C.strong; g.lineWidth = 1.8; curlyC(ax, ay, bx, by, Math.max(3.5, S * 0.018), Math.max(8, S * 0.04));
+  } else if (k === 'a') {
+    g.strokeStyle = C.em; g.lineWidth = 1.8; wavyC(ax, ay, bx, by, Math.max(3.5, S * 0.016), Math.max(10, S * 0.05), t * 0.012);
+    if (s.o) ball(bx, by, 3.5, C.em);
+  } else if (k === 'W' || k === 'Z') {
+    g.strokeStyle = C.weak; g.lineWidth = 2.2; wavyC(ax, ay, bx, by, Math.max(4, S * 0.02), Math.max(12, S * 0.06), t * 0.012);
+  } else if (k === 'h') {
+    g.strokeStyle = C.higgs; g.lineWidth = 2.4; g.setLineDash([7, 5]); g.lineDashOffset = -t * 0.03;
+    g.beginPath(); g.moveTo(ax, ay); g.lineTo(bx, by); g.stroke();
+  } else if (k === 'lep') {
+    const col = OCOL(s.o.k); g.strokeStyle = col; g.lineWidth = 2;
+    g.beginPath(); g.moveTo(ax, ay); g.lineTo(bx, by); g.stroke();
+    arrowC(ax, ay, bx, by, col, s.o.label.includes('⁺')); ball(bx, by, 5, col);
+  } else if (k === 'nu') {
+    g.strokeStyle = C.nu; g.lineWidth = 1.5; g.setLineDash([4, 5]);
+    g.beginPath(); g.moveTo(ax, ay); g.lineTo(bx, by); g.stroke(); g.setLineDash([]);
+    g.beginPath(); g.arc(bx, by, 5, 0, 7); g.stroke();
+  } else if (k === 'jet') {
+    const full = Math.hypot(fx, fy), ux = fx / full, uy = fy / full, cut = 0.3, qL = full * Math.min(e, cut);
+    g.strokeStyle = C.jet; g.lineWidth = 2;
+    g.beginPath(); g.moveTo(ax, ay); g.lineTo(ax + ux * qL, ay + uy * qL); g.stroke();
+    if (e > cut) {
+      const ang = Math.atan2(uy, ux), sp = (e - cut) / (1 - cut);
+      g.save(); g.globalAlpha = 0.07; g.fillStyle = C.jet; g.beginPath(); g.moveTo(ax + ux * full * cut, ay + uy * full * cut);
+      g.arc(ax, ay, full * e, ang - 0.3 * sp, ang + 0.3 * sp); g.closePath(); g.fill(); g.restore();
+      s.had.forEach(h => { const dd = full * (cut + (e - cut) * h.sp), a2 = ang + h.da * sp; ball(ax + Math.cos(a2) * dd, ay + Math.sin(a2) * dd, h.r, h.c, 0.95); });
+    } else ball(ax + ux * qL, ay + uy * qL, 3.5, C.jet);
+  }
+  g.restore();
+  if (s.label && f > 0.4 && s.t0 >= 0) {
+    const len = Math.hypot(bx - ax, by - ay) || 1, nx = -(by - ay) / len, ny = (bx - ax) / len;
+    zText(s.label, (ax + bx) / 2 + nx * 16, (ay + by) / 2 + ny * 16, C.ink);
+  }
+  if (s.o && f >= 1) {
+    const len = Math.hypot(fx, fy) || 1;
+    zText(s.o.label + (s.o.k === 'nu' ? L(' (unseen)', ' (invisible)') : ''), bx + fx / len * 20, by + fy / len * 20, OCOL(s.o.k));
+  }
+}
+function zProton(ps, xu, coll, collY, hide, alpha, side, S) {
+  const xc = cx + xu * S, rx = Math.max(8, 0.07 * S), ry = 0.95 * S;
+  if (xc < -rx * 3 - 80 || xc > W + rx * 3 + 80) return;
+  g.save(); g.globalAlpha = alpha;
+  const gr = g.createRadialGradient(xc, cy, 0, xc, cy, ry);
+  gr.addColorStop(0, 'rgba(229,236,244,0.10)'); gr.addColorStop(1, 'rgba(229,236,244,0.02)');
+  g.fillStyle = gr; g.strokeStyle = 'rgba(229,236,244,0.35)'; g.lineWidth = 1;
+  g.beginPath(); g.ellipse(xc, cy, rx * 1.6, ry, 0, 0, 7); g.fill(); g.stroke();
+  const pos = ps.map((p, k) => [xc + p.ox * rx, k === coll ? cy + collY * S : cy + p.oy * ry]);
+  const ord = ps.map((_, k) => k).filter(k => !(hide && k === coll)).sort((a, b) => pos[a][1] - pos[b][1]);
+  g.globalAlpha = alpha * 0.45; g.strokeStyle = C.strong; g.lineWidth = 1.2;
+  for (let k = 1; k < ord.length; k++) { const [x1, y1] = pos[ord[k - 1]], [x2, y2] = pos[ord[k]]; curlyC(x1, y1, x2, y2, 2.4, 7); }
+  g.globalAlpha = alpha;
+  g.font = '500 12px "IBM Plex Mono", monospace';
+  ps.forEach((p, k) => {
+    if (hide && k === coll) return;
+    const [x, y] = pos[k], r = 3 + 14 * Math.sqrt(p.x);
+    if (p.f === 'g') {
+      g.fillStyle = QCOL[p.c]; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill();
+      g.strokeStyle = QCOL[p.c2]; g.lineWidth = 2.2; g.beginPath(); g.arc(x, y, r + 1.6, 0, 7); g.stroke();
+    } else if (p.anti) {
+      g.fillStyle = '#0a1017'; g.strokeStyle = QCOL[p.c]; g.lineWidth = 2.4; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); g.stroke();
+    } else { g.fillStyle = QCOL[p.c]; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); }
+    g.fillStyle = C.ink; g.textAlign = side < 0 ? 'right' : 'left'; g.textBaseline = 'middle';
+    g.fillText(pname(p), x + side * (r + 6), y);
+    if (k === coll) {
+      g.strokeStyle = C.ink; g.lineWidth = 1; g.setLineDash([3, 3]); g.beginPath(); g.arc(x, y, r + 7, 0, 7); g.stroke(); g.setLineDash([]);
+      g.fillText(`x${side < 0 ? '₁' : '₂'} = ${p.x < 0.01 ? p.x.toFixed(4) : p.x.toFixed(2)}`, x + side * (r + 6), y + 17);
+    }
+  });
+  g.fillStyle = C.muted; g.textAlign = 'center'; g.textBaseline = 'alphabetic';
+  g.fillText(L('proton', 'protón'), xc, cy - ry - 10);
+  g.restore();
+}
+function drawZoom(t) {
+  g.clearRect(0, 0, W, H);
+  const ev = state.ev; if (!ev) return;
+  const S = Math.min(W, H) * 0.4, tau = t - T_A, v = 2.4 / T_A;
+  const Z = ev.P ? (ev.zoom || (ev.zoom = buildZoom(ev))) : null;
+  const ci = ev.P ? ev.i : -1, cj = ev.P ? ev.j : -1, yA = Z ? Z.inA[1] : 0, yB = Z ? Z.inB[1] : 0;
+  g.save(); g.strokeStyle = C.faint; g.globalAlpha = 0.5; g.setLineDash([2, 5]);
+  g.beginPath(); g.moveTo(0, cy); g.lineTo(W, cy); g.stroke(); g.restore();
+  if (Z) Z.segs.forEach(s => zSeg(s, tau, S, t));
+  if (tau < 0) {
+    zProton(ev.A, -2.4 + v * t, ci, yA, false, 1, -1, S);
+    zProton(ev.B, 2.4 - v * t, cj, yB, false, 1, 1, S);
+  } else {
+    const al = ev.P ? Math.max(0, 1 - tau / 1100) : 1;
+    if (al > 0) { zProton(ev.A, v * tau, ci, yA, !!ev.P, al, -1, S); zProton(ev.B, -v * tau, cj, yB, !!ev.P, al, 1, S); }
+  }
+  if (Z) {
+    Z.loops.forEach(L => {
+      if (tau < L.t) return;
+      const x = cx + L.c[0] * S, y = cy + L.c[1] * S, r = Math.max(7, L.r * S);
+      g.save(); g.lineWidth = 2;
+      if (L.blob) { g.fillStyle = '#142030'; g.strokeStyle = C.higgs; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); g.stroke(); }
+      else { g.strokeStyle = C.ink; g.beginPath(); g.arc(x, y, r, 0, 7); g.stroke(); arrowC(x - 20, y - r, x + 20, y - r, C.ink); zText(L.label, x, y - r - 12, C.ink); }
+      g.restore();
+    });
+    Z.verts.forEach(V => { if (tau >= V.t) ball(cx + V.p[0] * S, cy + V.p[1] * S, 3.5, C.ink); });
+    if (tau >= 0 && tau < 450) {
+      const k = tau / 450, R = S * (0.05 + 0.3 * k);
+      const gr = g.createRadialGradient(cx, cy, 0, cx, cy, R);
+      gr.addColorStop(0, `rgba(255,248,230,${0.9 * (1 - k)})`); gr.addColorStop(0.4, `rgba(255,170,90,${0.45 * (1 - k)})`); gr.addColorStop(1, 'rgba(255,120,60,0)');
+      g.fillStyle = gr; g.beginPath(); g.arc(cx, cy, R, 0, 7); g.fill();
+    }
+  }
+  g.save(); g.font = '500 11px "IBM Plex Mono", monospace'; g.fillStyle = C.muted; g.textAlign = 'left';
+  g.fillText(W > 520 ? L('Interaction view · pictorial, not to scale', 'Vista de la interacción · ilustrativa, no está a escala') : L('Interaction view', 'Vista de la interacción'), 12, H - 30);
+  if (ev.P) g.fillText(`${L('probes', 'resuelve')} ≈ ħc/√ŝ ≈ ${sci(0.1973 / ev.rs)} fm${W > 520 ? L('  (a proton is ≈ 1.7 fm)', '  (un protón mide ≈ 1,7 fm)') : ''}`, 12, H - 14);
+  g.restore();
+}
+
+
+/* ---------- Feynman diagrams ---------- */
+function fline(kind, [x1, y1], [x2, y2]) {
+  const dx = x2 - x1, dy = y2 - y1, L = Math.hypot(dx, dy), ux = dx / L, uy = dy / L, nx = -uy, ny = ux;
+  const P = (s, o) => `${(x1 + ux * s + nx * o).toFixed(1)},${(y1 + uy * s + ny * o).toFixed(1)}`;
+  if (kind === 'q' || kind === 'qb') {
+    const d = kind === 'q' ? 1 : -1, mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+    const tip = [mx + ux * d * 5, my + uy * d * 5], b = [mx - ux * d * 4, my - uy * d * 4];
+    return `<line class="fd-f" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/><path class="fd-ar" d="M${tip[0].toFixed(1)},${tip[1].toFixed(1)} L${(b[0] + nx * 4).toFixed(1)},${(b[1] + ny * 4).toFixed(1)} L${(b[0] - nx * 4).toFixed(1)},${(b[1] - ny * 4).toFixed(1)} Z"/>`;
+  }
+  if (kind === 'h') return `<line class="fd-h" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
+  if (kind === 'g') {
+    const N = Math.max(3, Math.round(L / 9)), r = L / (2 * Math.PI * N), d = 3.6, pts = [];
+    for (let ph = 0; ph <= 2 * Math.PI * N + 1e-6; ph += 0.15) {
+      const s = ph / (2 * Math.PI * N), ramp = Math.min(1, s * N, (1 - s) * N);
+      pts.push(P(r * ph - d * Math.sin(ph), d * (1 - Math.cos(ph)) - d * ramp));
+    }
+    pts.push(P(L, 0));
+    return `<path class="fd-g" d="M${pts.join(' L')}"/>`;
+  }
+  const N = Math.max(3, Math.round(L / 7)), pts = [];
+  for (let s = 0; s <= L; s += 1.2) pts.push(P(s, 3.6 * Math.sin(Math.PI * N * s / L)));
+  pts.push(P(L, 0));
+  return `<path class="${kind === 'a' ? 'fd-a' : 'fd-w'}" d="M${pts.join(' L')}"/>`;
+}
+const T = (x, y, s, anchor = 'middle', cls = 'fd-t') => `<text class="${cls}" x="${x}" y="${y}" text-anchor="${anchor}" dominant-baseline="middle">${s}</text>`;
+const V = ([x, y]) => `<circle class="fd-v" cx="${x}" cy="${y}" r="2.6"/>`;
+function diagramSVG(d) {
+  const A = [34, 24], B = [34, 136], Cc = [246, 24], D = [246, 136];
+  let s = '';
+  if (d.topo === 's') {
+    const v1 = [100, 80], v2 = [180, 80];
+    s += fline(d.i[0][0], A, v1) + fline(d.i[1][0], B, v1) + fline(d.p[0], v1, v2) + fline(d.o[0][0], v2, Cc) + fline(d.o[1][0], v2, D);
+    s += V(v1) + V(v2) + T(140, 62, d.p[1], 'middle', 'fd-tp');
+  } else if (d.topo === 't') {
+    const v1 = [140, 42], v2 = [140, 118];
+    s += fline(d.i[0][0], A, v1) + fline(d.o[0][0], v1, Cc) + fline(d.i[1][0], B, v2) + fline(d.o[1][0], v2, D) + fline(d.p[0], v1, v2);
+    s += V(v1) + V(v2) + T(156, 80, d.p[1], 'start', 'fd-tp');
+  } else if (d.topo === 'hgg' || d.topo === 'h4l') {
+    const ta = [92, 50], tb = [92, 110], tc = [130, 80], v2 = [190, 80];
+    s += fline('g', A, ta) + fline('g', B, tb) + fline('q', ta, tc) + fline('q', tc, tb) + fline('q', tb, ta) + fline('h', tc, v2);
+    s += V(ta) + V(tb) + V(tc) + T(80, 80, 't', 'middle', 'fd-tp') + T(160, 68, 'H', 'middle', 'fd-tp');
+    s += T(26, A[1], 'g', 'end') + T(26, B[1], 'g', 'end');
+    if (d.topo === 'hgg') {
+      s += fline('a', [198, 74], Cc) + fline('a', [198, 86], D) + `<circle class="fd-blob" cx="${v2[0] + 4}" cy="80" r="9"/>`;
+      s += T(254, Cc[1], 'γ', 'start') + T(254, D[1], 'γ', 'start');
+    } else {
+      const z1 = [222, 44], z2 = [222, 116];
+      s += fline('W', v2, z1) + fline('W', v2, z2) + V(v2) + V(z1) + V(z2);
+      s += fline('q', z1, [258, 18]) + fline('qb', z1, [258, 62]) + fline('q', z2, [258, 98]) + fline('qb', z2, [258, 142]);
+      s += T(196, 52, 'Z', 'middle', 'fd-tp') + T(196, 108, 'Z*', 'middle', 'fd-tp');
+      const l = k => LAB[k];
+      s += T(264, 18, l(d.l[0])[0], 'start') + T(264, 62, l(d.l[0])[1], 'start') + T(264, 98, l(d.l[1])[0], 'start') + T(264, 142, l(d.l[1])[1], 'start');
+    }
+    return `<svg viewBox="0 0 290 160" role="img" aria-label="Feynman diagram">${s}</svg>`;
+  }
+  s += T(26, A[1], d.i[0][1], 'end') + T(26, B[1], d.i[1][1], 'end') + T(254, Cc[1], d.o[0][1], 'start') + T(254, D[1], d.o[1][1], 'start');
+  return `<svg viewBox="0 0 290 160" role="img" aria-label="Feynman diagram">${s}</svg>`;
+}
+
+/* ---------- UI ---------- */
+const $ = id => document.getElementById(id);
+const fmtE = v => v >= 1000 ? `${dec((v / 1000).toFixed(2))} TeV` : `${Math.round(v)} GeV`;
+const fmtX = x => x < 0.01 ? x.toExponential(1).replace('e-', '×10⁻').replace(/⁻(\d)/, (m, d) => '⁻' + '⁰¹²³⁴⁵⁶⁷⁸⁹'[d]) : dec(x.toFixed(3));
+const SQ = { jet: 'var(--hcal)', bjet: 'var(--hcal)', e: 'var(--lep-e)', mu: 'var(--lep-mu)', gam: 'var(--em)', nu: 'var(--nu)' };
+
+function showEvent(ev) {
+  $('sx1').textContent = fmtX(ev.x1); $('sx2').textContent = fmtX(ev.x2); $('sss').textContent = fmtE(ev.rs);
+  if (!ev.P) {
+    $('evName').textContent = L('No interaction', 'Sin interacción');
+    $('evRxn').textContent = 'p p → p p';
+    $('evDiag').innerHTML = `<div class="empty">${L('No force is switched on, so there is no vertex to draw.', 'No hay ninguna fuerza prendida, así que no hay vértice para dibujar.')}</div>`;
+    $('evBlurb').textContent = L('With every force off, nothing can couple to anything. The two protons pass straight through each other.', 'Con todas las fuerzas apagadas, nada se acopla con nada. Los dos protones se atraviesan sin tocarse.');
+    $('evObjs').innerHTML = ''; $('evNote').hidden = true;
+  } else {
+    $('evName').textContent = nm(ev.P);
+    $('evRxn').textContent = ev.rxn;
+    $('evDiag').innerHTML = diagramSVG(ev.diag);
+    $('evBlurb').textContent = bl(ev.P);
+    $('evObjs').innerHTML = ev.outs.map(o => `<li><span class="sq" style="background:${SQ[o.k]}"></span><span>${o.k === 'nu' ? o.label + L(' (missing)', ' (faltante)') : o.label}</span><span class="v">p<sub>T</sub> ≈ ${fmtE(o.pt)}</span></li>`).join('');
+    $('evNote').textContent = ev.note(); $('evNote').hidden = false;
+  }
+  renderGrid();
+  renderHists();
+}
+
+function tally(ev) {
+  state.total++;
+  if (ev.P) { if (!state.counts[ev.P.id]) state.lastNew = ev.P.id; state.counts[ev.P.id]++; fillHist(ev.fill); }
+}
+
+/* ---------- histogram rendering ---------- */
+const HW = 340, HHt = 190, HM = { l: 38, r: 8, t: 14, b: 32 };
+const kfmt = v => v >= 1000 ? `${+(v / 1000).toFixed(1)}k` : `${+v.toFixed(0)}`;
+function niceStep(range, n) { const raw = range / n, p = 10 ** Math.floor(Math.log10(raw)); return [1, 2, 2.5, 5, 10].map(f => f * p).find(s => s >= raw); }
+function xTicks(H) {
+  if (H.log) { const t = []; for (let e = 0; e <= 5; e++) [1, 2, 5].forEach(f => { const v = f * 10 ** e; if (v >= H.lo && v <= H.hi) t.push([v, f === 1]); }); return t; }
+  const s = niceStep(H.hi - H.lo, 5), t = [];
+  for (let v = Math.ceil(H.lo / s) * s; v <= H.hi + 1e-9; v += s) t.push([v, true]);
+  return t;
+}
+function renderHist(H) {
+  const d = hdata[H.id], pw = HW - HM.l - HM.r, ph = HHt - HM.t - HM.b;
+  const tot = [...Array(H.nb)].map((_, k) => H.ser.reduce((s, [sid]) => s + d[sid][k], 0));
+  const N = tot.reduce((a, b) => a + b, 0), max = Math.max(1, ...tot);
+  const X = m => HM.l + pw * (H.log ? Math.log(m / H.lo) / Math.log(H.hi / H.lo) : (m - H.lo) / (H.hi - H.lo));
+  let yTop, Y, yt = [];
+  if (state.logy) {
+    yTop = 10 ** Math.max(1, Math.ceil(Math.log10(max * 1.3)));
+    Y = v => HM.t + ph * (1 - Math.log10(Math.max(v, 0.5) / 0.5) / Math.log10(yTop / 0.5));
+    for (let v = 1; v <= yTop; v *= 10) yt.push(v);
+  } else {
+    const s = niceStep(max * 1.1, 4); yTop = Math.ceil(max * 1.1 / s) * s;
+    Y = v => HM.t + ph * (1 - v / yTop);
+    for (let v = 0; v <= yTop + 1e-9; v += s) yt.push(v);
+  }
+  let s = '';
+  yt.forEach(v => { const y = Y(v).toFixed(1); s += `<line class="grid-l" x1="${HM.l}" x2="${HW - HM.r}" y1="${y}" y2="${y}"/><text class="tk" x="${HM.l - 5}" y="${y}" text-anchor="end" dominant-baseline="middle">${kfmt(v)}</text>`; });
+  for (let k = 0; k < H.nb; k++) {
+    const x0 = X(edge(H, k)), x1 = X(edge(H, k + 1));
+    let acc = 0;
+    H.ser.forEach(([sid, , col]) => {
+      const c = d[sid][k]; if (!c) return;
+      const yb = Y(acc), yt2 = Y(acc + c); acc += c;
+      s += `<rect class="bar" x="${x0.toFixed(1)}" y="${yt2.toFixed(1)}" width="${Math.max(0.5, x1 - x0).toFixed(1)}" height="${Math.max(0, yb - yt2).toFixed(1)}" fill="var(${col})"/>`;
+    });
+  }
+  s += `<line class="ax" x1="${HM.l}" x2="${HW - HM.r}" y1="${HM.t + ph}" y2="${HM.t + ph}"/>`;
+  xTicks(H).forEach(([v, lab]) => {
+    const x = X(v).toFixed(1);
+    s += `<line class="ax" x1="${x}" x2="${x}" y1="${HM.t + ph}" y2="${HM.t + ph + (lab ? 4 : 2)}"/>`;
+    if (lab) s += `<text class="tk" x="${x}" y="${HM.t + ph + 14}" text-anchor="middle">${kfmt(v)}</text>`;
+  });
+  s += `<text class="axl" x="${HW - HM.r}" y="${HHt - 2}" text-anchor="end">${H.ax} [GeV]</text>`;
+  s += `<text class="axl" x="${HM.l - 30}" y="${HM.t - 4}">${L('Events', 'Eventos')}</text>`;
+  if (d.last >= 0 && tot[d.last]) {
+    const xm = (X(edge(H, d.last)) + X(edge(H, d.last + 1))) / 2, ym = Y(tot[d.last]) - 3;
+    s += `<path class="last-mk" d="M${xm - 4},${ym - 6} L${xm + 4},${ym - 6} L${xm},${ym} Z"/>`;
+  }
+  if (!N) {
+    s += `<text class="empty-t" x="${HM.l + pw / 2}" y="${HM.t + ph / 2}" text-anchor="middle">${L('No entries yet', 'Todavía no hay entradas')}</text>`;
+  }
+  for (let k = 0; k < H.nb; k++) {
+    const x0 = X(edge(H, k)), x1 = X(edge(H, k + 1));
+    s += `<rect class="hit" data-h="${H.id}" data-k="${k}" x="${x0.toFixed(1)}" y="${HM.t}" width="${(x1 - x0).toFixed(1)}" height="${ph}"/>`;
+  }
+  const hl = hx(H), legend = H.ser.length > 1 ? H.ser.map(([, , col], q) => `<span><i style="background:var(${col})"></i>${hl.ser[q]}</span>`).join('') : '';
+  return `<div class="hc"><div class="hc-top"><h3>${hl.title}<span>${H.ax}</span></h3><span class="hc-n">${N.toLocaleString(LOC())} ${L('entries', 'entradas')}</span></div>
+    <div class="hc-legend">${legend}</div>
+    <svg viewBox="0 0 ${HW} ${HHt}" role="img" aria-label="${hl.title}: ${N}">${s}</svg>
+    <p class="cap">${hl.cap}</p></div>`;
+}
+function renderHists() { $('hgrid').innerHTML = HISTS.map(renderHist).join(''); }
+
+const tip = $('tip');
+$('hgrid').addEventListener('pointermove', e => {
+  const r = e.target.closest('.hit');
+  if (!r) { tip.hidden = true; return; }
+  const H = HISTS.find(x => x.id === r.dataset.h), k = +r.dataset.k, d = hdata[H.id];
+  const a = edge(H, k), b = edge(H, k + 1), f = v => v >= 1000 ? `${(v / 1000).toFixed(2)}k` : v.toFixed(v < 100 ? 1 : 0);
+  tip.innerHTML = `<div>${H.ax} ${f(a)}–${f(b)} GeV</div>` + H.ser.map(([sid, , col], q) => `<div><i style="background:var(${col})"></i>${hx(H).ser[q]}: ${d[sid][k]}</div>`).join('') + (d.last === k ? `<div>▼ ${L('latest event', 'último evento')}</div>` : '');
+  tip.hidden = false;
+  const tw = tip.offsetWidth, th = tip.offsetHeight;
+  tip.style.left = Math.min(window.innerWidth - tw - 8, e.clientX + 12) + 'px';
+  tip.style.top = Math.max(8, e.clientY - th - 12) + 'px';
+});
+$('hgrid').addEventListener('pointerleave', () => { tip.hidden = true; });
+$('logy').addEventListener('click', () => { state.logy = !state.logy; $('logy').setAttribute('aria-pressed', String(state.logy)); renderHists(); });
+$('clearH').addEventListener('click', () => { clearHists(); renderHists(); });
+function play() {
+  const ev = generateEvent(true); tally(ev);
+  state.ev = ev;
+  $('readout').innerHTML = `${L('event', 'evento')} <b>#${state.total.toLocaleString(LOC())}</b><br>√ŝ <b>${fmtE(ev.rs)}</b>`;
+  if (reduced.matches) { ev.shown = true; showEvent(ev); draw(1e9); return; }
+  state.t0 = performance.now();
+  if (!anim) { anim = true; requestAnimationFrame(frame); }
+  renderCounts();
+}
+const setBusy = b => document.querySelectorAll('[data-n]').forEach(x => { x.disabled = b; });
+function collide(n = 1) {
+  if (state.busy) return;
+  if (n <= 1) return play();
+  let left = n - 1;
+  state.busy = true; setBusy(true);
+  const step = () => {
+    const k = Math.min(5000, left);
+    for (let q = 0; q < k; q++) tally(generateEvent(false));
+    left -= k;
+    if (left > 0) {
+      $('readout').innerHTML = `${L('firing', 'disparando')} <b>${(n - 1 - left).toLocaleString(LOC())}</b> / ${n.toLocaleString(LOC())}`;
+      renderCounts(); renderHists(); setTimeout(step, 0);
+    } else { state.busy = false; setBusy(false); play(); }
+  };
+  step();
+}
+function userCollide(n) {
+  if (!state.touched) { state.touched = true; $('hint').hidden = true; }
+  collide(n);
+}
+
+function renderCounts() {
+  const found = PROCS.filter(P => state.counts[P.id] > 0).length;
+  $('foundN').textContent = `${found} / ${PROCS.length}`;
+  $('totN').textContent = state.total.toLocaleString(LOC());
+}
+function renderGrid() {
+  $('grid').innerHTML = PROCS.map(P => {
+    const n = state.counts[P.id], f = n > 0;
+    const share = state.total ? (100 * n / state.total) : 0;
+    return `<li class="pc${f ? ' found' : ''}${state.lastNew === P.id ? ' new' : ''}">
+      <div class="pc-top"><span class="pc-name">${f ? nm(P) : L('Not yet seen', 'Todavía no visto')}</span><span class="pc-n">${f ? `×${n.toLocaleString(LOC())} · ${share < 0.1 ? share.toFixed(2) : share.toFixed(1)}%` : ''}</span></div>
+      <div class="pc-rxn">${f ? P.rxn : '? ? → ?'}</div>
+      <div class="chips">${P.needs.map(k => `<span class="chip c-${k}">${fnm(k)}</span>`).join('')}</div></li>`;
+  }).join('');
+  state.lastNew = null;
+  renderCounts();
+}
+
+function setForce(k, on) {
+  state.forces[k] = on;
+  $('f' + k).setAttribute('aria-checked', String(on));
+  $('forceNote').hidden = state.forces.S;
+}
+['S', 'EM', 'W'].forEach(k => $('f' + k).addEventListener('click', () => setForce(k, !state.forces[k])));
+
+const MODE_NOTE = {
+  show: 'Showcase evens out the rates so every process turns up within a few dozen clicks.',
+  lhc: 'LHC-like weights each process by its rough cross-section. Almost everything is jets: a Higgs decaying to two photons turns up less than once in a million hard collisions, which is why the LHC collides bunches 40 million times a second.',
+};
+const MODE_NOTE_ES = {
+  show: 'La vidriera empareja las tasas para que cada proceso aparezca en unas pocas decenas de clics.',
+  lhc: 'El modo tipo LHC pesa cada proceso según su sección eficaz aproximada. Casi todo son jets: un Higgs que decae en dos fotones aparece menos de una vez por millón de colisiones duras, y por eso el LHC cruza paquetes de protones 40 millones de veces por segundo.',
+};
+function setMode(m) {
+  state.mode = m;
+  $('mShow').setAttribute('aria-pressed', String(m === 'show'));
+  $('mLhc').setAttribute('aria-pressed', String(m === 'lhc'));
+  $('modeNote').textContent = L(MODE_NOTE[m], MODE_NOTE_ES[m]);
+}
+$('mShow').addEventListener('click', () => setMode('show'));
+$('mLhc').addEventListener('click', () => setMode('lhc'));
+document.querySelectorAll('[data-n]').forEach(b => b.addEventListener('click', () => userCollide(+b.dataset.n)));
+function setView(v) {
+  state.view = v;
+  $('vDet').setAttribute('aria-pressed', String(v === 'det'));
+  $('vZoom').setAttribute('aria-pressed', String(v === 'zoom'));
+  if (!anim) draw(state.ev ? 1e9 : 0);
+}
+$('vDet').addEventListener('click', () => setView('det'));
+$('vZoom').addEventListener('click', () => setView('zoom'));
+document.addEventListener('keydown', e => { if ((e.key === 'z' || e.key === 'Z') && !e.ctrlKey && !e.metaKey && !e.altKey) setView(state.view === 'zoom' ? 'det' : 'zoom'); });
+cv.addEventListener('click', () => userCollide(1));
+cv.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); userCollide(1); } });
+new ResizeObserver(resize).observe(cv);
+
+const ES = {
+ "eyebrow": "Colisiones protón–protón · √s = 13,6 TeV",
+ "lede": "Cada protón es una bolsa de quarks y gluones, llamados <b>partones</b>, y cada uno lleva una fracción <b>x</b> del momento del protón. Cuando dos protones chocan, un partón de cada uno se encuentra en la <b>interacción dura</b>. Hacé clic en el detector para hacerlos chocar. Prendé y apagá las fuerzas para cambiar lo que puede salir.",
+ "tabPlay": "Colisionador",
+ "tabHow": "Cómo funciona",
+ "vZoom": "Zoom",
+ "hint": "Hacé clic en el detector para chocar",
+ "collide": "Chocar",
+ "rates": "Tasas",
+ "mShow": "Vidriera",
+ "mLhc": "Tipo LHC",
+ "legend": "<span><i class=\"lg dot\" style=\"background:#ff5d6c\"></i>quark (color QCD)</span><span><i class=\"lg ring\"></i>antiquark</span><span><i class=\"lg glu\"></i>gluón</span><span><i class=\"lg\" style=\"background:var(--jet)\"></i>trazas de jets</span><span><i class=\"lg\" style=\"background:var(--hcal)\"></i>calorímetro hadrónico</span><span><i class=\"lg\" style=\"background:var(--lep-e)\"></i>electrón</span><span><i class=\"lg\" style=\"background:var(--lep-mu)\"></i>muón</span><span><i class=\"lg ydash\"></i>fotón</span><span><i class=\"lg dash\"></i>neutrino (invisible)</span>",
+ "forces": "Fuerzas",
+ "swS": "Fuerte",
+ "swEM": "Electromagnética",
+ "swW": "Débil",
+ "mS": "gluón g · α<sub>s</sub> ≈ 0,118",
+ "mEM": "fotón γ · α ≈ 1/137",
+ "mW": "W<sup>±</sup>, Z (y el Higgs) · α<sub>W</sub> ≈ 1/30",
+ "tuneLink": "Ajustar las distribuciones de partones →",
+ "pdfNote": "Las colisiones usan tus distribuciones de partones ajustadas.",
+ "forceNote": "Con la fuerza fuerte apagada, los quarks no quedarían ligados dentro de los protones y no se podrían formar jets. La pantalla mantiene ambas cosas para que igual veas qué hacen las otras fuerzas.",
+ "thisEv": "Este evento",
+ "x1l": "x₁ (p izq.)",
+ "x2l": "x₂ (p der.)",
+ "procLog": "Registro de procesos",
+ "procP": "<span class=\"count\" id=\"foundN\">0 / 11</span> procesos encontrados · <span class=\"count\" id=\"totN\">0</span> colisiones",
+ "massH": "Espectros de masa",
+ "massP": "Cada colisión llena el histograma de su estado final. Dispará unos cientos y mirá cómo los picos crecen sobre el fondo. El ▼ marca el último evento.",
+ "logy": "Escala log (y)",
+ "clearH": "Borrar histogramas",
+ "stModel": "El modelo",
+ "stTune": "Ajustar las PDF (QCD)",
+ "whichH": "Qué proceso ocurre",
+ "whichP": "Cada clic elige exactamente un proceso duro. Cada proceso <i>i</i> tiene un peso fijo <i>w<sub>i</sub></i>, con un valor por modo de tasas. Los procesos que no pueden ocurrir en este evento tienen peso cero, y el resto se reparte la probabilidad en proporción a sus pesos.",
+ "thetaP": "<i>Θ<sub>i</sub></i> = 1 si están prendidas todas las fuerzas que necesita el proceso <i>i</i> y los dos protones tienen un par de partones desde el que puede arrancar (con suficiente √ŝ para un par de tops); si no, 0.",
+ "weightsH": "Los pesos",
+ "weightsP": "Los pesos tipo LHC son secciones eficaces aproximadas en picobarns a √s = 13,6 TeV. Varios dependen de cortes que acá no están fijados, así que leelos como órdenes de magnitud. Las probabilidades suponen las tres fuerzas prendidas.",
+ "probH": "Probabilidad por colisión, con todas las fuerzas prendidas",
+ "logscale": "escala log",
+ "probLeg": "<span><i style=\"background:var(--h-weak)\"></i>Vidriera</span><span><i style=\"background:var(--h-higgs)\"></i>Tipo LHC</span>",
+ "sampH": "Cómo se sortean los momentos de los partones",
+ "sampP": "Cada protón recibe tres quarks de valencia (u u d), de cuatro a seis gluones y pares quark–antiquark del mar (u ū y d d̄ siempre, s s̄ en el 60% de los protones). Cada partón sortea una fracción de momento cruda de una distribución Beta, un reemplazo simple de una función de distribución de partones (PDF) real:",
+ "betaW": "Valores por defecto: valencia α = 0,75, β = 3,6 · gluones α = 0,5, β = 4,5 · mar α = 0,3, β = 9. Cada sorteo usa el método de la CDF inversa: <i>x̃</i> = F⁻¹(<i>u</i>) con <i>u</i> uniforme en [0, 1] y F tabulada en una grilla de 2048 puntos.",
+ "sumP": "Después las fracciones crudas se reescalan para que los partones lleven exactamente el momento del protón (la regla de suma de momento):",
+ "inH": "Formas de entrada<span>x·f(x)</span>",
+ "inCap": "Cada distribución Beta normalizada a un partón, antes de reescalar.",
+ "carryH": "Lo que lleva un protón<span>x·f(x)</span>",
+ "carryCap": "Sorteado con protones simulados después de la regla de suma, sumando todos los partones de cada tipo. El área bajo cada curva (en el eje x logarítmico) es la fracción del momento que lleva ese tipo.",
+ "fromH": "De los partones al proceso duro",
+ "fromP1": "Los dos partones que chocan fijan la energía disponible para la interacción dura y cuánto se impulsa el estado final a lo largo del haz:",
+ "fromP2": "Los jets, los tops y los procesos de intercambio usan el par de partones más energético que puede iniciarlos:",
+ "fromP3": "En cambio, los procesos Z, W, Higgs, Drell–Yan y difotón fijan primero la masa <i>m</i> del sistema producido. Sale de una Breit–Wigner para el Z y el W, vale 125 GeV fijos para el Higgs y cae en picada para los continuos de Drell–Yan y difotón. Después, a dos partones permitidos se les da exactamente la fracción de momento necesaria:",
+ "yW": "<i>y</i> es uniforme en [−1,6, 1,6]. Las partículas salientes se emiten espalda con espalda en el sistema en reposo de los partones y después se impulsan con <i>y</i>₀ a lo largo del haz.",
+ "mAllowed": "permitidos",
+ "mCont": "(continuos)",
+ "tuneH": "Ajustá las distribuciones de partones",
+ "tuneP": "Dentro de un protón, la QCD decide cómo se reparte el momento entre quarks y gluones. Mové los controles para cambiar la forma de cada distribución Beta o cuántos partones tiene un protón. Todas las colisiones nuevas del Colisionador usan estos valores.",
+ "pdfOutH": "Lo que lleva un protón<span>x·f(x)</span>",
+ "pdfOutCap": "Línea llena: tu ajuste. Línea punteada: el modelo por defecto.",
+ "rsH": "Energía del par más duro<span>√ŝ</span>",
+ "rsCap": "Fracción de colisiones según la √ŝ de sus dos partones más energéticos. Partones más duros empujan la curva hacia la derecha: más energía para crear partículas pesadas.",
+ "tuneNote": "Los histogramas mezclan eventos de antes y después de un cambio. Borralos para comparar ajustes."
+};
+/* ---------- how it works tab ---------- */
+const WSRC = {
+  qcd: ['Inclusive jets above roughly 100 GeV; cut not fixed', 'Jets inclusivos por encima de unos 100 GeV; corte no fijado'],
+  emjj: ['Estimate: QCD scaled by about (α/α_s)²', 'Estimación: QCD escalada por ≈ (α/α_s)²'],
+  weakjj: ['Estimate, same idea', 'Estimación, misma idea'],
+  dy: ['Off-peak Drell–Yan, mass window not fixed', 'Drell–Yan fuera del pico; ventana de masa no fijada'],
+  z: ['σ × BR(Z → ℓℓ), e + μ', 'σ × BR(Z → ℓℓ), e + μ'],
+  w: ['σ × BR(W → ℓν), e + μ', 'σ × BR(W → ℓν), e + μ'],
+  aa: ['Depends on photon cuts', 'Depende de los cortes en los fotones'],
+  gj: ['Depends on the photon pT cut', 'Depende del corte en pT del fotón'],
+  tt: ['Total σ(tt̄)', 'σ(tt̄) total'],
+  hgg: ['σ(gg → H) × BR(H → γγ)', 'σ(gg → H) × BR(H → γγ)'],
+  h4l: ['σ(gg → H) × BR(H → ZZ* → 4ℓ)', 'σ(gg → H) × BR(H → ZZ* → 4ℓ)'],
+};
+const shareOf = m => { const t = PROCS.reduce((s, P) => s + P.w[m], 0); return P => P.w[m] / t; };
+const fmtP = p => p >= 0.001 ? dec(`${(100 * p).toFixed(p >= 0.01 ? 1 : 2)}%`) : sci(p);
+const supExp = e => String(e).replace('-', '⁻').replace(/\d/g, d => '⁰¹²³⁴⁵⁶⁷⁸⁹'[d]);
+function tipAt(e, html) {
+  tip.innerHTML = html; tip.hidden = false;
+  tip.style.left = Math.min(window.innerWidth - tip.offsetWidth - 8, e.clientX + 12) + 'px';
+  tip.style.top = Math.max(8, e.clientY - tip.offsetHeight - 12) + 'px';
+}
+function renderWeights() {
+  const ps = shareOf('show'), pl = shareOf('lhc'), mS = L('Showcase', 'Vidriera'), mL = L('LHC-like', 'Tipo LHC');
+  $('wtable').innerHTML = `<thead><tr><th>${L('Process', 'Proceso')}</th><th>${L('Forces', 'Fuerzas')}</th><th>${L('Starts from', 'Parte de')}</th><th class="n">w ${mS}</th><th class="n">w ${mL} (pb)</th><th class="n">P ${mS}</th><th class="n">P ${mL}</th><th>${L('LHC-like weight', 'Peso tipo LHC')}</th></tr></thead><tbody>` +
+    PROCS.map(P => `<tr><td>${nm(P)}</td><td><div class="chips">${P.needs.map(k => `<span class="chip c-${k}">${fnm(k)}</span>`).join('')}</div></td><td>${ini(P)}</td>
+      <td class="n">${P.w.show}</td><td class="n">${P.w.lhc >= 1 ? P.w.lhc.toLocaleString(LOC()) : dec(P.w.lhc)}</td><td class="n">${fmtP(ps(P))}</td><td class="n">${fmtP(pl(P))}</td><td class="src">${L(...WSRC[P.id])}</td></tr>`).join('') + '</tbody>';
+  // probability bars on a log axis
+  const Wd = 680, rowH = 28, m = { l: 150, r: 16, t: 8, b: 30 }, Hd = m.t + m.b + rowH * PROCS.length, pw = Wd - m.l - m.r;
+  const lo = -9, X = p => m.l + pw * (Math.log10(Math.max(p, 10 ** lo)) - lo) / -lo;
+  let s = '';
+  for (let e = lo; e <= 0; e++) {
+    const x = X(10 ** e).toFixed(1);
+    s += `<line class="grid-l" x1="${x}" x2="${x}" y1="${m.t}" y2="${Hd - m.b}"/>`;
+    if (e % 3 === 0) s += `<text class="tk" x="${x}" y="${Hd - m.b + 14}" text-anchor="middle">${e === 0 ? '1' : '10' + supExp(e)}</text>`;
+  }
+  PROCS.forEach((P, k) => {
+    const y = m.t + k * rowH;
+    s += `<text class="rowl" x="${m.l - 8}" y="${y + rowH / 2}" text-anchor="end" dominant-baseline="middle">${nm(P)}</text>`;
+    [[ps(P), '--h-weak', mS], [pl(P), '--h-higgs', mL]].forEach(([p, col, name], q) => {
+      const yy = y + 5 + q * 10;
+      s += `<rect x="${m.l}" y="${yy}" width="${Math.max(1, X(p) - m.l).toFixed(1)}" height="8" rx="2" fill="var(${col})"/>`;
+      s += `<rect class="hit" data-tip="${nm(P)} · ${name}: ${fmtP(p)}" x="${m.l}" y="${yy - 1}" width="${pw}" height="10"/>`;
+    });
+  });
+  s += `<line class="ax" x1="${m.l}" x2="${m.l}" y1="${m.t}" y2="${Hd - m.b}"/>`;
+  s += `<text class="axl" x="${Wd - m.r}" y="${Hd - 2}" text-anchor="end">${L('probability per hard collision', 'probabilidad por colisión dura')}</text>`;
+  $('pchart').innerHTML = `<div style="overflow-x:auto"><svg viewBox="0 0 ${Wd} ${Hd}" style="min-width:520px" role="img" aria-label="${L('Probability of each process in both rate modes', 'Probabilidad de cada proceso en los dos modos')}">${s}</svg></div>`;
+}
+
+// curve chart on a log-x axis, with a hover crosshair; dashed series are references
+function curveChart(el, series, yLabel, o = {}) {
+  const lo = o.lo || 1e-3, hi = o.hi || 1, LR = Math.log10(hi / lo);
+  const ticks = o.ticks || [[0.001, '10⁻³'], [0.01, dec('0.01')], [0.1, dec('0.1')], [1, '1']];
+  const xLabel = o.xLabel || L('x (momentum fraction)', 'x (fracción de momento)');
+  const fx = o.fmtX || (x => x < 0.01 ? dec(x.toExponential(1)) : dec(x.toFixed(3)));
+  const Wd = 440, Hd = 230, m = { l: 44, r: 10, t: 14, b: 32 }, pw = Wd - m.l - m.r, ph = Hd - m.t - m.b;
+  const xs = series[0].pts.map(p => p[0]), ymax = Math.max(1e-9, ...series.flatMap(S => S.pts.map(p => p[1])));
+  const st = niceStep(ymax * 1.1, 4), yTop = Math.ceil(ymax * 1.1 / st) * st;
+  const X = x => m.l + pw * Math.log10(x / lo) / LR, Y = y => m.t + ph * (1 - y / yTop);
+  let s = '';
+  for (let v = 0; v <= yTop + 1e-9; v += st) {
+    const y = Y(v).toFixed(1);
+    s += `<line class="grid-l" x1="${m.l}" x2="${Wd - m.r}" y1="${y}" y2="${y}"/><text class="tk" x="${m.l - 5}" y="${y}" text-anchor="end" dominant-baseline="middle">${dec(+v.toFixed(3))}</text>`;
+  }
+  ticks.forEach(([v, l]) => { const x = X(v).toFixed(1); s += `<line class="ax" x1="${x}" x2="${x}" y1="${m.t + ph}" y2="${m.t + ph + 4}"/><text class="tk" x="${x}" y="${m.t + ph + 15}" text-anchor="middle">${l}</text>`; });
+  s += `<line class="ax" x1="${m.l}" x2="${Wd - m.r}" y1="${m.t + ph}" y2="${m.t + ph}"/>`;
+  series.forEach(S => { s += `<path class="curve" stroke="var(${S.col})"${S.dash ? ' stroke-dasharray="5 4" opacity="0.75"' : ''} d="M${S.pts.map(p => `${X(p[0]).toFixed(1)},${Y(p[1]).toFixed(1)}`).join(' L')}"/>`; });
+  s += `<text class="axl" x="${Wd - m.r}" y="${Hd - 2}" text-anchor="end">${xLabel}</text><text class="axl" x="${m.l - 38}" y="${m.t - 4}">${yLabel}</text>`;
+  s += `<line class="crossl" id="${el}-x" x1="0" x2="0" y1="${m.t}" y2="${m.t + ph}" visibility="hidden"/><rect class="hit" id="${el}-hit" x="${m.l}" y="${m.t}" width="${pw}" height="${ph}"/>`;
+  $(el).innerHTML = `<svg viewBox="0 0 ${Wd} ${Hd}" role="img" aria-label="${yLabel} / ${xLabel}">${s}</svg>`;
+  const hit = $(el + '-hit'), cl = $(el + '-x'), svg = hit.ownerSVGElement;
+  hit.addEventListener('pointermove', e => {
+    const r = svg.getBoundingClientRect(), px = (e.clientX - r.left) * Wd / r.width, lx = (px - m.l) / pw * LR + Math.log10(lo);
+    let k = 0;
+    xs.forEach((x, q) => { if (Math.abs(Math.log10(x) - lx) < Math.abs(Math.log10(xs[k]) - lx)) k = q; });
+    cl.setAttribute('x1', X(xs[k])); cl.setAttribute('x2', X(xs[k])); cl.setAttribute('visibility', 'visible');
+    tipAt(e, `<div>${o.xName || 'x'} = ${fx(xs[k])}</div>` + series.map(S => `<div><i style="background:var(${S.col})"></i>${S.name}: ${dec(S.pts[k][1].toFixed(3))}</div>`).join(''));
+  });
+  hit.addEventListener('pointerleave', () => { tip.hidden = true; cl.setAttribute('visibility', 'hidden'); });
+}
+
+/* Monte Carlo of whole protons: x·f(x) per parton kind, momentum shares, and the √ŝ of the hardest pair */
+const KINDS = () => [['v', L('Valence quarks', 'Quarks de valencia'), '--h-strong'], ['g', L('Gluons', 'Gluones'), '--h-higgs'], ['s', L('Sea quarks + antiquarks', 'Quarks y antiquarks del mar'), '--h-weak']];
+const NB = 30, DL = 3 / NB * Math.LN10, RSB = 26, RSLO = 100, RSHI = SQRTS;
+function simulate(par, sm, N) {
+  const acc = { v: new Float64Array(NB), g: new Float64Array(NB), s: new Float64Array(NB) }, mom = { v: 0, g: 0, s: 0 }, cnt = { v: 0, g: 0, s: 0 };
+  const rs = new Float64Array(RSB), all = [];
+  let prev = 0;
+  for (let q = 0; q < N; q++) {
+    let mx = 0;
+    makeProton(par, sm).forEach(p => {
+      mom[p.t] += p.x; cnt[p.t]++; if (p.x > mx) mx = p.x;
+      const b = Math.floor((Math.log10(p.x) + 3) / 3 * NB); if (b >= 0 && b < NB) acc[p.t][b] += p.x;
+    });
+    if (q % 2) {
+      const r = SQRTS * Math.sqrt(mx * prev), b = Math.floor(Math.log(r / RSLO) / Math.log(RSHI / RSLO) * RSB);
+      all.push(r); if (b >= 0 && b < RSB) rs[b]++;
+    } else prev = mx;
+  }
+  all.sort((a, b) => a - b);
+  return { N, acc, mom, cnt, rs, med: all[all.length >> 1] };
+}
+const pdfPts = (R, t) => [...Array(NB)].map((_, b) => [10 ** (-3 + 3 * (b + 0.5) / NB), R.acc[t][b] / (R.N * DL)]);
+const rsPts = R => [...Array(RSB)].map((_, b) => [RSLO * Math.pow(RSHI / RSLO, (b + 0.5) / RSB), R.rs[b] / (R.N / 2)]);
+let DEF_SIM = null;
+const defSim = () => DEF_SIM || (DEF_SIM = simulate(PDF_DEF, SMP_DEF, 6000));
+const legendHTML = extra => KINDS().map(([, n, c]) => `<span><i style="background:var(${c})"></i>${n}</span>`).join('') + (extra ? `<span>${extra}</span>` : '');
+const shareTiles = (R, ref) => KINDS().map(([t, name]) => `<div class="tile"><b>${(100 * R.mom[t] / R.N).toFixed(0)}%</b><span>${L('of the momentum in', 'del momento en')} ${name.toLowerCase()} (${dec((R.cnt[t] / R.N).toFixed(1))} ${L('per proton', 'por protón')}${ref ? `; ${L('default', 'por defecto')} ${(100 * ref.mom[t] / ref.N).toFixed(0)}%` : ''})</span></div>`).join('');
+
+let howDone = false;
+function renderHow() {
+  if (howDone) return; howDone = true;
+  renderWeights();
+  $('lgA').innerHTML = legendHTML(); $('lgB').innerHTML = legendHTML();
+  const grid = [...Array(61)].map((_, k) => Math.min(0.995, 10 ** (-3 + 3 * k / 60)));
+  curveChart('pdfA', KINDS().map(([t, name, col]) => { const sm = SMP_DEF[t]; return { name, col, pts: grid.map(x => [x, Math.pow(x, sm.a) * Math.pow(1 - x, sm.b - 1) / sm.norm]) }; }), 'x·f(x)');
+  const R = defSim();
+  curveChart('pdfB', KINDS().map(([t, name, col]) => ({ name, col, pts: pdfPts(R, t) })), 'x·f(x)');
+  $('mcN').textContent = `${R.N.toLocaleString(LOC())} ${L('protons', 'protones')}`;
+  $('tiles').innerHTML = shareTiles(R) + `<div class="tile"><b>≈ 46%</b><span>${L('gluon share in real PDFs at Q ≈ 100 GeV, for comparison', 'fracción de los gluones en PDF reales a Q ≈ 100 GeV, para comparar')}</span></div>`;
+}
+$('pchart').addEventListener('pointermove', e => { const r = e.target.closest('[data-tip]'); if (r) tipAt(e, r.dataset.tip); else tip.hidden = true; });
+$('pchart').addEventListener('pointerleave', () => { tip.hidden = true; });
+
+/* ---------- PDF tuner ---------- */
+const PRESETS = {
+  def: PDF_DEF,
+  glu: { va: 0.7, vb: 4.2, ga: 0.35, gb: 5.5, sa: 0.2, sb: 10, ng: 8, ss: 0.9 },
+  val: { va: 0.9, vb: 2.8, ga: 0.7, gb: 4, sa: 0.5, sb: 8, ng: 2, ss: 0.2 },
+  hard: Object.assign({}, PDF_DEF, { ga: 0.8, gb: 2 }),
+};
+const PRESET_L = { def: ['Default', 'Por defecto'], glu: ['Gluon-rich (higher Q²)', 'Muchos gluones (Q² alto)'], val: ['Valence-heavy (lower Q²)', 'Más valencia (Q² bajo)'], hard: ['Hard gluons', 'Gluones duros'] };
+const SLIDERS = () => [
+  ['v', 'va', 'α', 0.3, 1.5, 0.05], ['v', 'vb', 'β', 1.2, 8, 0.1],
+  ['g', 'ga', 'α', 0.2, 1.2, 0.05], ['g', 'gb', 'β', 1.5, 10, 0.1], ['g', 'ng', L('gluons per proton (average)', 'gluones por protón (promedio)'), 1, 10, 1],
+  ['s', 'sa', 'α', 0.1, 1, 0.05], ['s', 'sb', 'β', 2, 15, 0.5], ['s', 'ss', L('chance of an s s̄ pair', 'probabilidad de un par s s̄'), 0, 1, 0.05],
+];
+let tuneBuilt = false, tunePending = false;
+function renderTuneControls() {
+  tuneBuilt = true;
+  const groups = KINDS().map(([t, name, col]) => `<div class="tg"><h3><i style="background:var(${col})"></i>${name}</h3>` +
+    SLIDERS().filter(x => x[0] === t).map(([, k, lab, mn, mx, st]) => `<div class="sl"><label for="sl-${k}"><span>${lab}</span><output id="o-${k}" for="sl-${k}"></output></label><input type="range" id="sl-${k}" min="${mn}" max="${mx}" step="${st}" value="${PDFP[k]}"></div>`).join('') + '</div>').join('');
+  $('tuneCtl').innerHTML = `<div class="presets" role="group" aria-label="${L('Presets', 'Ajustes predefinidos')}">${Object.keys(PRESETS).map(p => `<button class="btn small" type="button" data-preset="${p}">${L(...PRESET_L[p])}</button>`).join('')}</div>
+    <p class="footnote">${L('α sets how the distribution rises at small x; β sets how fast it dies out near x = 1.', 'α controla cómo sube la distribución a x chico; β, qué tan rápido se apaga cerca de x = 1.')}</p>` + groups;
+  syncSliders();
+}
+function syncSliders() {
+  SLIDERS().forEach(([, k]) => {
+    const el = $('sl-' + k); if (!el) return;
+    el.value = PDFP[k];
+    $('o-' + k).textContent = k === 'ss' ? `${Math.round(100 * PDFP[k])}%` : dec(String(+PDFP[k].toFixed(2)));
+  });
+}
+$('tuneCtl').addEventListener('input', e => {
+  const k = (e.target.id || '').slice(3);
+  if (!e.target.id.startsWith('sl-') || !(k in PDFP)) return;
+  PDFP[k] = +e.target.value; syncSliders(); scheduleTune();
+});
+$('tuneCtl').addEventListener('click', e => {
+  const b = e.target.closest('[data-preset]'); if (!b) return;
+  Object.assign(PDFP, PRESETS[b.dataset.preset]); syncSliders(); scheduleTune();
+});
+function scheduleTune() { if (tunePending) return; tunePending = true; requestAnimationFrame(() => { tunePending = false; applyTune(); }); }
+const isDefault = () => Object.keys(PDF_DEF).every(k => Math.abs(PDFP[k] - PDF_DEF[k]) < 1e-9);
+function applyTune() {
+  SMP = isDefault() ? SMP_DEF : samplersFor(PDFP);
+  $('pdfNote').hidden = isDefault();
+  if ($('how-tune').hidden || $('how').hidden) return;
+  const R = simulate(PDFP, SMP, 3000), D = defSim(), dflt = L('default', 'por defecto');
+  $('lgT').innerHTML = legendHTML(L('dashed: default', 'punteado: por defecto'));
+  curveChart('tunePdf', KINDS().flatMap(([t, name, col]) => [{ name, col, pts: pdfPts(R, t) }, { name: `${name} (${dflt})`, col, dash: true, pts: pdfPts(D, t) }]), 'x·f(x)');
+  $('lgR').innerHTML = `<span><i style="background:var(--h-strong)"></i>${L('Your tune', 'Tu ajuste')}</span><span><i style="background:var(--muted)"></i>${L('Default (dashed)', 'Por defecto (punteado)')}</span>`;
+  curveChart('tuneRs', [{ name: L('Your tune', 'Tu ajuste'), col: '--h-strong', pts: rsPts(R) }, { name: L('Default', 'Por defecto'), col: '--muted', dash: true, pts: rsPts(D) }],
+    L('share', 'fracción'), { lo: RSLO, hi: RSHI, ticks: [[100, '100 GeV'], [1000, '1 TeV'], [10000, '10 TeV']], xLabel: L('√ŝ of the two hardest partons', '√ŝ de los dos partones más duros'), xName: '√ŝ', fmtX: fmtE });
+  $('tTiles').innerHTML = shareTiles(R, D) + `<div class="tile"><b>${fmtE(R.med)}</b><span>${L('median √ŝ of the hardest pair', 'mediana de √ŝ del par más duro')} (${dflt} ${fmtE(D.med)})</span></div>`;
+}
+
+/* ---------- tabs ---------- */
+function setSub(id) {
+  state.sub = id;
+  ['model', 'tune'].forEach(k => { $('how-' + k).hidden = k !== id; $('st-' + k).setAttribute('aria-selected', String(k === id)); });
+  if (id === 'tune') { if (!tuneBuilt) renderTuneControls(); applyTune(); } else renderHow();
+}
+function setTab(id, sub) {
+  ['play', 'how'].forEach(k => { $(k).hidden = k !== id; $('tab-' + k).setAttribute('aria-selected', String(k === id)); });
+  if (id === 'how') setSub(sub || state.sub || 'model');
+  try { history.replaceState(null, '', '#' + (id === 'how' && state.sub === 'tune' ? 'tune' : id)); } catch (e) { /* the hash is a convenience */ }
+}
+$('tab-play').addEventListener('click', () => setTab('play'));
+$('tab-how').addEventListener('click', () => setTab('how'));
+$('st-model').addEventListener('click', () => setTab('how', 'model'));
+$('st-tune').addEventListener('click', () => setTab('how', 'tune'));
+$('tuneLink').addEventListener('click', () => { setTab('how', 'tune'); $('how').scrollIntoView({ block: 'start' }); });
+
+/* ---------- language switch ---------- */
+const EN = {};
+document.querySelectorAll('[data-i18n]').forEach(el => { EN[el.dataset.i18n] = el.innerHTML; });
+function setLang(lang) {
+  state.lang = lang;
+  document.documentElement.lang = lang === 'es' ? 'es-AR' : 'en';
+  $('lEN').setAttribute('aria-pressed', String(lang === 'en'));
+  $('lES').setAttribute('aria-pressed', String(lang === 'es'));
+  document.querySelectorAll('[data-i18n]').forEach(el => { const k = el.dataset.i18n; el.innerHTML = lang === 'es' ? ES[k] : EN[k]; });
+  setMode(state.mode);
+  renderGrid(); renderHists();
+  if (state.ev && state.ev.shown) showEvent(state.ev);
+  howDone = false; tuneBuilt = false;
+  if (!$('how').hidden) setSub(state.sub);
+  if (!anim) draw(state.ev ? 1e9 : 0);
+  try { localStorage.setItem('hard-scatter-lang', lang); } catch (e) { /* per-viewer convenience only */ }
+}
+$('lEN').addEventListener('click', () => setLang('en'));
+$('lES').addEventListener('click', () => setLang('es'));
+
+
+
+function start(saved) {
+  if (saved && saved.counts) {
+    Object.assign(state.counts, saved.counts); state.total = saved.total || 0;
+    if (saved.forces) Object.keys(saved.forces).forEach(k => setForce(k, saved.forces[k]));
+    if (saved.mode) setMode(saved.mode); else setMode('show');
+    if (saved.hdata) HISTS.forEach(H => { if (saved.hdata[H.id]) Object.assign(hdata[H.id], saved.hdata[H.id]); });
+    if (saved.pdf) { Object.assign(PDFP, saved.pdf); applyTune(); }
+  } else setMode('show');
+  resize();
+  renderGrid();
+  renderHists();
+  let lang = saved && saved.lang;
+  try { lang = lang || localStorage.getItem('hard-scatter-lang'); } catch (e) { /* per-viewer convenience only */ }
+  lang = lang || ((navigator.language || '').toLowerCase().startsWith('es') ? 'es' : 'en');
+  setLang(lang);
+  if (location.hash === '#how') setTab('how', 'model');
+  if (location.hash === '#tune') setTab('how', 'tune');
+  collide(1);
+}
+window.claude?.hot?.snapshot?.(() => ({ counts: state.counts, total: state.total, forces: state.forces, mode: state.mode, hdata, lang: state.lang, pdf: PDFP }));
+window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+})();
+</script>
+
+</body>
+</html>
