@@ -6,7 +6,7 @@
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>ProTron</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<meta name="description" content="Collide protons at 13.6 TeV, zoom into the parton-level hard scatter, tune the parton distributions and fill invariant-mass histograms. In English and Argentinean Spanish.">
+<meta name="description" content="Collide protons from 30 GeV to 100 TeV, zoom into the parton-level hard scatter, tune the parton distributions and fill invariant-mass histograms. In English and Argentinean Spanish.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
@@ -292,9 +292,12 @@ table.wt { border-collapse: collapse; width: 100%; font-size: 13.5px; }
 .sl label { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--muted); }
 .sl output { font-family: var(--font-mono); color: var(--ink); font-variant-numeric: tabular-nums; }
 .sl input[type="range"] { width: 100%; accent-color: var(--em); }
+.pc.locked { opacity: 0.55; }
+.pc-lock { font-family: var(--font-mono); font-size: 11px; color: var(--faint); }
+.pc.unlock { animation: found 1.4s ease-out; }
 
 @media (prefers-reduced-motion: reduce) {
-  .hint, .pc.new { animation: none; }
+  .hint, .pc.new, .pc.unlock { animation: none; }
 }
 </style>
 </head>
@@ -302,7 +305,7 @@ table.wt { border-collapse: collapse; width: 100%; font-size: 13.5px; }
 <div class="wrap">
   <header>
     <div class="head-row">
-      <p class="eyebrow" data-i18n="eyebrow">Proton–proton collisions · √s = 13.6 TeV</p>
+      <p class="eyebrow" id="eyebrow">Proton–proton collisions · √s = 13.6 TeV</p>
       <div class="seg lang" role="group" aria-label="Language / Idioma">
         <button type="button" id="lEN" aria-pressed="true">EN</button>
         <button type="button" id="lES" aria-pressed="false" lang="es">ES</button>
@@ -360,6 +363,21 @@ table.wt { border-collapse: collapse; width: 100%; font-size: 13.5px; }
 
     <aside class="rail">
       <div class="panel">
+        <h2 data-i18n="energyH">Collision energy</h2>
+        <div class="sl">
+          <label for="rsS"><span>√s</span><output id="rsO" for="rsS">13.6 TeV</output></label>
+          <input type="range" id="rsS" min="0" max="1000" step="1">
+        </div>
+        <div class="presets" role="group" aria-label="Collider presets" id="rsPre">
+          <button class="btn small" type="button" data-rs="62">ISR · 62 GeV</button>
+          <button class="btn small" type="button" data-rs="510">RHIC · 510 GeV</button>
+          <button class="btn small" type="button" data-rs="13600">LHC · 13.6 TeV</button>
+          <button class="btn small" type="button" data-rs="100000">FCC · 100 TeV</button>
+        </div>
+        <p class="footnote" id="rsNote"></p>
+      </div>
+
+      <div class="panel">
         <h2 data-i18n="forces">Forces</h2>
         <div class="switches">
           <button class="sw-row" role="switch" aria-checked="true" data-f="S" id="fS" type="button">
@@ -399,14 +417,6 @@ table.wt { border-collapse: collapse; width: 100%; font-size: 13.5px; }
     </aside>
   </section>
 
-  <section class="collection">
-    <div class="col-head">
-      <h2 data-i18n="procLog">Process log</h2>
-      <p data-i18n="procP"><span class="count" id="foundN">0 / 11</span> processes found · <span class="count" id="totN">0</span> collisions</p>
-    </div>
-    <ul class="grid" id="grid"></ul>
-  </section>
-
   <section class="hists">
     <div class="col-head">
       <h2 data-i18n="massH">Mass spectra</h2>
@@ -426,6 +436,14 @@ table.wt { border-collapse: collapse; width: 100%; font-size: 13.5px; }
     </div>
     <div class="hist-grid" id="hgrid"></div>
   </section>
+
+  <section class="collection">
+    <div class="col-head">
+      <h2 data-i18n="procLog">Process log</h2>
+      <p data-i18n="procP"><span class="count" id="foundN">0 / 11</span> processes found · <span class="count" id="totN">0</span> collisions</p>
+    </div>
+    <ul class="grid" id="grid"></ul>
+  </section>
   </div>
 
   <div class="tabpanel how" id="how" role="tabpanel" aria-labelledby="tab-how" hidden>
@@ -439,7 +457,7 @@ table.wt { border-collapse: collapse; width: 100%; font-size: 13.5px; }
       <p data-i18n="whichP">Every click picks exactly one hard process. Each process <i>i</i> has a fixed weight <i>w<sub>i</sub></i>, one value per rate mode. Processes that cannot happen in this event get zero weight, and the rest share the probability in proportion to their weights.</p>
       <div class="eq">
         <math display="block"><mi>P</mi><mo>(</mo><mi>i</mi><mo>)</mo><mo>=</mo><mfrac><mrow><msub><mi>w</mi><mi>i</mi></msub><mspace width="0.15em"/><msub><mi>Θ</mi><mi>i</mi></msub></mrow><mrow><munder><mo>∑</mo><mi>j</mi></munder><msub><mi>w</mi><mi>j</mi></msub><mspace width="0.15em"/><msub><mi>Θ</mi><mi>j</mi></msub></mrow></mfrac></math>
-        <p class="where" data-i18n="thetaP"><i>Θ<sub>i</sub></i> = 1 if every force that process <i>i</i> needs is switched on and the two protons contain a parton pair it can start from (with enough √ŝ for a top pair); otherwise 0.</p>
+        <p class="where" data-i18n="thetaP"><i>Θ<sub>i</sub></i> = 1 if every force that process <i>i</i> needs is switched on and the two protons contain a parton pair it can start from , carrying enough energy for it, x₁x₂s ≥ m² (m is the mass it makes, or its √ŝ threshold); otherwise 0. Lower the collision energy and the heavy processes drop out.</p>
       </div>
       <h3 data-i18n="weightsH">The weights</h3>
       <p class="muted" data-i18n="weightsP">LHC-like weights are rough cross-sections in picobarns at √s = 13.6 TeV. Several depend on cuts that are not fixed here, so read them as orders of magnitude. The probabilities assume all three forces are on.</p>
@@ -528,7 +546,8 @@ table.wt { border-collapse: collapse; width: 100%; font-size: 13.5px; }
 
 <script>
 (() => {
-const SQRTS = 13600, MZ = 91.19, MW = 80.38, MH = 125.1, MT = 172.5;
+let SQRTS = 13600;
+const MZ = 91.19, MW = 80.38, MH = 125.1, MT = 172.5;
 const QCOL = ['#ff5d6c', '#3fd68f', '#5b8dff'];
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const C = {};
@@ -633,7 +652,7 @@ const PROCS = [
       return { outs: [O('jet', 'jet', e.y0 + ys, 1, pt), O('jet', 'jet', e.y0 - ys, -1, pt)],
         rxn: `${pname(e.a)} ${pname(e.b)} → ${flipName(e.a)} ${flipName(e.b)}`,
         diag: { topo: 't', i: [[pkind(e.a), pname(e.a)], [pkind(e.b), pname(e.b)]], o: [[pkind(e.a), flipName(e.a)], [pkind(e.b), flipName(e.b)]], p: ['W', 'W'] } }; } },
-  { id: 'dy', name: 'Drell–Yan', rxn: 'q q̄ → γ* → ℓ⁺ℓ⁻', needs: ['EM'], w: { show: 3, lhc: 1e3 }, match: sameQQbar, mgen: () => falling(15, 3000),
+  { id: 'dy', name: 'Drell–Yan', rxn: 'q q̄ → γ* → ℓ⁺ℓ⁻', needs: ['EM'], w: { show: 3, lhc: 1e3 }, match: sameQQbar, mlo: 15, mgen: () => falling(15, 3000),
     init: 'a quark and an antiquark of the same flavour',
     blurb: 'A quark and an antiquark annihilate into a virtual photon, which becomes a lepton pair. The ϒ (upsilon) meson was discovered in this channel in 1977.',
     build(e) { const { ys, pt } = twoBody(e.rs); const k = lepK();
@@ -655,7 +674,7 @@ const PROCS = [
       return { outs: [O(k, lab(k, s), e.y0 + ys, 1, pt), O('nu', nu, e.y0 - ys, -1, pt)],
         rxn: `${pname(e.a)} ${pname(e.b)} → ${W} → ${lab(k, s)} ${nu}`,
         diag: { topo: 's', i: [[pkind(e.a), pname(e.a)], [pkind(e.b), pname(e.b)]], o: [[s > 0 ? 'qb' : 'q', lab(k, s)], [s > 0 ? 'q' : 'qb', nu]], p: ['W', W] } }; } },
-  { id: 'aa', name: 'Diphoton', rxn: 'q q̄ → γ γ', needs: ['EM'], w: { show: 2, lhc: 50 }, match: sameQQbar, mgen: () => falling(60, 1000),
+  { id: 'aa', name: 'Diphoton', rxn: 'q q̄ → γ γ', needs: ['EM'], w: { show: 2, lhc: 50 }, match: sameQQbar, mlo: 60, mgen: () => falling(60, 1000),
     init: 'a quark and an antiquark of the same flavour',
     blurb: 'A quark and antiquark annihilate into two photons. Photons leave no track; each one shows up only as a deposit in the electromagnetic calorimeter.',
     build(e) { const { ys, pt } = twoBody(e.rs);
@@ -772,37 +791,54 @@ const fnm = k => ({ S: L('Strong', 'Fuerte'), EM: 'EM', W: L('Weak', 'Débil') }
 function argmaxX(ps) { let b = 0; ps.forEach((p, i) => { if (p.x > ps[b].x) b = i; }); return b; }
 const sci = v => { const e = Math.floor(Math.log10(v)); return `${dec((v / 10 ** e).toFixed(1))}×10${String(e).replace('-', '⁻').replace(/\d/g, d => '⁰¹²³⁴⁵⁶⁷⁸⁹'[d])}`; };
 
+// a parton pair that can start P, carrying enough energy for it (x₁x₂s ≥ m²), or null
+function pickPair(P, A, B) {
+  let sel = null;
+  if (P.mgen) {
+    const M = P.mgen(), need = (M / SQRTS) ** 2;
+    if (need >= 1) return null;
+    let n = 0;  // reservoir-sample one matching pair without building a list
+    for (let i = 0; i < A.length; i++) for (let j = 0; j < B.length; j++) if (A[i].x * B[j].x >= need && P.match(A[i], B[j]) && Math.random() * ++n < 1) sel = [i, j, M];
+  } else {
+    let best = (P.thr / SQRTS) ** 2;
+    for (let i = 0; i < A.length; i++) for (let j = 0; j < B.length; j++) {
+      const s = A[i].x * B[j].x;
+      if (s >= best && P.match(A[i], B[j])) { best = s; sel = [i, j]; }
+    }
+  }
+  return sel;
+}
+// share of collisions in which each process could happen at the current energy, forces aside
+const REACH = {};
+function estimateReach(N = 1500) {
+  const hit = {}; PROCS.forEach(P => hit[P.id] = 0);
+  for (let q = 0; q < N; q++) { const A = makeProton(), B = makeProton(); PROCS.forEach(P => { if (pickPair(P, A, B)) hit[P.id]++; }); }
+  PROCS.forEach(P => REACH[P.id] = hit[P.id] / N);
+}
+const reachable = P => REACH[P.id] === undefined || REACH[P.id] >= 0.002;
+const mOf = P => P.thr || P.res || P.mlo;
+
 function generateEvent(full = true) {
   const A = makeProton(), B = makeProton(), f = state.forces;
   const hi = argmaxX(A), hj = argmaxX(B);
   const cands = [];
   for (const P of PROCS) {
     if (!P.needs.every(n => f[n])) continue;
-    let sel = null;
-    if (P.mgen) {
-      let n = 0;  // reservoir-sample one matching pair without building a list
-      for (let i = 0; i < A.length; i++) for (let j = 0; j < B.length; j++) if (P.match(A[i], B[j]) && Math.random() * ++n < 1) sel = [i, j];
-    } else {
-      let best = (P.thr / SQRTS) ** 2;
-      for (let i = 0; i < A.length; i++) for (let j = 0; j < B.length; j++) {
-        const s = A[i].x * B[j].x;
-        if (s >= best && P.match(A[i], B[j])) { best = s; sel = [i, j]; }
-      }
-    }
-    if (sel) cands.push({ P, i: sel[0], j: sel[1] });
+    const sel = pickPair(P, A, B);
+    if (sel) cands.push({ P, i: sel[0], j: sel[1], M: sel[2] });
   }
   const ev = { A, B, id: Math.random(), shown: false };
   if (!cands.length) {
-    Object.assign(ev, { P: null, i: hi, j: hj, x1: A[hi].x, x2: B[hj].x });
+    Object.assign(ev, { P: null, i: hi, j: hj, x1: A[hi].x, x2: B[hj].x, anyForce: f.S || f.EM || f.W });
     ev.rs = SQRTS * Math.sqrt(ev.x1 * ev.x2);
     return ev;
   }
   const tot = cands.reduce((s, c) => s + c.P.w[state.mode], 0);
   let r = Math.random() * tot, ch = cands[0];
   for (const c of cands) { r -= c.P.w[state.mode]; if (r <= 0) { ch = c; break; } }
-  const { P, i, j } = ch;
+  const { P, i, j, M } = ch;
   if (P.mgen) {
-    const M = P.mgen(), ym = Math.min(1.6, Math.log(0.95 * SQRTS / M)), y = rnd(-ym, ym);
+    const ym = Math.max(0, Math.min(1.6, Math.log(0.95 * SQRTS / M))), y = rnd(-ym, ym);
     A[i].x = M / SQRTS * Math.exp(y); B[j].x = M / SQRTS * Math.exp(-y);
   }
   const a = A[i], b = B[j];
@@ -846,7 +882,7 @@ const HISTS = [
   { id: 'mt', title: 'W transverse mass', ax: 'm_T(ℓν)', lo: 0, hi: 120, nb: 40,
     ser: [['w', 'W boson', '--h-weak']],
     cap: 'The neutrino escapes, so only the transverse mass can be built. It piles up just below a sharp edge at the W mass.' },
-  { id: 'mjj', title: 'Dijet mass', ax: 'm(jj)', lo: 100, hi: 14000, log: true, nb: 40,
+  { id: 'mjj', title: 'Dijet mass', ax: 'm(jj)', lo: 100, hi: 100000, log: true, nb: 48,
     ser: [['qcd', 'Gluon exchange', '--h-strong'], ['ew', 'γ / W exchange', '--h-weak']],
     cap: 'Dijets come from the hardest partons, so they reach several TeV.' },
   { id: 'mbjj', title: 'Hadronic top mass', ax: 'm(bjj)', lo: 80, hi: 400, nb: 40,
@@ -1049,7 +1085,7 @@ function drawPartons(ps, xc, hide, hl, alpha, side) {
   g.fillStyle = gr; g.strokeStyle = 'rgba(229,236,244,0.35)'; g.lineWidth = 1;
   g.beginPath(); g.ellipse(xc, cy, rx * 1.4, ry, 0, 0, 7); g.fill(); g.stroke();
   g.font = '500 11px "IBM Plex Mono", monospace'; g.fillStyle = C.muted; g.textAlign = 'center';
-  g.fillText(`p  ${dec('6.8')} TeV`, xc, cy - ry - 8);
+  g.fillText(`p  ${fmtS(SQRTS / 2)}`, xc, cy - ry - 8);
   ps.forEach((p, k) => {
     if (k === hide) return;
     const x = xc + p.ox * rx, y = cy + p.oy * ry, r = 2.2 + 10 * Math.sqrt(p.x);
@@ -1398,10 +1434,13 @@ const SQ = { jet: 'var(--hcal)', bjet: 'var(--hcal)', e: 'var(--lep-e)', mu: 'va
 function showEvent(ev) {
   $('sx1').textContent = fmtX(ev.x1); $('sx2').textContent = fmtX(ev.x2); $('sss').textContent = fmtE(ev.rs);
   if (!ev.P) {
-    $('evName').textContent = L('No interaction', 'Sin interacción');
+    $('evName').textContent = ev.anyForce ? L('No hard collision', 'Sin colisión dura') : L('No interaction', 'Sin interacción');
     $('evRxn').textContent = 'p p → p p';
-    $('evDiag').innerHTML = `<div class="empty">${L('No force is switched on, so there is no vertex to draw.', 'No hay ninguna fuerza prendida, así que no hay vértice para dibujar.')}</div>`;
-    $('evBlurb').textContent = L('With every force off, nothing can couple to anything. The two protons pass straight through each other.', 'Con todas las fuerzas apagadas, nada se acopla con nada. Los dos protones se atraviesan sin tocarse.');
+    $('evDiag').innerHTML = `<div class="empty">${ev.anyForce ? L('No hard process, so there is no vertex to draw.', 'No hay proceso duro, así que no hay vértice para dibujar.') : L('No force is switched on, so there is no vertex to draw.', 'No hay ninguna fuerza prendida, así que no hay vértice para dibujar.')}</div>`;
+    $('evBlurb').textContent = ev.anyForce
+      ? L(`No parton pair here carries enough energy for any switched-on process: the hardest pair has only √ŝ = ${fmtE(SQRTS * Math.sqrt(ev.x1 * ev.x2))}. The protons just graze each other. Raise the collision energy to open up more processes.`,
+          `Ningún par de partones lleva suficiente energía para un proceso prendido: el par más duro tiene apenas √ŝ = ${fmtE(SQRTS * Math.sqrt(ev.x1 * ev.x2))}. Los protones apenas se rozan. Subí la energía de colisión para abrir más procesos.`)
+      : L('With every force off, nothing can couple to anything. The two protons pass straight through each other.', 'Con todas las fuerzas apagadas, nada se acopla con nada. Los dos protones se atraviesan sin tocarse.');
     $('evObjs').innerHTML = ''; $('evNote').hidden = true;
   } else {
     $('evName').textContent = nm(ev.P);
@@ -1534,14 +1573,15 @@ function renderCounts() {
   $('foundN').textContent = `${found} / ${PROCS.length}`;
   $('totN').textContent = state.total.toLocaleString(LOC());
 }
-function renderGrid() {
+function renderGrid(unlocked = []) {
   $('grid').innerHTML = PROCS.map(P => {
-    const n = state.counts[P.id], f = n > 0;
+    const n = state.counts[P.id], f = n > 0, r = reachable(P);
     const share = state.total ? (100 * n / state.total) : 0;
-    return `<li class="pc${f ? ' found' : ''}${state.lastNew === P.id ? ' new' : ''}">
+    return `<li class="pc${f ? ' found' : ''}${r ? '' : ' locked'}${state.lastNew === P.id ? ' new' : ''}${unlocked.includes(P.id) ? ' unlock' : ''}">
       <div class="pc-top"><span class="pc-name">${f ? nm(P) : L('Not yet seen', 'Todavía no visto')}</span><span class="pc-n">${f ? `×${n.toLocaleString(LOC())} · ${share < 0.1 ? share.toFixed(2) : share.toFixed(1)}%` : ''}</span></div>
       <div class="pc-rxn">${f ? P.rxn : '? ? → ?'}</div>
-      <div class="chips">${P.needs.map(k => `<span class="chip c-${k}">${fnm(k)}</span>`).join('')}</div></li>`;
+      <div class="chips">${P.needs.map(k => `<span class="chip c-${k}">${fnm(k)}</span>`).join('')}</div>${r ? '' : `
+      <div class="pc-lock">${L(`Out of reach: needs √ŝ ≳ ${fmtE(mOf(P))}`, `Fuera de alcance: necesita √ŝ ≳ ${fmtE(mOf(P))}`)}</div>`}</li>`;
   }).join('');
   state.lastNew = null;
   renderCounts();
@@ -1553,6 +1593,39 @@ function setForce(k, on) {
   $('forceNote').hidden = state.forces.S;
 }
 ['S', 'EM', 'W'].forEach(k => $('f' + k).addEventListener('click', () => setForce(k, !state.forces[k])));
+
+/* ---------- collision energy ---------- */
+const RS_MIN = 30, RS_MAX = 100000, RS_STEPS = 1000;
+const fmtS = v => v >= 1000 ? `${dec(String(+(v / 1000).toPrecision(3)))} TeV` : `${+v.toPrecision(3)} GeV`;
+const rsToSlider = v => Math.round(RS_STEPS * Math.log(v / RS_MIN) / Math.log(RS_MAX / RS_MIN));
+const sliderToRs = k => +(RS_MIN * Math.pow(RS_MAX / RS_MIN, k / RS_STEPS)).toPrecision(3);
+function renderEnergy() {
+  $('rsS').value = rsToSlider(SQRTS);
+  $('rsO').textContent = fmtS(SQRTS);
+  $('eyebrow').textContent = L(`Proton–proton collisions · √s = ${fmtS(SQRTS)}`, `Colisiones protón–protón · √s = ${fmtS(SQRTS)}`);
+  const n = PROCS.filter(reachable).length;
+  $('rsNote').textContent = L(`Each proton carries ${fmtS(SQRTS / 2)}. A process that makes mass m needs partons with x₁x₂s ≥ m². ${n} of ${PROCS.length} processes are within reach.`,
+    `Cada protón lleva ${fmtS(SQRTS / 2)}. Un proceso que crea una masa m necesita partones con x₁x₂s ≥ m². ${n} de ${PROCS.length} procesos están al alcance.`);
+  document.querySelectorAll('[data-rs]').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.rs === SQRTS)));
+}
+let rsPending = false;
+function setEnergy(v) {
+  const before = PROCS.filter(reachable).map(P => P.id);
+  SQRTS = Math.max(RS_MIN, Math.min(RS_MAX, v));
+  RSLO = Math.min(100, SQRTS / 10); RSHI = SQRTS; DEF_SIM = null;
+  estimateReach();
+  renderEnergy();
+  renderGrid(PROCS.filter(P => reachable(P) && !before.includes(P.id)).map(P => P.id));
+  if (!anim) draw(state.ev ? 1e9 : 0);
+  if (!$('how').hidden) { howDone = false; setSub(state.sub); }
+}
+$('rsS').addEventListener('input', e => {
+  const v = sliderToRs(+e.target.value);
+  $('rsO').textContent = fmtS(v);
+  if (rsPending) return; rsPending = true;
+  requestAnimationFrame(() => { rsPending = false; setEnergy(sliderToRs(+$('rsS').value)); });
+});
+$('rsPre').addEventListener('click', e => { const b = e.target.closest('[data-rs]'); if (b) setEnergy(+b.dataset.rs); });
 
 const MODE_NOTE = {
   show: 'Showcase evens out the rates so every process turns up within a few dozen clicks.',
@@ -1585,7 +1658,6 @@ cv.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { 
 new ResizeObserver(resize).observe(cv);
 
 const ES = {
- "eyebrow": "Colisiones protón–protón · √s = 13,6 TeV",
  "lede": "Cada protón es una bolsa de quarks y gluones, llamados <b>partones</b>, y cada uno lleva una fracción <b>x</b> del momento del protón. Cuando dos protones chocan, un partón de cada uno se encuentra en la <b>interacción dura</b>. Hacé clic en el detector para hacerlos chocar. Prendé y apagá las fuerzas para cambiar lo que puede salir.",
  "tabPlay": "Colisionador",
  "tabHow": "Cómo funciona",
@@ -1596,6 +1668,7 @@ const ES = {
  "mShow": "Vidriera",
  "mLhc": "Tipo LHC",
  "legend": "<span><i class=\"lg dot\" style=\"background:#ff5d6c\"></i>quark (color QCD)</span><span><i class=\"lg ring\"></i>antiquark</span><span><i class=\"lg glu\"></i>gluón</span><span><i class=\"lg\" style=\"background:var(--jet)\"></i>trazas de jets</span><span><i class=\"lg\" style=\"background:var(--hcal)\"></i>calorímetro hadrónico</span><span><i class=\"lg\" style=\"background:var(--lep-e)\"></i>electrón</span><span><i class=\"lg\" style=\"background:var(--lep-mu)\"></i>muón</span><span><i class=\"lg ydash\"></i>fotón</span><span><i class=\"lg dash\"></i>neutrino (invisible)</span>",
+ "energyH": "Energía de colisión",
  "forces": "Fuerzas",
  "swS": "Fuerte",
  "swEM": "Electromagnética",
@@ -1619,7 +1692,7 @@ const ES = {
  "stTune": "Ajustar las PDF (QCD)",
  "whichH": "Qué proceso ocurre",
  "whichP": "Cada clic elige exactamente un proceso duro. Cada proceso <i>i</i> tiene un peso fijo <i>w<sub>i</sub></i>, con un valor por modo de tasas. Los procesos que no pueden ocurrir en este evento tienen peso cero, y el resto se reparte la probabilidad en proporción a sus pesos.",
- "thetaP": "<i>Θ<sub>i</sub></i> = 1 si están prendidas todas las fuerzas que necesita el proceso <i>i</i> y los dos protones tienen un par de partones desde el que puede arrancar (con suficiente √ŝ para un par de tops); si no, 0.",
+ "thetaP": "<i>Θ<sub>i</sub></i> = 1 si están prendidas todas las fuerzas que necesita el proceso <i>i</i> y los dos protones tienen un par de partones desde el que puede arrancar , que lleve suficiente energía, x₁x₂s ≥ m² (m es la masa que crea, o su umbral de √ŝ); si no, 0. Si bajás la energía de colisión, los procesos pesados quedan afuera.",
  "weightsH": "Los pesos",
  "weightsP": "Los pesos tipo LHC son secciones eficaces aproximadas en picobarns a √s = 13,6 TeV. Varios dependen de cortes que acá no están fijados, así que leelos como órdenes de magnitud. Las probabilidades suponen las tres fuerzas prendidas.",
  "probH": "Probabilidad por colisión, con todas las fuerzas prendidas",
@@ -1732,7 +1805,8 @@ function curveChart(el, series, yLabel, o = {}) {
 
 /* Monte Carlo of whole protons: x·f(x) per parton kind, momentum shares, and the √ŝ of the hardest pair */
 const KINDS = () => [['v', L('Valence quarks', 'Quarks de valencia'), '--h-strong'], ['g', L('Gluons', 'Gluones'), '--h-higgs'], ['s', L('Sea quarks + antiquarks', 'Quarks y antiquarks del mar'), '--h-weak']];
-const NB = 30, DL = 3 / NB * Math.LN10, RSB = 26, RSLO = 100, RSHI = SQRTS;
+const NB = 30, DL = 3 / NB * Math.LN10, RSB = 26;
+let RSLO = 100, RSHI = SQRTS;
 function simulate(par, sm, N) {
   const acc = { v: new Float64Array(NB), g: new Float64Array(NB), s: new Float64Array(NB) }, mom = { v: 0, g: 0, s: 0 }, cnt = { v: 0, g: 0, s: 0 };
   const rs = new Float64Array(RSB), all = [];
@@ -1822,7 +1896,7 @@ function applyTune() {
   curveChart('tunePdf', KINDS().flatMap(([t, name, col]) => [{ name, col, pts: pdfPts(R, t) }, { name: `${name} (${dflt})`, col, dash: true, pts: pdfPts(D, t) }]), 'x·f(x)');
   $('lgR').innerHTML = `<span><i style="background:var(--h-strong)"></i>${L('Your tune', 'Tu ajuste')}</span><span><i style="background:var(--muted)"></i>${L('Default (dashed)', 'Por defecto (punteado)')}</span>`;
   curveChart('tuneRs', [{ name: L('Your tune', 'Tu ajuste'), col: '--h-strong', pts: rsPts(R) }, { name: L('Default', 'Por defecto'), col: '--muted', dash: true, pts: rsPts(D) }],
-    L('share', 'fracción'), { lo: RSLO, hi: RSHI, ticks: [[100, '100 GeV'], [1000, '1 TeV'], [10000, '10 TeV']], xLabel: L('√ŝ of the two hardest partons', '√ŝ de los dos partones más duros'), xName: '√ŝ', fmtX: fmtE });
+    L('share', 'fracción'), { lo: RSLO, hi: RSHI, ticks: [[10, '10 GeV'], [100, '100 GeV'], [1000, '1 TeV'], [10000, '10 TeV'], [100000, '100 TeV']].filter(([v]) => v >= RSLO && v <= RSHI), xLabel: L('√ŝ of the two hardest partons', '√ŝ de los dos partones más duros'), xName: '√ŝ', fmtX: fmtE });
   $('tTiles').innerHTML = shareTiles(R, D) + `<div class="tile"><b>${fmtE(R.med)}</b><span>${L('median √ŝ of the hardest pair', 'mediana de √ŝ del par más duro')} (${dflt} ${fmtE(D.med)})</span></div>`;
 }
 
@@ -1853,6 +1927,7 @@ function setLang(lang) {
   $('lES').setAttribute('aria-pressed', String(lang === 'es'));
   document.querySelectorAll('[data-i18n]').forEach(el => { const k = el.dataset.i18n; el.innerHTML = lang === 'es' ? ES[k] : EN[k]; });
   setMode(state.mode);
+  renderEnergy();
   renderGrid(); renderHists();
   if (state.ev && state.ev.shown) showEvent(state.ev);
   howDone = false; tuneBuilt = false;
@@ -1872,7 +1947,10 @@ function start(saved) {
     if (saved.mode) setMode(saved.mode); else setMode('show');
     if (saved.hdata) HISTS.forEach(H => { if (saved.hdata[H.id]) Object.assign(hdata[H.id], saved.hdata[H.id]); });
     if (saved.pdf) { Object.assign(PDFP, saved.pdf); applyTune(); }
+    if (saved.sqrts) SQRTS = saved.sqrts;
   } else setMode('show');
+  RSLO = Math.min(100, SQRTS / 10); RSHI = SQRTS;
+  estimateReach();
   resize();
   renderGrid();
   renderHists();
@@ -1884,7 +1962,7 @@ function start(saved) {
   if (location.hash === '#tune') setTab('how', 'tune');
   collide(1);
 }
-window.claude?.hot?.snapshot?.(() => ({ counts: state.counts, total: state.total, forces: state.forces, mode: state.mode, hdata, lang: state.lang, pdf: PDFP }));
+window.claude?.hot?.snapshot?.(() => ({ counts: state.counts, total: state.total, forces: state.forces, mode: state.mode, hdata, lang: state.lang, pdf: PDFP, sqrts: SQRTS }));
 window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
 })();
 </script>
