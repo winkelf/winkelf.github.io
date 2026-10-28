@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>NeuTron</title>
-<meta name="description" content="Interactive nuclear physics notebook: the liquid drop model, a shell model that fills levels for any nucleus, and a shielding lab for alpha, beta and gamma beams.">
+<meta name="description" content="Interactive nuclear physics notebook: the liquid drop model, a shell model that fills levels for any nucleus, and a shielding lab for alpha, beta, gamma and neutron beams.">
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,7 +17,7 @@
   --bg:#f3f5f8; --panel:#ffffff; --ink:#141a26; --ink-2:#4a5468; --ink-3:#7a8497;
   --rule:#d9dee7; --grid:#e8ecf2; --accent:#2b3a67; --sel:#e9edf6;
   --vol:#2f5fd0; --surf:#0f8a7e; --coul:#d0442f; --asym:#7a3fc4; --pair:#b07800;
-  --nuc-p:#d0442f; --nuc-n:#7d8aa3; --nuc-edge:#ffffff; --neu:#3566c9; --good:#1f8a4c; --bad:#b42318; --warn:#b45309; --alpha:#d0442f; --beta:#3566c9; --gamma:#7a3fc4;
+  --nuc-p:#d0442f; --nuc-n:#7d8aa3; --nuc-edge:#ffffff; --neu:#3566c9; --good:#1f8a4c; --bad:#b42318; --warn:#b45309; --alpha:#d0442f; --beta:#3566c9; --gamma:#7a3fc4; --neutron:#0f8a7e;
   --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
   --f-body:"IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
   --f-math:"STIX Two Text", "Cambria Math", "Times New Roman", serif;
@@ -27,12 +27,12 @@
   --bg:#0e121b; --panel:#161c28; --ink:#e6eaf2; --ink-2:#a8b1c3; --ink-3:#7c8699;
   --rule:#2a3244; --grid:#202838; --accent:#9fb4ff; --sel:#1f2738;
   --vol:#7aa2ff; --surf:#4fd1c0; --coul:#ff8a70; --asym:#b48cff; --pair:#f2c14e;
-  --nuc-p:#ff8a70; --nuc-n:#8a96ad; --nuc-edge:#161c28; --neu:#82a8ff; --good:#5cd08a; --bad:#ff7a6b; --warn:#f5a524; --alpha:#ff8a70; --beta:#82a8ff; --gamma:#b48cff; color-scheme:dark;}}
+  --nuc-p:#ff8a70; --nuc-n:#8a96ad; --nuc-edge:#161c28; --neu:#82a8ff; --good:#5cd08a; --bad:#ff7a6b; --warn:#f5a524; --alpha:#ff8a70; --beta:#82a8ff; --gamma:#b48cff; --neutron:#4fd1c0; color-scheme:dark;}}
 :root[data-theme="dark"]{
   --bg:#0e121b; --panel:#161c28; --ink:#e6eaf2; --ink-2:#a8b1c3; --ink-3:#7c8699;
   --rule:#2a3244; --grid:#202838; --accent:#9fb4ff; --sel:#1f2738;
   --vol:#7aa2ff; --surf:#4fd1c0; --coul:#ff8a70; --asym:#b48cff; --pair:#f2c14e;
-  --nuc-p:#ff8a70; --nuc-n:#8a96ad; --nuc-edge:#161c28; --neu:#82a8ff; --good:#5cd08a; --bad:#ff7a6b; --warn:#f5a524; --alpha:#ff8a70; --beta:#82a8ff; --gamma:#b48cff; color-scheme:dark;}
+  --nuc-p:#ff8a70; --nuc-n:#8a96ad; --nuc-edge:#161c28; --neu:#82a8ff; --good:#5cd08a; --bad:#ff7a6b; --warn:#f5a524; --alpha:#ff8a70; --beta:#82a8ff; --gamma:#b48cff; --neutron:#4fd1c0; color-scheme:dark;}
 
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.55;
@@ -246,7 +246,7 @@ input[type=range]{width:100%;accent-color:var(--ink)}
 .pcard .big small{font-size:12px;color:var(--ink-3);font-family:var(--f-body);margin-left:4px}
 .pcard dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:3px 10px;margin:10px 0 0;font-size:13px}
 .pcard dt{color:var(--ink-3)}
-.pcard dd{margin:0;text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.pcard dd{margin:0;text-align:right;white-space:nowrap;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
 .pcard p{margin:10px 0 0;font-size:13px;color:var(--ink-2)}
 .pcard p.warnline{color:var(--warn)}
 .empty{padding:18px;border:1px dashed var(--rule);border-radius:12px;color:var(--ink-3);font-size:14px}
@@ -405,7 +405,7 @@ input[type=range]{width:100%;accent-color:var(--ink)}
       <div>
         <div class="eyebrow">Interaction of radiation with matter</div>
         <h2>Stopping a beam</h2>
-        <p>Pick a wall and a beam, then watch what gets through. Alpha particles stop at a sharp depth. Beta electrons scatter and stop over a spread of depths. Gamma photons are never fully stopped: each centimetre removes the same fraction.</p>
+        <p>Pick a wall and a beam, then watch what gets through. Alpha particles stop at a sharp depth. Beta electrons scatter and stop over a spread of depths. Gamma photons are never fully stopped: each centimetre removes the same fraction. Neutrons pass straight through lead but are slowed by the hydrogen in water and plastic.</p>
       </div>
     </section>
 
@@ -448,6 +448,7 @@ input[type=range]{width:100%;accent-color:var(--ink)}
         <div style="--c:var(--alpha)"><span class="pglyph">α</span><p><b>Alpha: heavy and doubly charged</b>A helium nucleus, 7300 times heavier than an electron. It loses energy continuously by ionising atoms (Bethe–Bloch) and barely deflects, so every alpha of the same energy stops at almost the same depth: a sharp range. Paper or the dead layer of skin is enough.</p></div>
         <div style="--c:var(--beta)"><span class="pglyph">β</span><p><b>Beta: light electrons</b>Electrons deflect at almost every collision, so their paths zig-zag and they stop over a spread of depths. Beta decay also gives a spectrum of energies. In high-Z materials such as lead, braking electrons radiate X-rays (bremsstrahlung). Use plastic first, then metal.</p></div>
         <div style="--c:var(--gamma)"><span class="pglyph">γ</span><p><b>Gamma: no charge</b>A photon travels freely until a single event removes it: photoelectric absorption, Compton scattering or pair production. Each layer removes the same fraction, <span class="m"><i>I</i> = <i>I</i><sub>0</sub>e<sup>−μ<i>x</i></sup></span>, so there is no range. Dense, high-Z materials make μ large.</p></div>
+        <div style="--c:var(--neutron)"><span class="pglyph">n</span><p><b>Neutron: no charge, sees only nuclei</b>A neutron ignores the electrons and travels until it hits a nucleus. It mostly bounces off (elastic scattering), and it loses the most energy when the nucleus has about the same mass as it does. A proton has nearly the same mass, so hydrogen-rich water, concrete and polyethylene slow it down in about 20 collisions. A lead nucleus is 200 times heavier and the neutron bounces off it with almost no energy loss. Once slow (thermal), the neutron is captured, and the capture releases gamma rays, so a neutron shield needs a gamma shield too.</p></div>
       </div>
     </section>
   </main>
@@ -989,13 +990,14 @@ const MU = {
     t.splice(8,0,[0.088,1.910],[0.08801,7.683]); return t; })(), // K edge at 88 keV
 };
 const MATS = [
-  {id:"paper", name:"Paper", rho:0.80, a13:2.0, Z:6.6, col:"#e6dfcd", mu:"pmma"},
-  {id:"water", name:"Water / tissue", rho:1.00, a13:2.0, Z:7.4, col:"#8dbde6", mu:"water"},
-  {id:"pmma", name:"Plastic (PMMA)", rho:1.19, a13:1.95, Z:6.5, col:"#c9e3ea", mu:"pmma"},
-  {id:"al", name:"Aluminium", rho:2.70, a13:3.0, Z:13, col:"#b8bfc8", mu:"al"},
-  {id:"conc", name:"Concrete", rho:2.30, a13:2.65, Z:11, col:"#a59f93", mu:"conc"},
-  {id:"fe", name:"Steel", rho:7.87, a13:3.83, Z:26, col:"#737a83", mu:"fe"},
-  {id:"pb", name:"Lead", rho:11.35, a13:5.92, Z:82, col:"#4e535b", mu:"pb"},
+  {id:"paper", name:"Paper", rho:0.80, a13:2.0, Z:6.6, col:"#e6dfcd", mu:"pmma", w:{H:0.062,C:0.444,O:0.494}},
+  {id:"water", name:"Water / tissue", rho:1.00, a13:2.0, Z:7.4, col:"#8dbde6", mu:"water", w:{H:0.112,O:0.888}},
+  {id:"pmma", name:"Plastic (PMMA)", rho:1.19, a13:1.95, Z:6.5, col:"#c9e3ea", mu:"pmma", w:{H:0.080,C:0.600,O:0.320}},
+  {id:"pe", name:"Polyethylene", rho:0.95, a13:1.9, Z:5.5, col:"#ecebe4", mu:"pmma", w:{H:0.144,C:0.856}},
+  {id:"al", name:"Aluminium", rho:2.70, a13:3.0, Z:13, col:"#b8bfc8", mu:"al", w:{Al:1}},
+  {id:"conc", name:"Concrete", rho:2.30, a13:2.65, Z:11, col:"#a59f93", mu:"conc", w:{H:0.022,C:0.003,O:0.575,Na:0.015,Al:0.034,Si:0.305,Ca:0.040,Fe:0.006}},
+  {id:"fe", name:"Steel", rho:7.87, a13:3.83, Z:26, col:"#737a83", mu:"fe", w:{Fe:1}},
+  {id:"pb", name:"Lead", rho:11.35, a13:5.92, Z:82, col:"#4e535b", mu:"pb", w:{Pb:1}},
 ];
 function muRho(mat,E){ const t=MU[mat.mu]; if(E<=t[0][0]) return t[0][1]; if(E>=t[t.length-1][0]) return t[t.length-1][1];
   let i=1; while(t[i][0]<E) i++; const [e0,m0]=t[i-1],[e1,m1]=t[i];
@@ -1012,7 +1014,6 @@ const betaMu = E => 17*Math.pow(E,-1.14);                          // cm²/g
 function alphaT(E,m,x){ const R=alphaRg(E,m)/m.rho; return x<R?1:0; }
 function betaT(E,m,x){ const R=betaRg(E)/m.rho; return x>=R?0:Math.exp(-betaMu(E)*m.rho*x); }
 function gammaT(E,m,x){ return Math.exp(-muRho(m,E)*m.rho*x); }
-const TF = {alpha:alphaT, beta:betaT, gamma:gammaT};
 
 function logInterp(pts,Z){ const lz=Math.log(Z); if(Z<=pts[0][0]) return pts[0][1]; for(let i=1;i<pts.length;i++) if(Z<=pts[i][0]){ const [z0,e0]=pts[i-1],[z1,e1]=pts[i]; return Math.exp(Math.log(e0)+(Math.log(e1)-Math.log(e0))*(lz-Math.log(z0))/(Math.log(z1)-Math.log(z0))); } return pts[pts.length-1][1]; }
 function gammaProcess(E,Z){
@@ -1020,12 +1021,39 @@ function gammaProcess(E,Z){
   return E<e1 ? "photoelectric absorption" : E>e2 ? "pair production" : "Compton scattering";
 }
 
+// neutron: total microscopic cross sections σ_t in barns (energy in MeV), smoothed over resonances.
+// Approximate values after ENDF/B; hydrogen at thermal energy is the bound value in water/plastics.
+const EN=[2.53e-8,1e-6,1e-3,0.1,0.5,1,2,5,14,20];
+const NX = {
+  H: {A:1.008,  s:[45,20.5,20.3,12.7,6.2,4.26,2.90,1.61,0.69,0.49]},
+  C: {A:12.011, s:[5.0,4.73,4.70,4.30,3.2,2.6,1.7,1.2,1.30,1.35]},
+  O: {A:15.999, s:[3.9,3.8,3.8,3.6,4.5,4.0,1.5,1.2,1.6,1.5]},
+  Na:{A:22.99,  s:[3.9,3.3,3.2,3.5,3.5,2.8,2.5,2.0,1.8,1.7]},
+  Al:{A:26.98,  s:[1.7,1.45,1.4,3.0,3.0,2.5,2.6,2.0,1.73,1.6]},
+  Si:{A:28.09,  s:[2.4,2.0,2.0,3.5,3.5,3.0,2.3,2.0,1.75,1.7]},
+  Ca:{A:40.08,  s:[3.4,3.0,3.0,3.0,3.0,2.8,2.6,2.3,2.0,1.9]},
+  Fe:{A:55.85,  s:[14.2,11.8,10.5,4.0,3.0,3.3,3.2,3.6,2.6,2.4]},
+  Pb:{A:207.2,  s:[11.4,11.3,11.3,9.5,7.5,5.0,6.5,7.6,5.4,5.6]},
+};
+const NA=0.6022;  // Avogadro × 1e-24, so ρ·NA·w/A·σ[b] gives cm⁻¹
+const logLin = (xs,ys,x) => { if(x<=xs[0]) return ys[0]; if(x>=xs[xs.length-1]) return ys[ys.length-1];
+  let i=1; while(xs[i]<x) i++; const f=(Math.log(x)-Math.log(xs[i-1]))/(Math.log(xs[i])-Math.log(xs[i-1]));
+  return Math.exp(Math.log(ys[i-1])+f*(Math.log(ys[i])-Math.log(ys[i-1]))); };
+const nDens = (m,el) => m.rho*NA*m.w[el]/NX[el].A;                     // atoms per b·cm
+const neutronSigma = (E,m) => Object.keys(m.w).reduce((a,el)=>a+nDens(m,el)*logLin(EN,NX[el].s,E),0);
+// mean log-energy loss per collision ξ, weighted by the epithermal scattering rate of each element
+const xiA = A => A===1 ? 1 : 1+(A-1)**2/(2*A)*Math.log((A-1)/(A+1));
+function neutronXi(m){ let num=0, den=0; for(const el in m.w){ const r=nDens(m,el)*NX[el].s[2]; num+=r*xiA(Math.round(NX[el].A)); den+=r; } return num/den; }
+const ETH=2.53e-8;
+function neutronT(E,m,x){ return Math.exp(-neutronSigma(E,m)*x); }
+const TF = {alpha:alphaT, beta:betaT, gamma:gammaT, neutron:neutronT};
+
 /* ---------- formatting ---------- */
 function fmtLen(cm){
   const f=(v,u)=>`${v>=100?v.toFixed(0):v>=10?v.toFixed(1):v.toPrecision(2).replace(/\.?0+$/,"")} ${u}`;
   if(cm<0.1) return f(cm*1e4,"µm"); if(cm<1) return f(cm*10,"mm"); if(cm<100) return f(cm,"cm"); return f(cm/100,"m");
 }
-function fmtE(E){ return E<1 ? `${+(E*1000).toPrecision(3)} keV` : `${+E.toPrecision(3)} MeV`; }
+function fmtE(E){ return E<1e-3 ? `${+(E*1e6).toPrecision(E<1e-6?2:3)} eV` : E<1 ? `${+(E*1000).toPrecision(3)} keV` : `${+E.toPrecision(3)} MeV`; }
 function fmtPct(T){ if(T<=0) return "0%"; if(T<1e-4) return "< 0.01%"; if(T>0.9999) return "100%"; const p=T*100; return `${p>=10?p.toFixed(0):p>=1?p.toFixed(1):p.toPrecision(2)}%`; }
 
 /* ---------- state + controls ---------- */
@@ -1033,11 +1061,13 @@ const PT = {
   alpha:{glyph:"α", name:"Alpha", desc:"Helium nucleus (2p + 2n). Kinetic energy.", min:1, max:10, log:false, step:0.05},
   beta:{glyph:"β", name:"Beta", desc:"Electron. For a β source, use the endpoint energy.", min:0.01, max:10, log:true, step:0.005},
   gamma:{glyph:"γ", name:"Gamma", desc:"Photon energy.", min:0.01, max:10, log:true, step:0.005},
+  neutron:{glyph:"n", name:"Neutron", desc:"Kinetic energy, from thermal (0.025 eV) to fusion (14 MeV).", min:ETH, max:20, log:true, step:0.01},
 };
-const SH = {mat:MATS[3], x:0.1, on:{alpha:true,beta:true,gamma:true}, E:{alpha:5.0,beta:1.0,gamma:0.662}};
+const SH = {mat:MATS[4], x:0.1, on:{alpha:true,beta:true,gamma:true,neutron:true}, E:{alpha:5.0,beta:1.0,gamma:0.662,neutron:2.0}};
 const SRC = [
   ["²¹⁰Po", {alpha:5.30}], ["²⁴¹Am", {alpha:5.49, gamma:0.0595}], ["⁹⁰Sr/⁹⁰Y", {beta:2.28}], ["³²P", {beta:1.71}],
   ["¹³⁷Cs", {beta:0.514, gamma:0.662}], ["⁶⁰Co", {beta:0.318, gamma:1.25}], ["⁹⁹ᵐTc", {gamma:0.1405}],
+  ["²⁵²Cf", {neutron:2.1, gamma:0.9}], ["Am–Be", {neutron:4.2, gamma:4.44}], ["D–T generator", {neutron:14.1}], ["Reactor thermal", {neutron:ETH}],
 ];
 const XPRE = [["1 sheet of paper",0.01],["1 mm",0.1],["1 cm",1],["10 cm",10],["1 m",100]];
 
@@ -1085,6 +1115,15 @@ function shieldCards(){
       <div class="big">${fmtPct(T)}<small>gets through</small></div>
       <dl><dt>μ</dt><dd>${mu<0.1?mu.toPrecision(2):mu.toPrecision(3)} cm⁻¹</dd><dt>Half-value layer</dt><dd>${fmtLen(hvl)}</dd><dt>Wall in HVLs</dt><dd>${(x/hvl)<10?(x/hvl).toFixed(2):(x/hvl).toFixed(0)}</dd></dl>
       <p>Mostly ${gammaProcess(E,m.Z)}. Every half-value layer halves the beam, and there is no thickness that stops it completely.</p></div>`); }
+  if(SH.on.neutron){ const E=SH.E.neutron, Sig=neutronSigma(E,m), T=neutronT(E,m,x), lam=1/Sig, xi=neutronXi(m), nc=Math.ceil(Math.log(E/ETH)/xi);
+    const fast=E>1e-6, hyd=xi>0.5;
+    const line = !fast ? `Already thermal: the neutron wanders until it is captured by a nucleus.`
+      : hyd ? `Hydrogen makes ${m.name.toLowerCase()} a good moderator. A collision with a proton can take up to all of the neutron's energy, so it reaches thermal energy after about ${nc} collisions.`
+      : `Each collision takes on average only ${((1-Math.exp(-xi))*100).toPrecision(2)}% of the energy, so a scattered neutron keeps going in a new direction. Reaching thermal energy takes about ${nc.toLocaleString("en")} collisions. The narrow-beam number above makes this wall look better than it is.`;
+    out.push(`<div class="pcard" style="--c:var(--neutron)"><div class="top"><h5><span class="sw"></span>Neutron · ${fmtE(E)}</h5>${verdict(T,"Blocked")}</div>
+      <div class="big">${fmtPct(T)}<small>gets through uncollided</small></div>
+      <dl><dt>Σ<sub>t</sub></dt><dd>${Sig<0.1?Sig.toPrecision(2):Sig.toPrecision(3)} cm⁻¹</dd><dt>Mean free path λ</dt><dd>${fmtLen(lam)}</dd><dt>Wall in λ</dt><dd>${(x/lam)<10?(x/lam).toFixed(2):(x/lam).toFixed(0)}</dd>${fast?`<dt>Collisions</dt><dd>${nc.toLocaleString("en")}</dd>`:""}</dl>
+      <p>${line}</p><p class="warnline">${m.w.H?"Slow neutrons are captured on hydrogen, which emits a 2.2 MeV gamma ray.":"Captured neutrons release gamma rays of several MeV."} Put a gamma shield behind a neutron shield.</p></div>`); }
   document.getElementById("sh-cards").innerHTML = out.length ? out.join("") : `<div class="empty">The beam is empty. Switch on at least one particle type under Beam.</div>`;
 }
 
@@ -1092,7 +1131,7 @@ function shieldCards(){
 function shieldChart(){
   const m=SH.mat, W=620, H=300, mg={l:46,r:20,t:14,b:40};
   const xs = c => mg.l + (Math.log10(c)+4)/6*(W-mg.l-mg.r), ys = T => mg.t + (1-T)*(H-mg.t-mg.b);
-  document.getElementById("sh-chart-sub").textContent = `Fraction of each beam that crosses ${m.name.toLowerCase()} of a given thickness. Narrow beam: scattered photons don't count.`;
+  document.getElementById("sh-chart-sub").textContent = `Fraction of each beam that crosses ${m.name.toLowerCase()} of a given thickness. Narrow beam: scattered photons and neutrons don't count.`;
   let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Transmitted fraction versus wall thickness">`;
   [0,0.25,0.5,0.75,1].forEach(T=> s+=`<line x1="${mg.l}" x2="${W-mg.r}" y1="${ys(T)}" y2="${ys(T)}" stroke="var(--grid)"/><g class="axis"><text x="${mg.l-8}" y="${ys(T)+3.5}" text-anchor="end">${T*100}%</text></g>`);
   [[1e-4,"1 µm"],[1e-3,"10 µm"],[1e-2,"100 µm"],[0.1,"1 mm"],[1,"1 cm"],[10,"10 cm"],[100,"1 m"]].forEach(([c,l])=> s+=`<line x1="${xs(c)}" x2="${xs(c)}" y1="${mg.t}" y2="${H-mg.b}" stroke="var(--grid)"/><g class="axis"><text x="${xs(c)}" y="${H-mg.b+16}" text-anchor="middle">${l}</text></g>`);
@@ -1103,7 +1142,7 @@ function shieldChart(){
     // direct label where the curve crosses 50%
     let c50=1e-4; for(let i=0;i<=600;i++){ const c=Math.pow(10,-4+6*i/600); if(TF[k](SH.E[k],m,c)<0.5){ c50=c; break; } c50=c; }
     const lx=Math.min(W-mg.r-40, xs(c50)+6);
-    s+=`<text class="lbl" x="${lx}" y="${ys(0.5)-6-(["alpha","beta","gamma"].indexOf(k)*14)}" style="fill:var(--ink);font-weight:600">${PT[k].glyph} ${PT[k].name}</text>`;
+    s+=`<text class="lbl" x="${lx}" y="${ys(0.5)-6-(Object.keys(PT).indexOf(k)*14)}" style="fill:var(--ink);font-weight:600">${PT[k].glyph} ${PT[k].name}</text>`;
   });
   s+=`<line x1="${xs(SH.x)}" x2="${xs(SH.x)}" y1="${mg.t}" y2="${H-mg.b}" stroke="var(--ink)" stroke-width="1.5" stroke-dasharray="4 3"/>
     <text class="lbl" x="${xs(SH.x)+5}" y="${mg.t+10}" style="fill:var(--ink)">your wall</text>`;
@@ -1128,7 +1167,7 @@ const SIM = {parts:[], marks:[], count:{}, spawnAcc:0, last:0, cols:{}, W:0, H:0
 const cv=document.getElementById("sh-canvas"), cx=cv.getContext("2d");
 const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 function readCols(){ const cs=getComputedStyle(document.documentElement);
-  ["alpha","beta","gamma","ink","ink-2","ink-3","panel","rule","grid","bg"].forEach(k=>SIM.cols[k]=cs.getPropertyValue("--"+k).trim()); }
+  ["alpha","beta","gamma","neutron","ink","ink-2","ink-3","panel","rule","grid","bg"].forEach(k=>SIM.cols[k]=cs.getPropertyValue("--"+k).trim()); }
 function sizeCanvas(){ const r=cv.getBoundingClientRect(); SIM.dpr=window.devicePixelRatio||1; SIM.W=r.width; SIM.H=r.height;
   cv.width=Math.round(r.width*SIM.dpr); cv.height=Math.round(r.height*SIM.dpr); cx.setTransform(SIM.dpr,0,0,SIM.dpr,0,0); }
 function geom(){ const W=SIM.W, H=SIM.H, x0=Math.round(W*0.42), ww=Math.max(4, 4+(Math.log10(SH.x)+4)/6*(W*0.33-4));
@@ -1142,7 +1181,8 @@ function spawn(g){
   if(k==="alpha"){ const R=alphaRg(E,m)/m.rho*(1+0.03*(Math.random()-0.5)); if(R<x){ depth=R; passes=false; } }
   if(k==="beta"){ const R=betaRg(E)/m.rho, d=-Math.log(Math.random())/(betaMu(E)*m.rho); if(x>=R || d<x){ depth=Math.min(d,R); passes=false; } }
   if(k==="gamma"){ const d=-Math.log(Math.random())/(muRho(m,E)*m.rho); if(d<x){ depth=d; passes=false; } }
-  const sp={alpha:150,beta:300,gamma:420}[k];
+  if(k==="neutron"){ const d=-Math.log(Math.random())/neutronSigma(E,m); if(d<x){ depth=d; passes=false; } }
+  const sp={alpha:150,beta:300,gamma:420,neutron:230}[k];
   let exitSp=sp; if(k==="alpha" && passes){ const Rres=alphaRair(E)-x*m.rho/(0.56e-3*m.a13); exitSp=sp*Math.sqrt(Math.max(0.05,alphaEfromRair(Rres)/E)); }
   const y=g.cy+(Math.random()-0.5)*Math.min(110,g.H*0.4);
   SIM.parts.push({k, x:g.src+8, y, ang:0, sp, exitSp, passes, stopX: passes?Infinity : g.x0+Math.min(1,depth/x)*g.ww, trail:[], scattered:false, alive:true});
@@ -1175,6 +1215,7 @@ function drawParticle(p){
   cx.fillStyle=col; cx.strokeStyle=col;
   if(p.k==="alpha"){ cx.beginPath(); cx.arc(p.x,p.y,4.8,0,7); cx.fill(); }
   else if(p.k==="beta"){ cx.beginPath(); cx.arc(p.x,p.y,2.4,0,7); cx.fill(); }
+  else if(p.k==="neutron"){ cx.lineWidth=1.6; cx.fillStyle=SIM.cols.panel; cx.beginPath(); cx.arc(p.x,p.y,3.8,0,7); cx.fill(); cx.stroke(); }
   else { cx.lineWidth=1.6; cx.beginPath(); for(let i=0;i<=16;i++){ const s=-i, wx=p.x+Math.cos(p.ang)*s - Math.sin(p.ang)*Math.sin((i+p.x*0.3)*0.9)*3, wy=p.y+Math.sin(p.ang)*s + Math.cos(p.ang)*Math.sin((i+p.x*0.3)*0.9)*3; i?cx.lineTo(wx,wy):cx.moveTo(wx,wy);} cx.stroke(); }
   cx.globalAlpha=1;
 }
@@ -1186,9 +1227,10 @@ function step(dt,g){
     if(p.k==="beta" && inWall){ p.ang+= (Math.random()-0.5)*0.9; p.ang=Math.max(-1.1,Math.min(1.1,p.ang)); }
     else if(p.k==="beta" && p.x>=g.x1 && !p.scattered) p.ang*=0.9;
     p.x+=Math.cos(p.ang)*v*dt; p.y+=Math.sin(p.ang)*v*dt;
-    if(p.k!=="gamma"){ p.trail.push([p.x,p.y]); if(p.trail.length>(p.k==="beta"?14:10)) p.trail.shift(); }
+    if(p.k!=="gamma" && p.k!=="neutron"){ p.trail.push([p.x,p.y]); if(p.trail.length>(p.k==="beta"?14:10)) p.trail.shift(); }
     if(!p.passes && !p.scattered && p.x>=p.stopX){
-      if(p.k==="gamma" && Math.random()<0.55){ p.scattered=true; p.ang=(Math.random()-0.5)*2*Math.PI; SIM.marks.push({x:p.x,y:p.y,t:0,k:p.k,ring:true}); }
+      if(p.k==="neutron"){ p.scattered=true; p.ang=(Math.random()-0.5)*2*Math.PI; p.sp*=Math.max(0.35,Math.exp(-neutronXi(SH.mat))); SIM.marks.push({x:p.x,y:p.y,t:0,k:p.k,ring:true}); }
+      else if(p.k==="gamma" && Math.random()<0.55){ p.scattered=true; p.ang=(Math.random()-0.5)*2*Math.PI; SIM.marks.push({x:p.x,y:p.y,t:0,k:p.k,ring:true}); }
       else { p.alive=false; SIM.marks.push({x:p.x,y:p.y,t:0,k:p.k,ring:p.k==="gamma"}); }
     }
     if(!p.scattered && p.passes && p.x>=g.det){ p.alive=false; SIM.count[p.k].d++; }
