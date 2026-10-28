@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>NeuTron</title>
-<meta name="description" content="Interactive nuclear physics notebook: the liquid drop model, a shell model that fills levels for any nucleus, and a shielding lab for alpha, beta, gamma and neutron beams, and a fission reactor to run.">
+<meta name="description" content="Interactive nuclear physics notebook: the liquid drop model, a shell model that fills levels for any nucleus, and a shielding lab for alpha, beta, gamma and neutron beams, a fission reactor to run, and the CNO cycle that powers heavy stars.">
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,7 +17,7 @@
   --bg:#f3f5f8; --panel:#ffffff; --ink:#141a26; --ink-2:#4a5468; --ink-3:#7a8497;
   --rule:#d9dee7; --grid:#e8ecf2; --accent:#2b3a67; --sel:#e9edf6;
   --vol:#2f5fd0; --surf:#0f8a7e; --coul:#d0442f; --asym:#7a3fc4; --pair:#b07800;
-  --nuc-p:#d0442f; --nuc-n:#7d8aa3; --nuc-edge:#ffffff; --neu:#3566c9; --good:#1f8a4c; --bad:#b42318; --warn:#b45309; --alpha:#d0442f; --beta:#3566c9; --gamma:#7a3fc4; --neutron:#0f8a7e; --u235:#2e8b57; --water:#e4f0fa; --rod:#3b4252; --spent:#b8bfc8;
+  --nuc-p:#d0442f; --nuc-n:#7d8aa3; --nuc-edge:#ffffff; --neu:#3566c9; --good:#1f8a4c; --bad:#b42318; --warn:#b45309; --alpha:#d0442f; --beta:#3566c9; --gamma:#7a3fc4; --neutron:#0f8a7e; --u235:#2e8b57; --water:#e4f0fa; --rod:#3b4252; --spent:#b8bfc8; --c-pp:#3566c9; --c-cno:#d0442f;
   --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
   --f-body:"IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
   --f-math:"STIX Two Text", "Cambria Math", "Times New Roman", serif;
@@ -27,12 +27,12 @@
   --bg:#0e121b; --panel:#161c28; --ink:#e6eaf2; --ink-2:#a8b1c3; --ink-3:#7c8699;
   --rule:#2a3244; --grid:#202838; --accent:#9fb4ff; --sel:#1f2738;
   --vol:#7aa2ff; --surf:#4fd1c0; --coul:#ff8a70; --asym:#b48cff; --pair:#f2c14e;
-  --nuc-p:#ff8a70; --nuc-n:#8a96ad; --nuc-edge:#161c28; --neu:#82a8ff; --good:#5cd08a; --bad:#ff7a6b; --warn:#f5a524; --alpha:#ff8a70; --beta:#82a8ff; --gamma:#b48cff; --neutron:#4fd1c0; --u235:#6fd08c; --water:#13263a; --rod:#6b7488; --spent:#3d4555; color-scheme:dark;}}
+  --nuc-p:#ff8a70; --nuc-n:#8a96ad; --nuc-edge:#161c28; --neu:#82a8ff; --good:#5cd08a; --bad:#ff7a6b; --warn:#f5a524; --alpha:#ff8a70; --beta:#82a8ff; --gamma:#b48cff; --neutron:#4fd1c0; --u235:#6fd08c; --water:#13263a; --rod:#6b7488; --spent:#3d4555; --c-pp:#5f88e8; --c-cno:#e2664b; color-scheme:dark;}}
 :root[data-theme="dark"]{
   --bg:#0e121b; --panel:#161c28; --ink:#e6eaf2; --ink-2:#a8b1c3; --ink-3:#7c8699;
   --rule:#2a3244; --grid:#202838; --accent:#9fb4ff; --sel:#1f2738;
   --vol:#7aa2ff; --surf:#4fd1c0; --coul:#ff8a70; --asym:#b48cff; --pair:#f2c14e;
-  --nuc-p:#ff8a70; --nuc-n:#8a96ad; --nuc-edge:#161c28; --neu:#82a8ff; --good:#5cd08a; --bad:#ff7a6b; --warn:#f5a524; --alpha:#ff8a70; --beta:#82a8ff; --gamma:#b48cff; --neutron:#4fd1c0; --u235:#6fd08c; --water:#13263a; --rod:#6b7488; --spent:#3d4555; color-scheme:dark;}
+  --nuc-p:#ff8a70; --nuc-n:#8a96ad; --nuc-edge:#161c28; --neu:#82a8ff; --good:#5cd08a; --bad:#ff7a6b; --warn:#f5a524; --alpha:#ff8a70; --beta:#82a8ff; --gamma:#b48cff; --neutron:#4fd1c0; --u235:#6fd08c; --water:#13263a; --rod:#6b7488; --spent:#3d4555; --c-pp:#5f88e8; --c-cno:#e2664b; color-scheme:dark;}
 
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.55;
@@ -309,6 +309,39 @@ input[type=range]{width:100%;accent-color:var(--ink)}
 .fcap b{color:var(--ink)}
 @media (max-width:900px){ .rx-grid,.rx-lower{grid-template-columns:minmax(0,1fr)} }
 @media (max-width:480px){ #rx-canvas{height:360px} .sim.rx-core{grid-template-columns:minmax(0,1fr) 60px} .rx-banner{left:calc(50% - 30px);width:calc(100% - 84px)} }
+/* ---------- CNO tab ---------- */
+.cno-grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:20px;margin-top:22px;align-items:start}
+.cno-side{display:flex;flex-direction:column;gap:16px;min-width:0}
+#cn-svg svg{display:block;width:100%;height:auto;max-width:520px;margin:0 auto}
+.cn-cell{cursor:pointer}
+.cn-cell rect{transition:stroke-width .2s}
+.cn-ctrl{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px}
+.cn-ctrl .play{margin-left:auto}
+.cn-key{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:12.5px;color:var(--ink-2);margin:4px 0 6px}
+.cn-key span{display:inline-flex;align-items:center;gap:6px}
+.cn-key i{width:16px;height:3px;border-radius:2px;background:var(--c);display:inline-block}
+.facts.tally{grid-template-columns:repeat(4,minmax(0,1fr));margin-top:14px}
+.facts.tally dd{font-family:var(--f-mono);font-size:16px}
+.rxn{font-family:var(--f-math);font-size:clamp(20px,2.6vw,26px);margin:4px 0 6px;line-height:1.3}
+.rtype{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:2px 10px;border-radius:999px;border:1.5px solid var(--c);color:var(--ink)}
+.rtype i{width:8px;height:8px;border-radius:50%;background:var(--c);display:inline-block}
+.cn-dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 10px;margin:12px 0 0;font-size:13.5px}
+.cn-dl dt{color:var(--ink-3)}
+.cn-dl dd{margin:0;text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.cn-note{margin:12px 0 0;font-size:13.5px;color:var(--ink-2)}
+.eqbars{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:6px 10px;align-items:center;margin-top:10px;font-size:13px}
+.eqbars .nm{font-family:var(--f-math);font-size:15px}
+.eqbars .tr{height:10px;background:var(--grid);border-radius:5px;overflow:hidden}
+.eqbars .tr span{display:block;height:100%;background:var(--ink-2);border-radius:5px}
+.eqbars .v{font-family:var(--f-mono);font-size:12.5px;text-align:right;min-width:5.5ch}
+.cno-lower{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:20px;margin-top:28px}
+#cn-chart{position:relative}
+#cn-chart svg{display:block;width:100%;height:auto;overflow:visible}
+.legend-inline{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12.5px;color:var(--ink-2);margin-bottom:6px}
+.legend-inline span{display:inline-flex;align-items:center;gap:6px}
+.legend-inline i{width:16px;height:2px;background:var(--c);display:inline-block}
+@media (max-width:900px){ .cno-grid,.cno-lower{grid-template-columns:minmax(0,1fr)} }
+@media (max-width:480px){ .facts.tally{grid-template-columns:repeat(2,minmax(0,1fr))} }
 </style>
 </head>
 <body>
@@ -329,6 +362,7 @@ input[type=range]{width:100%;accent-color:var(--ink)}
       <button class="tab" role="tab" id="tab-shell" data-tab="shell-model" aria-selected="false" aria-controls="panel-shell" tabindex="-1">Shell model</button>
       <button class="tab" role="tab" id="tab-shield" data-tab="shielding" aria-selected="false" aria-controls="panel-shield" tabindex="-1">Shielding</button>
       <button class="tab" role="tab" id="tab-rx" data-tab="reactor" aria-selected="false" aria-controls="panel-rx" tabindex="-1">Reactor</button>
+      <button class="tab" role="tab" id="tab-cno" data-tab="cno-cycle" aria-selected="false" aria-controls="panel-cno" tabindex="-1">CNO cycle</button>
     </nav><button id="theme-btn" type="button" aria-label="Switch background"></button></div>
   </header>
 
@@ -564,6 +598,64 @@ input[type=range]{width:100%;accent-color:var(--ink)}
         <div style="--c:var(--ink-2)"><span class="pglyph">B</span><p><b>Control rods absorb them</b>Boron-10 and cadmium absorb thermal neutrons thousands of times more readily than water. Inserting the rods lowers the multiplication factor <i>k</i>. At <i>k</i> = 1 each generation has exactly as many neutrons as the last.</p></div>
         <div style="--c:var(--pair)"><span class="pglyph">τ</span><p><b>Delayed neutrons buy time</b>A neutron generation lasts only about 0.1 ms. If all neutrons were prompt, <i>k</i> = 1.001 would multiply the power 20 000 times in a second. But 0.65% of neutrons (β) come seconds later, from the decay of fission fragments such as ⁸⁷Br. They stretch the time scale to tens of seconds, as long as the reactivity stays below β. Above β the reactor is <em>prompt critical</em>.</p></div>
         <div style="--c:var(--coul)"><span class="pglyph">T</span><p><b>Hot fuel pushes back</b>As the fuel heats up, the absorption resonances of ²³⁸U broaden (Doppler effect) and capture more neutrons. Reactivity falls by a few pcm per degree, so you must pull the rods a little further to hold full power, and the reactor partly steadies itself.</p></div>
+      </div>
+    </section>
+  </main>
+
+  <main id="panel-cno" role="tabpanel" aria-labelledby="tab-cno" hidden>
+    <section class="intro">
+      <div>
+        <div class="eyebrow">Stellar nucleosynthesis · Bethe and von Weizsäcker, 1938–39</div>
+        <h2>The CNO cycle</h2>
+        <p>Stars heavier than the Sun burn hydrogen with help from carbon, nitrogen and oxygen. A ¹²C nucleus captures four protons one after another, decays twice, and finally splits off a helium nucleus, giving back the ¹²C it started from. On the chart of nuclides the reactions trace a closed loop.</p>
+      </div>
+    </section>
+
+    <div class="cno-grid">
+      <div class="panel">
+        <h4>The loop on the chart of nuclides</h4>
+        <p class="sub">Each square is a nucleus. Proton captures move up one row (Z + 1). β⁺ decays move diagonally (a proton becomes a neutron). Click a square or a step to inspect it.</p>
+        <div class="cn-key"><span><i style="--c:var(--coul)"></i>proton capture (p,γ)</span><span><i style="--c:var(--neu)"></i>β⁺ decay</span><span><i style="--c:var(--surf)"></i>(p,α): helium out</span></div>
+        <div id="cn-svg"></div>
+        <div class="cn-ctrl" id="cn-ctrl"></div>
+        <dl class="facts tally" id="cn-tally"></dl>
+      </div>
+
+      <div class="cno-side">
+        <div class="panel" aria-live="polite">
+          <div class="eyebrow" id="cn-stepno"></div>
+          <div class="rxn" id="cn-rxn"></div>
+          <span class="rtype" id="cn-type"></span>
+          <dl class="cn-dl" id="cn-dl"></dl>
+          <p class="cn-note" id="cn-note"></p>
+        </div>
+        <div class="panel">
+          <h4>Core temperature</h4>
+          <p class="sub">Sets the proton-capture times above and the energy curves below. Density 100 g/cm³, hydrogen mass fraction 0.70.</p>
+          <div class="slider-row"><label for="cn-T">Temperature</label><output id="cn-Tout" for="cn-T"></output></div>
+          <input id="cn-T" type="range" min="5" max="50" step="0.1" value="15.7">
+          <div class="sh-presets" id="cn-Tpre"></div>
+          <div class="eyebrow" style="margin-top:16px">Where the catalyst waits</div>
+          <div class="eqbars" id="cn-eq"></div>
+          <p class="cn-note" id="cn-eqnote" style="font-size:12.5px"></p>
+        </div>
+      </div>
+    </div>
+
+    <section class="cno-lower">
+      <div class="panel">
+        <h4>Energy output versus temperature</h4>
+        <p class="sub" id="cn-chart-sub"></p>
+        <div class="presets" id="cn-Z" style="margin-bottom:6px"></div>
+        <div class="legend-inline"><span><i style="--c:var(--c-pp)"></i>pp chain</span><span><i style="--c:var(--c-cno)"></i>CNO cycle</span></div>
+        <div id="cn-chart"></div>
+      </div>
+      <div class="panel howto">
+        <h4 style="margin-bottom:0">What makes the cycle special</h4>
+        <div style="--c:var(--ink-2)"><span class="pglyph">C</span><p><b>A catalyst, not a fuel</b>The C, N and O nuclei come out as they went in. The net result is the same as the pp chain: 4 ¹H → ⁴He + 2e⁺ + 2ν<sub>e</sub> + 26.7 MeV. Neutrinos carry away about 1.7 MeV of that.</p></div>
+        <div style="--c:var(--surf)"><span class="pglyph">N</span><p><b>Stars turn carbon into nitrogen</b>¹⁴N + p is by far the slowest step, so the catalyst piles up as ¹⁴N. CNO burning converts most of a star's carbon (and, slowly, its oxygen) into nitrogen. Much of the nitrogen in the air you breathe was made this way.</p></div>
+        <div style="--c:var(--coul)"><span class="pglyph">T</span><p><b>Extremely sensitive to temperature</b>A proton must tunnel through the Coulomb barrier of a Z = 7 nucleus instead of Z = 1. Near 20 MK the rate grows like <i>T</i><sup>18</sup>, against <i>T</i><sup>4</sup> for the pp chain. Above about 20 MK, in stars heavier than about 1.3 solar masses, the CNO cycle takes over. Its energy is released so close to the centre that the core becomes convective.</p></div>
+        <div style="--c:var(--neu)"><span class="pglyph">ν</span><p><b>Seen directly in 2020</b>The β⁺ decays of ¹³N and ¹⁵O emit neutrinos. The Borexino detector under the Gran Sasso mountain measured them in 2020, the first direct proof that the CNO cycle runs in the Sun. It supplies about 1% of the Sun's energy.</p></div>
       </div>
     </section>
   </main>
@@ -861,7 +953,7 @@ select("vol");
 </script>
 <script>
 /* ---------- tabs ---------- */
-const TABS = {"liquid-drop":["tab-ldm","panel-ldm"], "shell-model":["tab-shell","panel-shell"], "shielding":["tab-shield","panel-shield"], "reactor":["tab-rx","panel-rx"]};
+const TABS = {"liquid-drop":["tab-ldm","panel-ldm"], "shell-model":["tab-shell","panel-shell"], "shielding":["tab-shield","panel-shield"], "reactor":["tab-rx","panel-rx"], "cno-cycle":["tab-cno","panel-cno"]};
 function showTab(name){
   if(!TABS[name]) name="liquid-drop";
   for(const k in TABS){ const on=k===name, [t,p]=TABS[k];
@@ -1699,6 +1791,192 @@ new ResizeObserver(()=>{ histSize(); histDraw(); }).observe(hcv);
 new ResizeObserver(()=>{ fxSize(); fxDraw(); }).observe(fcv);
 document.addEventListener("themechange",()=>{ rvCols(); rvDraw(); histDraw(); fxDraw(); });
 requestAnimationFrame(rxFrame);
+</script>
+<script>
+/* ---------- CNO: reaction rates ---------- */
+// Non-resonant thermonuclear rate from the Gamow peak: N_A<σv> in cm³ mol⁻¹ s⁻¹, S-factor in MeV b, T in MK.
+function gamow(Z2,A2,S,T6){ const mu=A2/(1+A2), T9=T6/1e3, tau=4.2487*Math.cbrt(Z2*Z2*mu/T9);
+  return {r:7.8327e9*Math.cbrt(Z2/(mu*T9*T9))*S*Math.exp(-tau), tau}; }
+const CN = {rho:100, X:0.70, XCN:0.0035, NA:6.022e23, MeV:1.602e-6, yr:3.156e7};   // X_CN: solar C+N, counted as ¹⁴N
+const S_PP=4.01e-25;
+// ε in erg g⁻¹ s⁻¹. pp: 13.1 MeV per p+p reaction (pp-I, neutrinos removed). CNO: one cycle per ¹⁴N capture, 25.0 MeV kept.
+function epsPP(T){ const g=gamow(1,1,S_PP,T); return {e:CN.rho*CN.X*CN.X*CN.NA*g.r/2*13.1*CN.MeV, nu:(g.tau-2)/3}; }
+function epsCNO(T,z){ const g=gamow(7,14,1.66e-3,T); return {e:CN.XCN*z*CN.NA/14*CN.rho*CN.X*g.r*25.03*CN.MeV, nu:(g.tau-2)/3}; }
+const tauCapture = (Z,A,S,T) => 1/(CN.rho*CN.X*gamow(Z,A,S,T).r);   // seconds
+
+/* ---------- CNO: the six steps ---------- */
+// node keys: [N, Z, symbol, A, half-life or null]
+const CNN = {c12:[6,6,"C",12,null], n13:[6,7,"N",13,"t½ 9.97 min"], c13:[7,6,"C",13,null], n14:[7,7,"N",14,null], o15:[7,8,"O",15,"t½ 122 s"], n15:[8,7,"N",15,null], o16:[8,8,"O",16,null]};
+const CNS = [
+  {from:"c12", to:"n13", kind:"pg", rxn:"¹²C + p → ¹³N + γ", Q:1.944, cap:[6,12,1.34e-3], short:"¹²C(p,γ)",
+    note:"¹²C starts the loop. The proton needs to tunnel through the Coulomb barrier of a carbon nucleus, Z = 6, which is why this only happens at millions of kelvin."},
+  {from:"n13", to:"c13", kind:"beta", rxn:"¹³N → ¹³C + e⁺ + ν<sub>e</sub>", Q:2.220, nu:0.707, half:"9.97 min", short:"¹³N(β⁺)",
+    note:"¹³N has one proton too many and decays: a proton turns into a neutron, and the positron annihilates with an electron. The weak interaction sets the pace, so temperature does not matter."},
+  {from:"c13", to:"n14", kind:"pg", rxn:"¹³C + p → ¹⁴N + γ", Q:7.551, cap:[6,13,7.6e-3], short:"¹³C(p,γ)",
+    note:"A second proton capture on carbon, about five times faster than on ¹²C. In equilibrium this fixes the ¹²C/¹³C ratio near 4–5, far below the solar value of 89, a fingerprint astronomers use to spot CN-processed gas."},
+  {from:"n14", to:"o15", kind:"pg", rxn:"¹⁴N + p → ¹⁵O + γ", Q:7.297, cap:[7,14,1.66e-3], short:"¹⁴N(p,γ)",
+    note:"The bottleneck. Nitrogen has a higher barrier (Z = 7) and a small S-factor, 1.7 keV b, measured deep underground by the LUNA experiment. This step sets the pace of the whole cycle."},
+  {from:"o15", to:"n15", kind:"beta", rxn:"¹⁵O → ¹⁵N + e⁺ + ν<sub>e</sub>", Q:2.754, nu:0.997, half:"122 s", short:"¹⁵O(β⁺)",
+    note:"The second β⁺ decay. Its neutrinos, with up to 1.7 MeV, are the most energetic of the cycle and the easiest for Borexino to see."},
+  {from:"n15", to:"c12", kind:"pa", rxn:"¹⁵N + p → ¹²C + ⁴He", Q:4.966, cap:[7,15,0.07], short:"¹⁵N(p,α)",
+    note:"Instead of keeping the proton, ¹⁵N usually splits off an alpha particle and the original ¹²C comes back. Roughly 1 time in 2500 it captures the proton instead, ¹⁵N(p,γ)¹⁶O, which opens a second loop through oxygen (CNO-II)."},
+];
+const KIND = {pg:["Proton capture (p,γ)","coul"], beta:["β⁺ decay","neu"], pa:["Proton in, alpha out (p,α)","surf"]};
+const CNX = {step:0, u:0, play:!reduced, T:15.7, z:1, tally:{cyc:0,he:0,nu:0,E:0}};
+
+/* ---------- CNO: chart-of-nuclides loop ---------- */
+const CS=124, CW=84, cell = (N,Z) => [92+(N-6)*CS, 30+(8-Z)*CS];
+const ctr = k => { const [N,Z]=CNN[k], [x,y]=cell(N,Z); return [x+CW/2,y+CW/2]; };
+function edgePt(c,dx,dy){ const t=Math.min(46/Math.abs(dx||1e-9),46/Math.abs(dy||1e-9)); return [c[0]+dx*t,c[1]+dy*t]; }
+function arrowD(s){
+  const a=ctr(s.from), b=ctr(s.to);
+  if(s.kind==="pa"){ const c13=ctr("c13"); return `M${a[0]},${a[1]+46} Q${c13[0]},${b[1]+175} ${b[0]+5},${b[1]+50}`; }
+  const L=Math.hypot(b[0]-a[0],b[1]-a[1]), dx=(b[0]-a[0])/L, dy=(b[1]-a[1])/L, p=edgePt(a,dx,dy), q=edgePt(b,-dx,-dy);
+  return `M${p[0]},${p[1]} L${q[0]-dx*4},${q[1]-dy*4}`;
+}
+function buildCycle(){
+  let s=`<svg viewBox="0 0 470 418" role="img" aria-label="CNO cycle drawn on the chart of nuclides: six reactions forming a loop between carbon, nitrogen and oxygen isotopes">
+  <defs>${["coul","neu","surf","ink-3"].map(k=>`<marker id="cn-ah-${k}" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--${k})"/></marker>`).join("")}</defs>`;
+  [6,7,8].forEach(N=>{ const [x]=cell(N,8); s+=`<text class="axis-t" x="${x+CW/2}" y="18" text-anchor="middle" style="font:11px var(--f-mono);fill:var(--ink-3)">N = ${N}</text>`; });
+  [[6,"C"],[7,"N"],[8,"O"]].forEach(([Z,el])=>{ const [,y]=cell(6,Z); s+=`<text x="66" y="${y+38}" text-anchor="end" style="font:600 15px var(--f-body);fill:var(--ink-2)">${el}</text><text x="66" y="${y+54}" text-anchor="end" style="font:11px var(--f-mono);fill:var(--ink-3)">Z = ${Z}</text>`; });
+  for(const k in CNN){ const [N,Z,el,A,hl]=CNN[k], [x,y]=cell(N,Z), cyc=k!=="o16";
+    s+=`<g class="cn-cell" data-k="${k}" ${cyc?`role="button" tabindex="0" aria-label="${el}-${A}"`:""} style="opacity:${cyc?1:.5}">
+      <rect id="cn-r-${k}" x="${x}" y="${y}" width="${CW}" height="${CW}" rx="10" style="fill:${hl?"color-mix(in srgb, var(--pair) 14%, var(--panel))":"var(--panel)"};stroke:var(--rule);stroke-width:1.5"/>
+      <text x="${x+CW/2}" y="${y+48}" text-anchor="middle" style="font:500 28px var(--f-math);fill:var(--ink)"><tspan dy="-12" style="font-size:15px">${A}</tspan><tspan dy="12">${el}</tspan></text>
+      <text x="${x+CW/2}" y="${y+71}" text-anchor="middle" style="font:10px var(--f-mono);fill:var(--ink-3)">${hl||(k==="o16"?"CNO-II":"stable")}</text></g>`; }
+  CNS.forEach((st,i)=>{ const col=KIND[st.kind][1];
+    s+=`<path id="cn-a-${i}" d="${arrowD(st)}" fill="none" style="stroke:var(--${col})" stroke-width="2.2" marker-end="url(#cn-ah-${col})"/>`; });
+  const n15=ctr("n15"), o16=ctr("o16");
+  s+=`<path d="M${n15[0]},${n15[1]-46} L${o16[0]},${o16[1]+48}" fill="none" style="stroke:var(--ink-3)" stroke-width="1.4" stroke-dasharray="3 3" marker-end="url(#cn-ah-ink-3)"/>`;
+  // moving pieces
+  s+=`<circle id="cn-dot" r="6" style="fill:var(--ink)" visibility="hidden"/>
+    <g id="cn-p" visibility="hidden"><circle r="6" style="fill:var(--coul)"/><text y="-10" text-anchor="middle" style="font:600 12px var(--f-body);fill:var(--ink)">p</text></g>
+    <g id="cn-g" visibility="hidden"><path d="M0,0 q4,-6 8,0 t8,0 t8,0 t8,0 t8,0" fill="none" style="stroke:var(--gamma)" stroke-width="2"/><text x="44" y="4" style="font:italic 15px var(--f-math);fill:var(--ink)">γ</text></g>
+    <g id="cn-e" visibility="hidden"><circle r="4" style="fill:var(--ink-2)"/><text x="7" y="-6" style="font:600 12px var(--f-body);fill:var(--ink)">e⁺</text></g>
+    <g id="cn-nu" visibility="hidden"><line x1="0" y1="0" x2="0" y2="0" style="stroke:var(--ink-3)" stroke-width="1.6" stroke-dasharray="4 3"/><text style="font:italic 15px var(--f-math);fill:var(--ink)">ν</text></g>
+    <g id="cn-al" visibility="hidden"><circle r="9" style="fill:var(--surf)"/><text y="4.5" text-anchor="middle" style="font:600 12px var(--f-math);fill:var(--panel)">α</text></g></svg>`;
+  const el=document.getElementById("cn-svg"); el.innerHTML=s;
+  el.querySelectorAll(".cn-cell[role=button]").forEach(g=>{ const go=()=>{ cnGo(CNS.findIndex(st=>st.from===g.dataset.k)); };
+    g.addEventListener("click",go); g.addEventListener("keydown",e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); go(); } }); });
+}
+const fmtSci = (v,d=2) => { const e=Math.floor(Math.log10(v)), m=v/Math.pow(10,e); return `${m.toFixed(d-1)}×10${supS(e)}`; };
+function fmtDur(s){
+  if(s<60) return `${s.toPrecision(2)} s`; if(s<3600) return `${(s/60).toPrecision(2)} min`; if(s<86400) return `${(s/3600).toPrecision(2)} h`;
+  const y=s/CN.yr; if(y<1) return `${(s/86400).toPrecision(2)} days`; if(y<1e4) return `${y>=100?y.toFixed(0):y.toPrecision(2)} years`; return `${fmtSci(y)} years`;
+}
+
+/* ---------- CNO: animation ---------- */
+const CN_DUR=2.4;
+const ptOn = (id,i,f) => { const p=document.getElementById(id), L=p.getTotalLength(); return p.getPointAtLength(Math.max(0,Math.min(1,f))*L); };
+const setVis = (id,on) => document.getElementById(id).setAttribute("visibility",on?"visible":"hidden");
+const place = (id,x,y,o=1) => { const g=document.getElementById(id); g.setAttribute("transform",`translate(${x},${y})`); g.style.opacity=o; };
+const clamp01 = x => Math.max(0,Math.min(1,x));
+function cnFrameDraw(){
+  const st=CNS[CNX.step], u=CNX.u, a=ctr(st.from), anim=!reduced;
+  for(const k in CNN){ const r=document.getElementById(`cn-r-${k}`); const on=k===st.from; r.style.stroke=on?"var(--ink)":"var(--rule)"; r.style.strokeWidth=on?3:1.5; }
+  CNS.forEach((s,i)=>{ const p=document.getElementById(`cn-a-${i}`); p.setAttribute("stroke-width",i===CNX.step?4:2.2); p.style.opacity=i===CNX.step?1:.55; });
+  ["cn-p","cn-g","cn-e","cn-nu","cn-al","cn-dot"].forEach(id=>setVis(id,false));
+  if(!anim) return;
+  const tok=clamp01((u-0.4)/0.6); if(tok>0 && tok<1){ const q=ptOn(`cn-a-${CNX.step}`,0,tok); setVis("cn-dot",true); document.getElementById("cn-dot").setAttribute("cx",q.x); document.getElementById("cn-dot").setAttribute("cy",q.y); }
+  if(st.kind!=="beta" && u<0.36){ const f=u/0.36; setVis("cn-p",true); place("cn-p",a[0]-84+40*f,a[1]+84-40*f); }
+  if(st.kind==="pg" && u>=0.34 && u<0.85){ const f=(u-0.34)/0.51; setVis("cn-g",true); document.getElementById("cn-g").style.opacity=1-f; document.getElementById("cn-g").setAttribute("transform",`translate(${a[0]+36+f*34},${a[1]-36-f*34}) rotate(-45)`); }
+  if(st.kind==="beta" && u<0.75){ const f=u/0.75; setVis("cn-e",true); place("cn-e",a[0]-46-f*40,a[1]-46-f*40,1-f*0.7);
+    setVis("cn-nu",true); const nu=document.getElementById("cn-nu"), ln=nu.querySelector("line"), tx=nu.querySelector("text"), L=40+f*90;
+    nu.setAttribute("transform",`translate(${a[0]+8},${a[1]-44})`); nu.style.opacity=1-f*0.5; ln.setAttribute("x2",0); ln.setAttribute("y2",-L*0.55); tx.setAttribute("x",6); tx.setAttribute("y",-L*0.55+8); }
+  if(st.kind==="pa" && u>=0.34 && u<0.95){ const f=(u-0.34)/0.61; setVis("cn-al",true); place("cn-al",a[0]+58+f*60,a[1]-10-f*50,1-f*f); }
+}
+function cnAdvance(){
+  const st=CNS[CNX.step], T=CNX.tally; T.E+=st.Q; if(st.nu) T.nu++;
+  if(st.kind==="pa"){ T.he++; T.cyc++; }
+  CNX.step=(CNX.step+1)%CNS.length; CNX.u=0; cnCard(); cnTally();
+}
+function cnGo(i){ if(i<0) return; CNX.step=i; CNX.u=0; cnCard(); cnFrameDraw(); }
+function cnTally(){ const T=CNX.tally;
+  document.getElementById("cn-tally").innerHTML=`<div><dt>Cycles</dt><dd>${T.cyc}</dd></div><div><dt>Helium made</dt><dd>${T.he}</dd></div><div><dt>Neutrinos</dt><dd>${T.nu}</dd></div><div><dt>Energy</dt><dd>${T.E.toFixed(1)} MeV</dd></div>`; }
+function cnCard(){
+  const st=CNS[CNX.step], [kname,kcol]=KIND[st.kind];
+  document.getElementById("cn-stepno").textContent=`Step ${CNX.step+1} of 6`;
+  document.getElementById("cn-rxn").innerHTML=st.rxn;
+  const ty=document.getElementById("cn-type"); ty.style.setProperty("--c",`var(--${kcol})`); ty.innerHTML=`<i></i>${kname}`;
+  let dl=`<dt>Energy released, Q</dt><dd>${st.Q.toFixed(3)} MeV</dd>`;
+  if(st.nu) dl+=`<dt>Lost to the neutrino (average)</dt><dd>${st.nu.toFixed(2)} MeV</dd><dt>Half-life</dt><dd>${st.half}</dd>`;
+  else { const [Z,A,S]=st.cap; dl+=`<dt>S-factor</dt><dd>${(S*1e3).toPrecision(2)} keV b</dd><dt>Waiting time at ${CNX.T.toFixed(1)} MK</dt><dd>${fmtDur(tauCapture(Z,A,S,CNX.T))}</dd>`; }
+  document.getElementById("cn-dl").innerHTML=dl;
+  document.getElementById("cn-note").textContent=st.note;
+  document.querySelectorAll("#cn-ctrl [data-i]").forEach(b=>b.setAttribute("aria-pressed",(+b.dataset.i===CNX.step)+""));
+}
+function buildCnCtrl(){
+  document.getElementById("cn-ctrl").innerHTML = CNS.map((s,i)=>`<button class="chip" data-i="${i}" aria-pressed="false">${s.short}</button>`).join("")+
+    `<button class="chip" id="cn-reset">Clear count</button><button class="chip play" id="cn-play">${CNX.play?"Pause":"Play"}</button>`;
+  document.querySelectorAll("#cn-ctrl [data-i]").forEach(b=>b.addEventListener("click",()=>cnGo(+b.dataset.i)));
+  document.getElementById("cn-play").addEventListener("click",e=>{ CNX.play=!CNX.play; e.currentTarget.textContent=CNX.play?"Pause":"Play"; if(reduced && CNX.play){ cnAdvance(); CNX.play=false; e.currentTarget.textContent="Next step"; cnFrameDraw(); } });
+  if(reduced) document.getElementById("cn-play").textContent="Next step";
+  document.getElementById("cn-reset").addEventListener("click",()=>{ CNX.tally={cyc:0,he:0,nu:0,E:0}; cnTally(); });
+}
+
+/* ---------- CNO: temperature, equilibrium, energy chart ---------- */
+const TPRE=[["Sun today",15.7],["1.5 M☉",20],["3 M☉",25],["15 M☉",34]];
+const ZPRE=[["Solar C+N",1],["÷ 10",0.1],["÷ 100 (old halo star)",0.01]];
+function cnEq(){
+  const T=CNX.T, caps=CNS.filter(s=>s.cap), t=caps.map(s=>tauCapture(...s.cap,T)), sum=t.reduce((a,b)=>a+b);
+  document.getElementById("cn-eq").innerHTML=caps.map((s,i)=>{ const k=s.from, f=t[i]/sum;
+    return `<span class="nm">${s.rxn.split(" ")[0]}</span><span class="tr"><span style="width:${Math.max(0.6,f*100)}%"></span></span><span class="v">${f>=0.1?(f*100).toFixed(1):(f*100).toPrecision(2)}%</span>`; }).join("");
+  document.getElementById("cn-eqnote").textContent=`In steady state each nucleus is present in proportion to how long it waits. The cycle completes once every ${fmtDur(t.reduce((a,b)=>a+b))} per catalyst nucleus at this temperature.`;
+}
+const lg=Math.log10;
+function cnChart(){
+  const W=620, H=300, mg={l:58,r:16,t:12,b:40}, T0=5, T1=50, y0=-4, y1=8, z=CNX.z;
+  const xs=T=>mg.l+(T-T0)/(T1-T0)*(W-mg.l-mg.r), ys=e=>mg.t+(1-(Math.max(y0,Math.min(y1,lg(e)))-y0)/(y1-y0))*(H-mg.t-mg.b);
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Energy generation of the pp chain and CNO cycle versus core temperature, log scale">`;
+  for(let d=y0;d<=y1;d+=2) s+=`<line x1="${mg.l}" x2="${W-mg.r}" y1="${ys(10**d)}" y2="${ys(10**d)}" stroke="var(--grid)"/><g class="axis"><text x="${mg.l-8}" y="${ys(10**d)+3.5}" text-anchor="end">${d===0?"1":"10"+supS(d)}</text></g>`;
+  for(let T=10;T<=50;T+=10) s+=`<line x1="${xs(T)}" x2="${xs(T)}" y1="${mg.t}" y2="${H-mg.b}" stroke="var(--grid)"/><g class="axis"><text x="${xs(T)}" y="${H-mg.b+16}" text-anchor="middle">${T}</text></g>`;
+  s+=`<g class="axis"><text x="${(mg.l+W-mg.r)/2}" y="${H-4}" text-anchor="middle">core temperature (million K)</text><text transform="translate(12 ${(mg.t+H-mg.b)/2}) rotate(-90)" text-anchor="middle">erg per gram per second</text></g>`;
+  const path=f=>{ const pts=[]; for(let i=0;i<=240;i++){ const T=T0+(T1-T0)*i/240, e=f(T); if(lg(e)>=y0-0.5) pts.push(`${xs(T).toFixed(1)},${ys(e).toFixed(1)}`); } return "M"+pts.join(" L"); };
+  s+=`<path d="${path(T=>epsPP(T).e)}" fill="none" stroke="var(--c-pp)" stroke-width="2.2" stroke-linejoin="round"/>`;
+  s+=`<path d="${path(T=>epsCNO(T,z).e)}" fill="none" stroke="var(--c-cno)" stroke-width="2.2" stroke-linejoin="round"/>`;
+  let Tx=null; for(let T=T0;T<=T1;T+=0.05) if(epsCNO(T,z).e>=epsPP(T).e){ Tx=T; break; }
+  if(Tx){ const e=epsPP(Tx).e; s+=`<circle cx="${xs(Tx)}" cy="${ys(e)}" r="4.5" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.5"/><text class="lbl" x="${xs(Tx)+8}" y="${ys(e)+16}" style="fill:var(--ink)">equal at ${Tx.toFixed(1)} MK</text>`; }
+  s+=`<text class="lbl" x="${xs(46)}" y="${ys(epsPP(46).e)+18}" text-anchor="end" style="fill:var(--ink);font-weight:600">pp chain</text>`;
+  const Tl=[46,42,38,34,30,26].find(T=>lg(epsCNO(T,z).e)<y1-0.6)||26, eT=epsCNO(Tl,z).e;
+  s+=`<text class="lbl" x="${xs(Tl)-10}" y="${ys(eT)+4}" text-anchor="end" style="fill:var(--ink);font-weight:600">CNO cycle</text>`;
+  const T=CNX.T, ep=epsPP(T).e, ec=epsCNO(T,z).e;
+  s+=`<line x1="${xs(T)}" x2="${xs(T)}" y1="${mg.t}" y2="${H-mg.b}" stroke="var(--ink)" stroke-width="1.5" stroke-dasharray="4 3"/>`;
+  [[ep,"--c-pp"],[ec,"--c-cno"]].forEach(([e,c])=>{ if(lg(e)>=y0) s+=`<circle cx="${xs(T)}" cy="${ys(e)}" r="5" fill="var(${c})" stroke="var(--panel)" stroke-width="2"/>`; });
+  s+=`<line id="cn-xh" x1="0" x2="0" y1="${mg.t}" y2="${H-mg.b}" stroke="var(--ink-3)" stroke-dasharray="2 3" visibility="hidden"/><rect id="cn-hit" x="${mg.l}" y="${mg.t}" width="${W-mg.l-mg.r}" height="${H-mg.t-mg.b}" fill="transparent"/></svg><div class="tip" id="cn-tip" hidden></div>`;
+  const el=document.getElementById("cn-chart"); el.innerHTML=s;
+  const share=ec/(ec+ep), npp=epsPP(T).nu, ncno=epsCNO(T,z).nu;
+  document.getElementById("cn-chart-sub").innerHTML=`At ${T.toFixed(1)} MK the CNO cycle supplies <b>${share>=0.995?"over 99":share<0.001?"under 0.1":(share*100).toPrecision(2)}%</b> of the energy. Near this temperature ε<sub>pp</sub> ∝ <i>T</i><sup>${npp.toFixed(1)}</sup> and ε<sub>CNO</sub> ∝ <i>T</i><sup>${ncno.toFixed(1)}</sup>.`;
+  const svg=el.querySelector("svg"), tip=el.querySelector("#cn-tip"), xh=el.querySelector("#cn-xh"), hit=el.querySelector("#cn-hit");
+  hit.addEventListener("pointermove",ev=>{ const pt=svg.createSVGPoint(); pt.x=ev.clientX; pt.y=ev.clientY; const p=pt.matrixTransform(svg.getScreenCTM().inverse());
+    const Tq=T0+(p.x-mg.l)/(W-mg.l-mg.r)*(T1-T0), a=epsPP(Tq).e, b=epsCNO(Tq,z).e;
+    xh.setAttribute("x1",p.x); xh.setAttribute("x2",p.x); xh.setAttribute("visibility","visible"); tip.hidden=false;
+    tip.innerHTML=`<div class="r"><span>Temperature</span><b>${Tq.toFixed(1)} MK</b></div><div class="r"><span class="tname"><span class="sw" style="--c:var(--c-pp)"></span>pp chain</span><b>${fmtSci(a)}</b></div><div class="r"><span class="tname"><span class="sw" style="--c:var(--c-cno)"></span>CNO cycle</span><b>${fmtSci(b)}</b></div><div class="r"><span>CNO share</span><b>${(b/(a+b)*100).toPrecision(2)}%</b></div>`;
+    const bx=el.getBoundingClientRect(); let lx=ev.clientX-bx.left+14; if(lx>bx.width-200) lx=ev.clientX-bx.left-200; tip.style.left=lx+"px"; tip.style.top=Math.max(0,ev.clientY-bx.top-80)+"px"; });
+  hit.addEventListener("pointerleave",()=>{ tip.hidden=true; xh.setAttribute("visibility","hidden"); });
+  hit.addEventListener("click",ev=>{ const pt=svg.createSVGPoint(); pt.x=ev.clientX; pt.y=ev.clientY; const p=pt.matrixTransform(svg.getScreenCTM().inverse()); cnSetT(Math.round((T0+(p.x-mg.l)/(W-mg.l-mg.r)*(T1-T0))*10)/10); });
+}
+function cnSetT(T){ CNX.T=Math.max(5,Math.min(50,T)); document.getElementById("cn-T").value=CNX.T; cnUpdate(); }
+function cnUpdate(){
+  document.getElementById("cn-Tout").textContent=`${CNX.T.toFixed(1)} MK`;
+  document.querySelectorAll("#cn-Tpre .chip").forEach(b=>b.setAttribute("aria-pressed",(Math.abs(+b.dataset.t-CNX.T)<0.05)+""));
+  document.querySelectorAll("#cn-Z .chip").forEach(b=>b.setAttribute("aria-pressed",(+b.dataset.z===CNX.z)+""));
+  cnCard(); cnEq(); cnChart();
+}
+document.getElementById("cn-Tpre").innerHTML=TPRE.map(([l,t])=>`<button class="chip" data-t="${t}" aria-pressed="false">${l} · ${t} MK</button>`).join("");
+document.querySelectorAll("#cn-Tpre .chip").forEach(b=>b.addEventListener("click",()=>cnSetT(+b.dataset.t)));
+document.getElementById("cn-Z").innerHTML=ZPRE.map(([l,z])=>`<button class="chip" data-z="${z}" aria-pressed="false">${l}</button>`).join("");
+document.querySelectorAll("#cn-Z .chip").forEach(b=>b.addEventListener("click",()=>{ CNX.z=+b.dataset.z; cnUpdate(); }));
+document.getElementById("cn-T").addEventListener("input",e=>{ CNX.T=+e.target.value; cnUpdate(); });
+
+let cnLast=0;
+function cnLoop(t){
+  requestAnimationFrame(cnLoop);
+  const dt=Math.min(0.05,(t-(cnLast||t))/1000); cnLast=t;
+  if(document.getElementById("panel-cno").hidden || document.hidden || reduced || !CNX.play) return;
+  CNX.u+=dt/CN_DUR; if(CNX.u>=1) cnAdvance(); cnFrameDraw();
+}
+buildCycle(); buildCnCtrl(); cnTally(); cnUpdate(); cnFrameDraw();
+requestAnimationFrame(cnLoop);
 </script>
 
 </body>
