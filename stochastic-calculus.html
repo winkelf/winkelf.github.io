@@ -1,0 +1,579 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Stochastic Calculus I</title>
+<meta name="description" content="Course notebook for discrete-time finance: binomial pricing and self-financing replication of a European call.">
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,500;0,600;1,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: course-notebook header with chapter tabs; each tab = controls rail beside a live tree, detail tables below. */
+:root{
+  --paper:#f4f6f9; --surface:#ffffff; --sunk:#eef1f5;
+  --ink:#141c2a; --ink-2:#465265; --ink-3:#768195; --rule:#d9dee6;
+  --accent:#1d5bc0; --accent-soft:#e3ecfb;
+  --path:#bf540c; --path-soft:#fbebdf;
+  --pos:#1a7348; --neg:#b3261e;
+  --f-display:"Spectral",Georgia,"Times New Roman",serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --paper:#0e1218; --surface:#161b23; --sunk:#1c222c;
+  --ink:#e5e9ef; --ink-2:#a8b1be; --ink-3:#7b8596; --rule:#2a313d;
+  --accent:#74a3f2; --accent-soft:#1d2b44;
+  --path:#f08b45; --path-soft:#3a2617;
+  --pos:#4fc48d; --neg:#f27d72; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --paper:#0e1218; --surface:#161b23; --sunk:#1c222c;
+  --ink:#e5e9ef; --ink-2:#a8b1be; --ink-3:#7b8596; --rule:#2a313d;
+  --accent:#74a3f2; --accent-soft:#1d2b44;
+  --path:#f08b45; --path-soft:#3a2617;
+  --pos:#4fc48d; --neg:#f27d72; color-scheme:dark }
+
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font:15px/1.55 var(--f-body);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 48px}
+.wrap{max-width:1180px;margin:0 auto}
+h1,h2,h3{font-family:var(--f-display);font-weight:600;text-wrap:balance;margin:0;letter-spacing:-.01em}
+.eyebrow{font-size:11.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)}
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px;padding-block:28px 0;border-bottom:1px solid var(--rule)}
+header.top h1{font-size:clamp(28px,4vw,40px);line-height:1.1;margin-top:4px}
+nav.tabs{display:flex;gap:4px;overflow-x:auto}
+nav.tabs button{font:500 14px var(--f-body);color:var(--ink-2);background:none;border:0;border-bottom:2px solid transparent;padding:10px 14px;cursor:pointer;white-space:nowrap}
+nav.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+nav.tabs button:hover{color:var(--ink)}
+.hdr-right{display:flex;align-items:flex-end;gap:10px;min-width:0}
+.hdr-right nav{min-width:0}
+#theme-btn{flex:none;display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;margin-bottom:6px;border:1px solid var(--rule);border-radius:9px;background:var(--surface);color:var(--ink-2);cursor:pointer}
+#theme-btn:hover{color:var(--ink);background:var(--sunk)}
+#theme-btn svg{width:18px;height:18px}
+button:focus-visible,input:focus-visible,.node:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.intro{max-width:70ch;margin:26px 0 22px}
+.intro h2{font-size:clamp(22px,2.8vw,28px);margin:4px 0 8px}
+.intro p{margin:0;color:var(--ink-2)}
+
+.layout{display:grid;grid-template-columns:300px minmax(0,1fr);gap:20px;align-items:start}
+.panel{background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:18px;min-width:0}
+.panel h3{font-size:18px;margin-bottom:4px}
+.sub{margin:0 0 12px;font-size:13px;color:var(--ink-3)}
+.rail{display:flex;flex-direction:column;gap:16px}
+.fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 12px}
+.field{display:flex;flex-direction:column;gap:3px;min-width:0}
+.field label{font-size:12.5px;color:var(--ink-2)}
+.field label i{font-family:var(--f-display);font-size:15px;color:var(--ink)}
+input[type=number],input[type=text]{font:14px var(--f-mono);color:var(--ink);background:var(--sunk);border:1px solid var(--rule);border-radius:6px;padding:7px 9px;width:100%;min-width:0}
+input.bad{border-color:var(--neg)}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.btn{font:500 13px var(--f-body);color:var(--ink);background:var(--sunk);border:1px solid var(--rule);border-radius:6px;padding:6px 11px;cursor:pointer}
+.btn:hover{border-color:var(--ink-3)}
+.btn.ud{font-family:var(--f-mono);min-width:44px}
+.err{margin:10px 0 0;font-size:13px;color:var(--neg)}
+.hint{font-size:12.5px;color:var(--ink-3);margin:8px 0 0}
+
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;border:1px solid var(--rule);border-radius:10px;background:var(--surface);overflow:hidden}
+.stats>div{padding:12px 16px;border-left:1px solid var(--rule);min-width:0}
+.stats>div:first-child{border-left:0}
+.stats dt{font-size:12px;color:var(--ink-3)}
+.stats dd{margin:2px 0 0;font:500 20px var(--f-mono);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.main{display:flex;flex-direction:column;gap:16px;min-width:0}
+
+.treebox{overflow-x:auto;margin:0 -4px;padding:0 4px}
+.treebox svg{display:block;margin:0 auto;font-family:var(--f-mono)}
+.edge{stroke:var(--rule);stroke-width:1.5}
+.edge.on{stroke:var(--path);stroke-width:3}
+.node{cursor:pointer}
+.node rect{fill:var(--surface);stroke:var(--ink-3);stroke-width:1}
+.node.onpath rect{stroke:var(--path);stroke-width:2}
+.node.sel rect{fill:var(--accent-soft);stroke:var(--accent);stroke-width:2.5}
+.node:hover rect{stroke:var(--ink)}
+.node text{fill:var(--ink);font-size:11.5px}
+.node text.id{fill:var(--ink-3);font-size:10.5px}
+.node text.v{font-weight:500}
+.axis text{fill:var(--ink-3);font-size:11px;font-family:var(--f-body)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:12.5px;color:var(--ink-2);margin-top:10px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{display:inline-block;width:16px;height:10px;border-radius:2px;border:2px solid var(--c);background:var(--b,transparent)}
+.legend i.ln{height:0;border-width:1.5px 0 0;border-radius:0}
+
+.detail{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+dl.kv{display:grid;grid-template-columns:auto minmax(0,1fr);gap:5px 14px;margin:0;font-size:14px}
+dl.kv dt{color:var(--ink-2)}
+dl.kv dd{margin:0;text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.note{font-size:13px;color:var(--ink-2);margin:10px 0 0}
+.pill{display:inline-block;font:600 11.5px var(--f-body);letter-spacing:.04em;padding:2px 9px;border-radius:999px;border:1.5px solid currentColor}
+.pill.yes{color:var(--pos)} .pill.no{color:var(--neg)}
+.pos{color:var(--pos)} .neg{color:var(--neg)}
+
+.tablewrap{overflow:auto;max-height:440px;border:1px solid var(--rule);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:13.5px;font-variant-numeric:tabular-nums}
+th,td{padding:6px 12px;text-align:right;white-space:nowrap}
+th{position:sticky;top:0;background:var(--sunk);color:var(--ink-2);font-weight:600;font-size:12.5px;border-bottom:1px solid var(--rule)}
+td{font-family:var(--f-mono);border-bottom:1px solid var(--rule)}
+tr:last-child td{border-bottom:0}
+tbody tr{cursor:pointer}
+tbody tr:hover td{background:var(--sunk)}
+tr.sel td{background:var(--accent-soft)}
+tr.onpath td:first-child{box-shadow:inset 3px 0 0 var(--path)}
+td.mv{font-weight:600;color:var(--path)}
+.lower{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;margin-top:16px}
+.head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:6px 12px}
+
+.theory{margin-top:16px}
+.theory .cols{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;margin-top:10px}
+.theory h4{margin:0 0 4px;font:600 14px var(--f-body)}
+.theory p{margin:0;font-size:13.5px;color:var(--ink-2)}
+.eq{font-family:var(--f-display);font-size:16.5px;color:var(--ink);margin:6px 0;white-space:nowrap;overflow-x:auto}
+.eq i{font-style:italic}
+
+@media (max-width:980px){
+  .layout{grid-template-columns:minmax(0,1fr)}
+  .rail{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+  .theory .cols{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:720px){
+  .rail,.detail,.lower{grid-template-columns:minmax(0,1fr)}
+  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .stats>div:nth-child(3){border-left:0}
+  .stats>div:nth-child(n+3){border-top:1px solid var(--rule)}
+  .theory .cols{grid-template-columns:minmax(0,1fr)}
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="eyebrow">Course notebook</div>
+      <h1>Stochastic Calculus I</h1>
+    </div>
+    <div class="hdr-right">
+      <nav class="tabs" role="tablist" aria-label="Chapters">
+        <button role="tab" id="tab-binomial" aria-controls="panel-binomial" aria-selected="true">Binomial model</button>
+      </nav>
+      <button id="theme-btn" type="button" aria-label="Switch background"></button>
+    </div>
+  </header>
+
+  <main id="panel-binomial" role="tabpanel" aria-labelledby="tab-binomial">
+    <section class="intro">
+      <div class="eyebrow">Chapter 1 · No-arbitrage pricing in discrete time</div>
+      <h2>Pricing and replicating a European call</h2>
+      <p>The stock moves up by a factor <i>u</i> or down by <i>d</i> each period, and cash earns a simple rate <i>r</i> per step. Backward induction under the risk-neutral probability gives the call's fair value at every node. A self-financing portfolio that holds Δ shares and starts with <i>X</i>₀ then tracks the call. It replicates the payoff exactly when <i>X</i>₀ equals the fair price <i>V</i>₀; any surplus or deficit just grows in the bank.</p>
+    </section>
+
+    <div class="layout">
+      <aside class="rail">
+        <div class="panel">
+          <h3>Model</h3>
+          <p class="sub">Requires <i>K</i> ≥ 0, <i>S</i>₀ &gt; 0 and 0 &lt; <i>d</i> &lt; 1+<i>r</i> &lt; <i>u</i>.</p>
+          <div class="fields">
+            <div class="field"><label for="p-N">Steps <i>N</i></label><input id="p-N" type="number" min="0" max="60" step="1" value="3"></div>
+            <div class="field"><label for="p-K">Strike <i>K</i></label><input id="p-K" type="number" step="any" value="5"></div>
+            <div class="field"><label for="p-s0">Spot <i>S</i>₀</label><input id="p-s0" type="number" step="any" value="4"></div>
+            <div class="field"><label for="p-x0">Capital <i>X</i>₀</label><input id="p-x0" type="number" step="any" value="1.2"></div>
+            <div class="field"><label for="p-u">Up factor <i>u</i></label><input id="p-u" type="number" step="any" value="2"></div>
+            <div class="field"><label for="p-d">Down factor <i>d</i></label><input id="p-d" type="number" step="any" value="0.5"></div>
+            <div class="field"><label for="p-r">Rate <i>r</i> per step</label><input id="p-r" type="number" step="any" value="0.25"></div>
+            <div class="field" style="justify-content:flex-end"><button class="btn" id="p-reset" type="button">Reset defaults</button></div>
+          </div>
+          <p class="err" id="p-err" role="alert" hidden></p>
+        </div>
+
+        <div class="panel">
+          <h3>Node</h3>
+          <p class="sub">Node (<i>t</i>, <i>j</i>) is time <i>t</i> after <i>j</i> up moves. Click a box in the tree or a table row.</p>
+          <div class="fields">
+            <div class="field"><label for="n-t">Time <i>t</i></label><input id="n-t" type="number" min="0" step="1" value="3"></div>
+            <div class="field"><label for="n-j">Up moves <i>j</i></label><input id="n-j" type="number" min="0" step="1" value="0"></div>
+            <div class="field" style="grid-column:1/-1"><label for="n-val">Candidate value at this node (optional)</label><input id="n-val" type="number" step="any" placeholder="e.g. 1"></div>
+          </div>
+          <p class="err" id="n-err" role="alert" hidden></p>
+        </div>
+
+        <div class="panel">
+          <h3>Hedging path</h3>
+          <p class="sub">A sequence of U and D moves, at most <i>N</i> long.</p>
+          <div class="field"><label for="h-path">Path</label><input id="h-path" type="text" value="DUD" autocomplete="off" spellcheck="false"></div>
+          <div class="row" style="margin-top:8px">
+            <button class="btn ud" id="h-u" type="button">+U</button>
+            <button class="btn ud" id="h-d" type="button">+D</button>
+            <button class="btn" id="h-undo" type="button">Undo</button>
+            <button class="btn" id="h-clear" type="button">Clear</button>
+          </div>
+          <p class="err" id="h-err" role="alert" hidden></p>
+        </div>
+      </aside>
+
+      <div class="main">
+        <dl class="stats">
+          <div><dt>Risk-neutral <i>q</i></dt><dd id="s-q"></dd></div>
+          <div><dt>Fair call price <i>V</i>₀</dt><dd id="s-v0"></dd></div>
+          <div><dt>Starting capital <i>X</i>₀</dt><dd id="s-x0"></dd></div>
+          <div><dt>Funding difference <i>X</i>₀ − <i>V</i>₀</dt><dd id="s-diff"></dd></div>
+        </dl>
+
+        <div class="panel">
+          <div class="head"><h3>Stock and call tree</h3><span class="eyebrow" id="t-cap"></span></div>
+          <p class="sub">Each box shows stock <i>S</i>, intrinsic value <i>I</i> = max(<i>S</i> − <i>K</i>, 0) and call value <i>V</i>. Up moves go up. Children of (<i>t</i>, <i>j</i>): down (<i>t</i>+1, <i>j</i>), up (<i>t</i>+1, <i>j</i>+1).</p>
+          <div class="treebox" id="tree"></div>
+          <div class="legend"><span><i style="--c:var(--accent);--b:var(--accent-soft)"></i>selected node</span><span><i class="ln" style="--c:var(--path)"></i>hedging path</span></div>
+        </div>
+
+        <div class="detail">
+          <div class="panel" aria-live="polite">
+            <h3 id="d-title">Selected node</h3>
+            <dl class="kv" id="d-kv" style="margin-top:10px"></dl>
+            <p class="note" id="d-note"></p>
+            <div class="row" style="margin-top:12px"><button class="btn" id="d-path" type="button">Set path to reach this node</button></div>
+          </div>
+          <div class="panel" aria-live="polite">
+            <h3>Candidate value</h3>
+            <div id="c-body" style="margin-top:10px"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="lower">
+      <div class="panel">
+        <div class="head"><h3>Self-financing hedge along the path</h3><span class="eyebrow" id="h-cap"></span></div>
+        <p class="sub">At each step: hold Δ<sub><i>t</i></sub> shares, keep the rest in cash, then <i>X</i><sub><i>t</i>+1</sub> = Δ<sub><i>t</i></sub><i>S</i><sub><i>t</i>+1</sub> + (1+<i>r</i>)(<i>X</i><sub><i>t</i></sub> − Δ<sub><i>t</i></sub><i>S</i><sub><i>t</i></sub>).</p>
+        <div class="tablewrap" style="max-height:none">
+          <table><thead><tr><th>t</th><th>Shares Δ</th><th>Cash</th><th>Move</th><th>S next</th><th>X next</th><th>V next</th></tr></thead><tbody id="h-body"></tbody></table>
+        </div>
+        <p class="note" id="h-end"></p>
+      </div>
+      <div class="panel">
+        <div class="head"><h3>All nodes</h3>
+          <div class="row"><button class="btn" id="cp-csv" type="button">Copy CSV</button><button class="btn" id="cp-txt" type="button">Copy report</button></div></div>
+        <p class="sub"><i>X</i> is the hedge's wealth starting from <i>X</i>₀. At maturity <i>V</i> = max(<i>S</i> − <i>K</i>, 0); earlier, <i>V</i> need not equal intrinsic value. <span id="cp-msg"></span></p>
+        <div class="tablewrap">
+          <table><thead><tr><th>t</th><th>j</th><th>Stock S</th><th>Call V</th><th>Wealth X</th><th>Intrinsic</th></tr></thead><tbody id="a-body"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <section class="panel theory">
+      <h3>The four formulas behind the page</h3>
+      <div class="cols">
+        <div><h4>Risk-neutral probability</h4><div class="eq"><i>q</i> = (1 + <i>r</i> − <i>d</i>) / (<i>u</i> − <i>d</i>)</div><p>The probability under which the discounted stock is a martingale. No arbitrage is exactly the condition 0 &lt; <i>q</i> &lt; 1.</p></div>
+        <div><h4>Backward induction</h4><div class="eq"><i>V<sub>t</sub></i> = [<i>q V</i><sub>up</sub> + (1−<i>q</i>) <i>V</i><sub>down</sub>] / (1+<i>r</i>)</div><p>Start from the payoff max(<i>S<sub>N</sub></i> − <i>K</i>, 0) and step back one period at a time.</p></div>
+        <div><h4>Delta hedge</h4><div class="eq">Δ<i><sub>t</sub></i> = (<i>V</i><sub>up</sub> − <i>V</i><sub>down</sub>) / (<i>S</i><sub>up</sub> − <i>S</i><sub>down</sub>)</div><p>For a call 0 ≤ Δ ≤ 1: the hedge is long the stock and borrows cash.</p></div>
+        <div><h4>Wealth of the hedge</h4><div class="eq"><i>X<sub>t</sub></i> = <i>V<sub>t</sub></i> + (<i>X</i>₀ − <i>V</i>₀)(1+<i>r</i>)<i><sup>t</sup></i></div><p>Holding the call's Δ with the wrong starting capital leaves the gap in the bank, where it earns interest.</p></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+const DEF = {N:3, K:5, s0:4, u:2, d:0.5, r:0.25, x0:1.2};
+const NMAX = 60, TREE_MAX = 10;
+const st = {t:3, j:0, path:'DUD', model:null};
+
+// Python-style %g formatting
+function g(x, p = 6){
+  if (!isFinite(x)) return String(x);
+  if (x === 0) return '0';
+  const ex = Number(x.toExponential(p-1).split('e')[1]);
+  const trim = s => s.includes('.') ? s.replace(/0+$/,'').replace(/\.$/,'') : s;
+  if (ex < -4 || ex >= p){
+    let [m, e] = x.toExponential(p-1).split('e');
+    const sign = e[0] === '-' ? '-' : '+';
+    return trim(m) + 'e' + sign + e.replace(/^[+-]/,'').padStart(2,'0');
+  }
+  return trim(x.toFixed(Math.max(0, p-1-ex)));
+}
+const sg = (x, p) => (x >= 0 ? '+' : '') + g(x, p);
+const show = s => s.replace(/-/g, '−');
+const close = (a, b) => Math.abs(a-b) <= Math.max(1e-9*Math.max(Math.abs(a), Math.abs(b)), 1e-9);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function buildTree(n, K, s0, u, d, r, x0){
+  if (!Number.isInteger(n) || n < 0) throw Error('N must be a nonnegative integer.');
+  if (n > NMAX) throw Error(`N is capped at ${NMAX} here to keep the table readable.`);
+  if (![K, s0, u, d, r, x0].every(Number.isFinite)) throw Error('Every parameter needs a finite number.');
+  if (K < 0 || s0 <= 0 || !(0 < d && d < 1+r && 1+r < u)) throw Error('Require K ≥ 0, S₀ > 0 and 0 < d < 1+r < u.');
+  const q = (1+r-d)/(u-d);
+  const stock = [], call = [], delta = [];
+  for (let t = 0; t <= n; t++){ stock.push([]); for (let j = 0; j <= t; j++) stock[t].push(s0 * u**j * d**(t-j)); }
+  for (let t = 0; t <= n; t++) call.push(new Array(t+1).fill(0));
+  for (let t = 0; t < n; t++) delta.push(new Array(t+1).fill(0));
+  call[n] = stock[n].map(s => Math.max(s-K, 0));
+  for (let t = n-1; t >= 0; t--) for (let j = 0; j <= t; j++){
+    const vd = call[t+1][j], vu = call[t+1][j+1];
+    call[t][j] = ((1-q)*vd + q*vu)/(1+r);
+    delta[t][j] = (vu-vd)/(stock[t+1][j+1]-stock[t+1][j]);
+  }
+  const wealth = call.map((row, t) => row.map(v => v + (x0-call[0][0])*(1+r)**t));
+  if (![stock, call, wealth].every(tr => tr.every(row => row.every(Number.isFinite))))
+    throw Error('The numbers overflow. Lower N or the up factor u.');
+  return {n, K, s0, u, d, r, x0, stock, call, wealth, delta, q};
+}
+
+function hedge(m, path){
+  let w = m.x0, ups = 0; const rows = [];
+  for (let t = 0; t < path.length; t++){
+    const shares = m.delta[t][ups], cash = w - shares*m.stock[t][ups];
+    const nu = ups + (path[t] === 'U');
+    w = shares*m.stock[t+1][nu] + cash*(1+m.r);
+    rows.push({t, shares, cash, move:path[t], S:m.stock[t+1][nu], X:w, V:m.call[t+1][nu], ups:nu});
+    ups = nu;
+  }
+  return {rows, X:w, ups};
+}
+
+function readParams(){
+  const num = id => { const v = $(id).value.trim(); return v === '' ? NaN : Number(v); };
+  return {N:num('p-N'), K:num('p-K'), s0:num('p-s0'), u:num('p-u'), d:num('p-d'), r:num('p-r'), x0:num('p-x0')};
+}
+function setErr(id, msg){ $(id).hidden = !msg; $(id).textContent = msg || ''; }
+
+function recompute(){
+  const p = readParams();
+  try {
+    st.model = buildTree(p.N, p.K, p.s0, p.u, p.d, p.r, p.x0);
+    setErr('p-err', '');
+  } catch (e){ setErr('p-err', e.message); return; }
+  const n = st.model.n;
+  if (st.t > n) st.t = n;
+  if (st.j > st.t) st.j = st.t;
+  if (st.path.length > n) st.path = st.path.slice(0, n);
+  $('n-t').max = n; $('n-j').max = st.t;
+  render();
+}
+
+function pathNodes(){
+  const s = new Set(['0,0']), e = new Set(); let ups = 0;
+  [...st.path].forEach((m, t) => { const nu = ups + (m === 'U'); e.add(`${t},${ups},${nu}`); s.add(`${t+1},${nu}`); ups = nu; });
+  return {s, e};
+}
+
+function renderTree(){
+  const m = st.model, n = m.n, box = $('tree');
+  $('t-cap').textContent = `${(n+1)*(n+2)/2} nodes`;
+  if (n > TREE_MAX){
+    box.innerHTML = `<p class="note">The tree is drawn for N ≤ ${TREE_MAX}. With N = ${n} use the table of all nodes below.</p>`;
+    return;
+  }
+  const colW = 108, bw = 92, bh = 60, unit = 36, padX = 6, padT = 6, axisH = 24;
+  const W = padX*2 + bw + n*colW, H = padT + bh + 2*n*unit + axisH;
+  const pos = (t, j) => [padX + bw/2 + t*colW, padT + bh/2 + (n - (2*j - t))*unit];
+  const {s:on, e:onE} = pathNodes();
+  let out = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="group" aria-label="Binomial tree">`;
+  const edge = (t, j, c, cls) => { const [x, y] = pos(t, j), [xx, yy] = pos(t+1, c);
+    return `<line class="${cls}" x1="${x+bw/2}" y1="${y}" x2="${xx-bw/2}" y2="${yy}"/>`; };
+  for (let t = 0; t < n; t++) for (let j = 0; j <= t; j++)
+    for (const c of [j, j+1]) if (!onE.has(`${t},${j},${c}`)) out += edge(t, j, c, 'edge');
+  // path edges last so they sit above the grey ones
+  onE.forEach(k => { const [t, j, c] = k.split(',').map(Number); out += edge(t, j, c, 'edge on'); });
+  for (let t = 0; t <= n; t++) for (let j = 0; j <= t; j++){
+    const [x, y] = pos(t, j), S = m.stock[t][j], V = m.call[t][j], I = Math.max(S - m.K, 0);
+    const cls = 'node' + (on.has(`${t},${j}`) && st.path.length ? ' onpath' : '') + (t === st.t && j === st.j ? ' sel' : '');
+    out += `<g class="${cls}" data-t="${t}" data-j="${j}" tabindex="0" role="button" aria-label="Node ${t}, ${j}: S ${g(S,4)}, V ${g(V,4)}">
+      <rect x="${x-bw/2}" y="${y-bh/2}" width="${bw}" height="${bh}" rx="6"/>
+      <text class="id" x="${x}" y="${y-16}" text-anchor="middle">(${t},${j})</text>
+      <text x="${x}" y="${y-1}" text-anchor="middle">S=${show(g(S,4))}</text>
+      <text x="${x}" y="${y+13}" text-anchor="middle">I=${show(g(I,4))}</text>
+      <text class="v" x="${x}" y="${y+27}" text-anchor="middle">V=${show(g(V,4))}</text></g>`;
+  }
+  out += `<g class="axis">`;
+  for (let t = 0; t <= n; t++) out += `<text x="${pos(t,0)[0]}" y="${H-6}" text-anchor="middle">t = ${t}</text>`;
+  out += `</g></svg>`;
+  box.innerHTML = out;
+}
+
+function renderNode(){
+  const m = st.model, {t, j} = st, n = m.n;
+  const S = m.stock[t][j], V = m.call[t][j], X = m.wealth[t][j], I = Math.max(S - m.K, 0);
+  $('d-title').textContent = `Node (${t}, ${j})`;
+  const gap = X - V;
+  let rows = [['Stock S', g(S,10)], ['Call value V', g(V,10)], ['Intrinsic max(S−K, 0)', g(I,10)],
+              ['Hedge wealth X', g(X,10)], ['Wealth − option', `<span class="${Math.abs(gap) < 1e-12 ? '' : gap > 0 ? 'pos' : 'neg'}">${show(sg(gap,10))}</span>`]];
+  if (t < n) rows.push(['Shares Δ held next', g(m.delta[t][j],10)]);
+  $('d-kv').innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${show(v)}</dd>`).join('');
+  let note;
+  if (t === n){
+    const ok = close(X, I);
+    note = `At maturity the call pays its intrinsic value. Terminal wealth matches the payoff: <span class="pill ${ok ? 'yes' : 'no'}">${ok ? 'YES' : 'NO'}</span>` +
+           (ok ? '' : ` The hedge is off by (X₀ − V₀)(1+r)<sup>${t}</sup>.`);
+  } else {
+    note = 'Before maturity the option value need not equal intrinsic value.' +
+      (V > I + 1e-12 ? ` Here it is worth ${show(g(V-I,6))} more than immediate exercise would pay.` :
+       V < I - 1e-12 ? ` Here it is worth ${show(g(I-V,6))} less: a European call can be worth less than its intrinsic value.` : '');
+  }
+  $('d-note').innerHTML = note;
+}
+
+function renderCandidate(){
+  const raw = $('n-val').value.trim(), body = $('c-body');
+  const V = st.model.call[st.t][st.j];
+  if (raw === ''){ body.innerHTML = `<p class="note" style="margin:0">Type a value in the Node panel to check it against the fair value ${show(g(V,8))} at (${st.t}, ${st.j}).</p>`; return; }
+  const c = Number(raw);
+  if (!Number.isFinite(c)){ body.innerHTML = `<p class="err" style="margin:0">The candidate value must be a finite number.</p>`; return; }
+  const ok = close(c, V), diff = c - V;
+  body.innerHTML = `<dl class="kv"><dt>Candidate</dt><dd>${show(g(c,10))}</dd><dt>Fair value V</dt><dd>${show(g(V,10))}</dd>
+    <dt>Candidate − fair</dt><dd class="${ok ? '' : diff > 0 ? 'pos' : 'neg'}">${show(sg(diff,10))}</dd></dl>
+    <p class="note">Matches the fair value: <span class="pill ${ok ? 'yes' : 'no'}">${ok ? 'YES' : 'NO'}</span>
+    ${ok ? '' : diff > 0 ? ' Selling at this price and hedging would lock in a profit.' : ' Buying at this price and shorting the hedge would lock in a profit.'}</p>`;
+}
+
+function renderHedge(){
+  const m = st.model, h = hedge(m, st.path), L = st.path.length;
+  $('h-cap').textContent = L ? `path ${st.path}` : 'empty path';
+  $('h-body').innerHTML = h.rows.map(r => `<tr><td>${r.t}</td><td>${show(g(r.shares,8))}</td><td>${show(g(r.cash,8))}</td>
+    <td class="mv">${r.move}</td><td>${show(g(r.S,8))}</td><td>${show(g(r.X,8))}</td><td>${show(g(r.V,8))}</td></tr>`).join('')
+    || `<tr><td colspan="7" style="text-align:left;font-family:var(--f-body);color:var(--ink-3)">Add U or D moves to trace the hedge.</td></tr>`;
+  const V = m.call[L][h.ups], ok = close(h.X, V);
+  $('h-end').innerHTML = `Path ends at node (${L}, ${h.ups}). Wealth X = ${show(g(h.X,10))}, option V = ${show(g(V,10))}. ` +
+    `Replicates the option: <span class="pill ${ok ? 'yes' : 'no'}">${ok ? 'YES' : 'NO'}</span>` +
+    (ok ? '' : ` The gap ${show(sg(h.X-V,8))} equals (X₀ − V₀)(1+r)<sup>${L}</sup>.`);
+}
+
+function renderAll(){
+  const m = st.model, {s:on} = pathNodes();
+  let html = '';
+  for (let t = 0; t <= m.n; t++) for (let j = 0; j <= t; j++){
+    const cls = [(t === st.t && j === st.j) ? 'sel' : '', (st.path.length && on.has(`${t},${j}`)) ? 'onpath' : ''].join(' ').trim();
+    html += `<tr data-t="${t}" data-j="${j}"${cls ? ` class="${cls}"` : ''}><td>${t}</td><td>${j}</td><td>${show(g(m.stock[t][j],7))}</td>
+      <td>${show(g(m.call[t][j],7))}</td><td>${show(g(m.wealth[t][j],7))}</td><td>${show(g(Math.max(m.stock[t][j]-m.K,0),7))}</td></tr>`;
+  }
+  $('a-body').innerHTML = html;
+}
+
+function render(){
+  const m = st.model;
+  $('s-q').textContent = show(g(m.q,10));
+  $('s-v0').textContent = show(g(m.call[0][0],10));
+  $('s-x0').textContent = show(g(m.x0,10));
+  const d = m.x0 - m.call[0][0];
+  $('s-diff').innerHTML = `<span class="${Math.abs(d) < 1e-12 ? '' : d > 0 ? 'pos' : 'neg'}">${show(sg(d,10))}</span>`;
+  if (document.activeElement !== $('n-t')) $('n-t').value = st.t;
+  if (document.activeElement !== $('n-j')) $('n-j').value = st.j;
+  if (document.activeElement !== $('h-path')) $('h-path').value = st.path;
+  renderTree(); renderNode(); renderCandidate(); renderHedge(); renderAll();
+}
+
+function select(t, j){ st.t = t; st.j = j; $('n-j').max = t; setErr('n-err', ''); render(); }
+
+// ---- events
+['p-N','p-K','p-s0','p-u','p-d','p-r','p-x0'].forEach(id => $(id).addEventListener('input', recompute));
+$('p-reset').addEventListener('click', () => {
+  Object.entries({ 'p-N':DEF.N, 'p-K':DEF.K, 'p-s0':DEF.s0, 'p-u':DEF.u, 'p-d':DEF.d, 'p-r':DEF.r, 'p-x0':DEF.x0 })
+    .forEach(([id, v]) => $(id).value = v);
+  recompute();
+});
+function nodeInput(){
+  if (!st.model) return;
+  const t = Number($('n-t').value), j = Number($('n-j').value), n = st.model.n;
+  if (!Number.isInteger(t) || !Number.isInteger(j) || !(0 <= j && j <= t && t <= n)){
+    setErr('n-err', `The node must satisfy 0 ≤ j ≤ t ≤ N = ${n}.`); return;
+  }
+  select(t, j);
+}
+$('n-t').addEventListener('input', nodeInput);
+$('n-j').addEventListener('input', nodeInput);
+$('n-val').addEventListener('input', () => st.model && renderCandidate());
+
+function setPath(p){
+  if (!st.model) return;
+  p = p.toUpperCase();
+  if (/[^UD]/.test(p)){ setErr('h-err', 'The path may contain only the letters U and D.'); $('h-path').classList.add('bad'); return; }
+  if (p.length > st.model.n){ setErr('h-err', `The path can be at most N = ${st.model.n} moves long.`); $('h-path').classList.add('bad'); return; }
+  setErr('h-err', ''); $('h-path').classList.remove('bad');
+  st.path = p; render();
+}
+$('h-path').addEventListener('input', e => setPath(e.target.value.trim()));
+$('h-u').addEventListener('click', () => setPath(st.path + 'U'));
+$('h-d').addEventListener('click', () => setPath(st.path + 'D'));
+$('h-undo').addEventListener('click', () => setPath(st.path.slice(0, -1)));
+$('h-clear').addEventListener('click', () => setPath(''));
+$('d-path').addEventListener('click', () => setPath('U'.repeat(st.j) + 'D'.repeat(st.t - st.j)));
+
+$('tree').addEventListener('click', e => { const n = e.target.closest('.node'); if (n) select(+n.dataset.t, +n.dataset.j); });
+$('tree').addEventListener('keydown', e => {
+  const n = e.target.closest('.node'); if (!n || (e.key !== 'Enter' && e.key !== ' ')) return;
+  e.preventDefault(); const t = +n.dataset.t, j = +n.dataset.j; select(t, j);
+  $('tree').querySelector(`.node[data-t="${t}"][data-j="${j}"]`)?.focus();
+});
+$('a-body').addEventListener('click', e => { const r = e.target.closest('tr[data-t]'); if (r) select(+r.dataset.t, +r.dataset.j); });
+
+// ---- copy
+function csv(){
+  const m = st.model, L = ['time,up_moves,stock,call,wealth,intrinsic'];
+  for (let t = 0; t <= m.n; t++) for (let j = 0; j <= t; j++)
+    L.push([t, j, m.stock[t][j], m.call[t][j], m.wealth[t][j], Math.max(m.stock[t][j]-m.K,0)].join(','));
+  return L.join('\n');
+}
+function report(){
+  const m = st.model, {t, j} = st, L = [], pad = (s, w) => String(s).padStart(w);
+  L.push(`N=${m.n} | K=${g(m.K)} | S0=${g(m.s0)} | u=${g(m.u)} | d=${g(m.d)} | r=${g(m.r)} per step | X0=${g(m.x0)}`);
+  L.push(`Risk-neutral q = ${g(m.q,10)}; fair initial call price = ${g(m.call[0][0],10)}`);
+  L.push(`X0 = ${g(m.x0,10)}; initial funding difference = ${sg(m.x0-m.call[0][0],10)}`, '');
+  L.push('  t   j           S      Call V    Wealth X   Intrinsic');
+  for (let a = 0; a <= m.n; a++) for (let b = 0; b <= a; b++)
+    L.push(`${pad(a,3)} ${pad(b,3)} ${pad(g(m.stock[a][b]),11)} ${pad(g(m.call[a][b]),11)} ${pad(g(m.wealth[a][b]),11)} ${pad(g(Math.max(m.stock[a][b]-m.K,0)),11)}`);
+  const S = m.stock[t][j], V = m.call[t][j], X = m.wealth[t][j], I = Math.max(S-m.K,0);
+  L.push('', `Selected node (${t},${j}): S=${g(S,10)}`, `Option value=${g(V,10)}; max(S-K,0)=${g(I,10)}`);
+  if (t < m.n) L.push('Before maturity, option value need not equal intrinsic value.');
+  L.push(`Wealth=${g(X,10)}; wealth minus option=${sg(X-V,10)}`);
+  if (t === m.n) L.push(`Terminal wealth matches payoff: ${close(X, I) ? 'True' : 'False'}`);
+  const raw = $('n-val').value.trim();
+  if (raw !== '' && Number.isFinite(+raw)) L.push(`Candidate=${g(+raw,10)}; candidate minus fair value=${sg(+raw-V,10)}`, `Candidate matches fair value: ${close(+raw, V) ? 'True' : 'False'}`);
+  if (st.path){
+    const h = hedge(m, st.path);
+    L.push('', 'Self-financing hedge along requested path:');
+    h.rows.forEach(r => L.push(`t=${r.t}: shares=${g(r.shares,10)}, cash=${g(r.cash,10)}; ${r.move} -> S=${g(r.S,10)}, X=${g(r.X,10)}`));
+    L.push(`Path-end X=${g(h.X,10)}, option=${g(m.call[st.path.length][h.ups],10)}`);
+  }
+  return L.join('\n');
+}
+async function copy(text, label){
+  const msg = $('cp-msg');
+  try { await navigator.clipboard.writeText(text); msg.textContent = `${label} copied.`; }
+  catch { msg.textContent = 'Copying is blocked here. The text is selected in the table instead.';
+    const r = document.createRange(); r.selectNodeContents($('a-body')); getSelection().removeAllRanges(); getSelection().addRange(r); }
+  setTimeout(() => msg.textContent = '', 3000);
+}
+$('cp-csv').addEventListener('click', () => st.model && copy(csv(), 'CSV'));
+$('cp-txt').addEventListener('click', () => st.model && copy(report(), 'Report'));
+
+// ---- tabs (hash routing, ready for more chapters)
+function route(){
+  const tabs = [...document.querySelectorAll('[role=tab]')];
+  const want = location.hash.slice(1), map = {'binomial-model':'tab-binomial'};
+  const id = map[want] || 'tab-binomial';
+  tabs.forEach(b => { const on = b.id === id; b.setAttribute('aria-selected', on); $(b.getAttribute('aria-controls')).hidden = !on; });
+}
+document.querySelectorAll('[role=tab]').forEach(b => b.addEventListener('click', () => {
+  const h = {'tab-binomial':'binomial-model'}[b.id]; if (location.hash.slice(1) !== h) location.hash = h; route();
+}));
+addEventListener('hashchange', route);
+route();
+recompute();
+
+// ---- theme toggle
+const root = document.documentElement, btn = $('theme-btn');
+const MOON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>`;
+const SUN = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2.2M12 19.8V22M4.9 4.9l1.6 1.6M17.5 17.5l1.6 1.6M2 12h2.2M19.8 12H22M4.9 19.1l1.6-1.6M17.5 6.5l1.6-1.6"/></svg>`;
+const eff = () => root.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+const paint = () => { const d = eff() === 'dark', l = d ? 'Switch to light background' : 'Switch to dark background';
+  btn.innerHTML = d ? SUN : MOON; btn.setAttribute('aria-label', l); btn.title = l; };
+try { const t = localStorage.getItem('stochcalc-theme'); if (t === 'dark' || t === 'light') root.dataset.theme = t; } catch (e) {}
+btn.addEventListener('click', () => { const next = eff() === 'dark' ? 'light' : 'dark'; root.dataset.theme = next;
+  try { localStorage.setItem('stochcalc-theme', next); } catch (e) {} paint(); });
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', paint);
+new MutationObserver(m => { if (m.some(r => r.attributeName === 'data-theme')) paint(); }).observe(root, {attributes:true});
+paint();
+})();
+</script>
+</body>
+</html>
