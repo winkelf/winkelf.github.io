@@ -803,7 +803,7 @@ button { font-family: var(--f-display); font-weight: 600; font-size: 13px; lette
       tracksCap: 'Ordenadas por significancia. Las etiquetas de origen son las que GN2 aprende a predecir como tarea auxiliar. d₀ lleva signo: positivo si el punto de máxima aproximación queda delante del PV en la dirección del jet. Las trazas de fragmentación dan |S<sub>d0</sub>| ≲ 3 con ambos signos; las del hadrón pesado dan valores grandes y positivos.',
       hDist: 'Discriminante y working points',
       distCap: 'D<sub>b</sub> de juguete para miles de jets simulados con el mismo modelo (en los taggers reales, D<sub>b</sub> = ln[p<sub>b</sub> / (f<sub>c</sub>p<sub>c</sub> + (1−f<sub>c</sub>)p<sub>light</sub>)]). Cada working point fija la eficiencia b y con eso cuántos jets c y light se cuelan. Los números de GN2 o UParT son otros; la forma del compromiso es la misma.',
-      eff: { b: 'eficiencia b', c: 'rechazo c', l: 'rechazo light', y: 'fracción de jets', jet: 'este jet' },
+      wpTx: { b: 'eficiencia b', c: 'rechazo c', l: 'rechazo light', y: 'fracción de jets', jet: 'este jet' },
       hFoot: 'Las huellas de cada sabor',
       footL: '<h3>Jet ligero (u, d, s, g)</h3><p>No hay hadrón pesado. Las trazas desplazadas vienen de:</p><ul><li>K⁰<sub>S</sub> → π⁺π⁻ (cτ = 2.68 cm) y Λ → pπ⁻ (7.89 cm): vértices V0 de masa conocida, que se vetan.</li><li>Conversiones γ → e⁺e⁻ e interacciones hadrónicas en el material.</li><li>Colas de resolución de d₀ y trazas mal reconstruidas.</li></ul><p>El rechazo de light depende de cuánto se controlan esas colas.</p>',
       footC: '<h3>Jet c</h3><table><thead><tr><th>hadrón</th><th>fracción</th><th>cτ</th></tr></thead><tbody><tr><td>D⁰</td><td>≈ 59 %</td><td>123 μm</td></tr><tr><td>D⁺</td><td>≈ 24 %</td><td>312 μm</td></tr><tr><td>D⁺<sub>s</sub></td><td>≈ 9 %</td><td>151 μm</td></tr><tr><td>Λ<sub>c</sub>⁺</td><td>≈ 8 %</td><td>61 μm</td></tr></tbody></table><ul><li>Fragmentación intermedia: ⟨x<sub>D</sub>⟩ ≈ 0.5–0.6.</li><li>Vidas medias muy distintas: el D⁺ vuela 2.5 veces más que el D⁰.</li><li>Masa ~1.9 GeV: un SV liviano, con 2–3 trazas.</li><li>Es el sabor más difícil: queda entre light y b.</li></ul><p class="barnote">Fracciones medidas en e⁺e⁻; en pp a bajo p<sub>T</sub> los bariones Λ<sub>c</sub> aparecen bastante más.</p>',
@@ -912,7 +912,7 @@ button { font-family: var(--f-display); font-weight: 600; font-size: 13px; lette
       tracksCap: 'Sorted by significance. The origin labels are the ones GN2 learns to predict as an auxiliary task. d₀ is signed: positive if the point of closest approach lies ahead of the PV along the jet. Fragmentation tracks give |S<sub>d0</sub>| ≲ 3 with either sign; heavy-hadron tracks give large positive values.',
       hDist: 'Discriminant and working points',
       distCap: 'Toy D<sub>b</sub> for thousands of jets simulated with the same model (in real taggers, D<sub>b</sub> = ln[p<sub>b</sub> / (f<sub>c</sub>p<sub>c</sub> + (1−f<sub>c</sub>)p<sub>light</sub>)]). Each working point fixes the b efficiency, and with it how many c and light jets get through. GN2 or UParT numbers differ; the shape of the trade-off is the same.',
-      eff: { b: 'b efficiency', c: 'c rejection', l: 'light rejection', y: 'fraction of jets', jet: 'this jet' },
+      wpTx: { b: 'b efficiency', c: 'c rejection', l: 'light rejection', y: 'fraction of jets', jet: 'this jet' },
       hFoot: 'The fingerprints of each flavour',
       footL: '<h3>Light jet (u, d, s, g)</h3><p>There is no heavy hadron. Displaced tracks come from:</p><ul><li>K⁰<sub>S</sub> → π⁺π⁻ (cτ = 2.68 cm) and Λ → pπ⁻ (7.89 cm): V0 vertices with a known mass, which are vetoed.</li><li>Photon conversions γ → e⁺e⁻ and hadronic interactions in the material.</li><li>Tails of the d₀ resolution and badly reconstructed tracks.</li></ul><p>Light rejection depends on how well those tails are controlled.</p>',
       footC: '<h3>c jet</h3><table><thead><tr><th>hadron</th><th>fraction</th><th>cτ</th></tr></thead><tbody><tr><td>D⁰</td><td>≈ 59 %</td><td>123 μm</td></tr><tr><td>D⁺</td><td>≈ 24 %</td><td>312 μm</td></tr><tr><td>D⁺<sub>s</sub></td><td>≈ 9 %</td><td>151 μm</td></tr><tr><td>Λ<sub>c</sub>⁺</td><td>≈ 8 %</td><td>61 μm</td></tr></tbody></table><ul><li>Intermediate fragmentation: ⟨x<sub>D</sub>⟩ ≈ 0.5–0.6.</li><li>Very different lifetimes: a D⁺ flies 2.5 times further than a D⁰.</li><li>Mass ~1.9 GeV: a light SV with 2–3 tracks.</li><li>The hardest flavour: it sits between light and b.</li></ul><p class="barnote">Fractions measured in e⁺e⁻; in pp at low p<sub>T</sub>, Λ<sub>c</sub> baryons show up considerably more often.</p>',
@@ -1816,7 +1816,7 @@ button { font-family: var(--f-display); font-weight: 600; font-size: 13px; lette
   }
 
   function drawDist() {
-    const S = tag.samples, tx = T_().eff, W = 520, H = 240, pad = { l: 44, r: 10, t: 12, b: 34 };
+    const S = tag.samples, tx = T_().wpTx, W = 520, H = 240, pad = { l: 44, r: 10, t: 12, b: 34 };
     const lo = -6, hi = 34, nb = 40, bw = (hi - lo) / nb;
     const hist = arr => { const c = new Array(nb).fill(0); arr.forEach(v => { const i = Math.floor((clamp(v, lo, hi - 1e-9) - lo) / bw); c[i]++; }); return c.map(x => x / arr.length); };
     const yl = -4, yh = 0;
