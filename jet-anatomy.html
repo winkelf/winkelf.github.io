@@ -1,0 +1,1968 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>JetAnatomy</title>
+<meta name="description" content="Interactive notebook on jets: truth versus reco in a 3D cone, how a truth jet is born, and reconstruction and flavour tagging of light, c and b jets.">
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Barlow:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: two tabs. Explorer = event-display stage (3D cone) + instrument side panel. Truth = numbered chain of figures. */
+:root {
+  --bg: #f2f3f7; --panel: #fbfbfd; --scene: #e7e9f1; --fg: #181a2a; --muted: #5b5f76; --line: #d8dbe6;
+  --truth: #6b55f0; --reco: #5c6b80;
+  --c-ch: #2f6bd8; --c-ph: #d99a00; --c-nh: #159a72; --c-lep: #cc3487; --c-nu: #8a8fa3; --c-miss: #d23c3c;
+  --cone-opacity: 0.10;
+  --f-display: "Barlow Semi Condensed", "Arial Narrow", system-ui, sans-serif;
+  --f-body: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e0f18; --panel: #161827; --scene: #0a0b13; --fg: #e7e7f2; --muted: #9a9db5; --line: #2a2d42;
+  --truth: #a493ff; --reco: #9aaac0;
+  --c-ch: #6d9dff; --c-ph: #f3c341; --c-nh: #3fd0a0; --c-lep: #ff72b9; --c-nu: #9da2b8; --c-miss: #ff6b6b;
+  --cone-opacity: 0.13; color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --bg: #0e0f18; --panel: #161827; --scene: #0a0b13; --fg: #e7e7f2; --muted: #9a9db5; --line: #2a2d42;
+  --truth: #a493ff; --reco: #9aaac0;
+  --c-ch: #6d9dff; --c-ph: #f3c341; --c-nh: #3fd0a0; --c-lep: #ff72b9; --c-nu: #9da2b8; --c-miss: #ff6b6b;
+  --cone-opacity: 0.13; color-scheme: dark;
+}
+body { background: var(--bg); color: var(--fg); font-family: var(--f-body); font-size: 15px; line-height: 1.55; transition: background-color .2s; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 56px; display: grid; gap: 24px; }
+a { color: var(--truth); }
+
+.topbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.eyebrow { font-family: var(--f-mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.prefs { display: flex; gap: 8px; align-items: center; }
+.seg.mini { grid-template-columns: auto auto; }
+.seg.mini label { padding: 5px 10px; font-family: var(--f-mono); font-size: 12px; }
+.themebtn { display: inline-flex; align-items: center; gap: 7px; padding: 5px 11px; font-size: 12.5px; }
+.themebtn svg { width: 14px; height: 14px; }
+
+h1 { font-family: var(--f-display); font-stretch: 72%; font-weight: 800; font-size: clamp(44px, 7vw, 76px); line-height: .95; letter-spacing: -.015em; margin: 0; }
+h1 .ease { color: var(--truth); }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+.tabs a { font-family: var(--f-display); font-stretch: 85%; font-weight: 700; font-size: 15px; letter-spacing: .02em; padding: 9px 14px; color: var(--muted); text-decoration: none; border-bottom: 3px solid transparent; margin-bottom: -1px; white-space: nowrap; }
+.tabs a[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--truth); }
+.tabs a:hover { color: var(--fg); }
+.tabs a:focus-visible { outline: 2px solid var(--truth); outline-offset: -2px; }
+.panel { display: grid; gap: 28px; }
+
+header { display: grid; gap: 10px; max-width: 76ch; }
+.tagline { font-family: var(--f-display); font-stretch: 80%; font-weight: 700; font-size: clamp(22px, 2.8vw, 30px); line-height: 1.15; margin: 0; text-wrap: balance; }
+.tagline .t { color: var(--truth); } .tagline .r { color: var(--reco); }
+.lede { margin: 0; font-size: 16.5px; color: var(--fg); }
+
+.stage { display: grid; grid-template-columns: minmax(0, 1fr) 350px; gap: 20px; align-items: start; }
+@media (max-width: 920px) { .stage { grid-template-columns: minmax(0, 1fr); } }
+.viewcol { display: grid; gap: 12px; min-width: 0; }
+.viewport { position: relative; height: clamp(360px, 64vh, 680px); background: var(--scene); border: 1px solid var(--line); border-radius: 0; overflow: hidden; touch-action: none; }
+.viewport canvas { display: block; width: 100%; height: 100%; }
+.lbl { position: absolute; left: 0; top: 0; pointer-events: none; font-family: var(--f-mono); font-size: 11.5px; white-space: nowrap; transform: translate(-50%, -50%); }
+.lbl.pill { font-family: var(--f-display); font-stretch: 80%; font-weight: 700; font-size: 13px; letter-spacing: .1em; padding: 3px 9px; border-radius: 0; color: var(--bg); }
+.lbl.pill small { font-family: var(--f-mono); font-weight: 400; letter-spacing: 0; font-size: 10.5px; opacity: .85; margin-left: 6px; }
+.lbl.truth { background: var(--truth); } .lbl.reco { background: var(--reco); }
+.lbl.note { color: var(--muted); }
+.lbl.nu { color: var(--c-nu); }
+.vhint { position: absolute; right: 10px; bottom: 8px; font-family: var(--f-mono); font-size: 11px; color: var(--muted); pointer-events: none; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 11px; height: 11px; border-radius: 2px; display: inline-block; flex: none; }
+.sw.ch { background: var(--c-ch); } .sw.ph { background: var(--c-ph); } .sw.nh { background: var(--c-nh); } .sw.lep { background: var(--c-lep); }
+.sw.nu { background: repeating-linear-gradient(90deg, var(--c-nu) 0 2px, transparent 2px 4px); outline: 1px solid var(--c-nu); }
+.sw.miss { background: repeating-linear-gradient(90deg, var(--c-miss) 0 2px, transparent 2px 4px); outline: 1px solid var(--c-miss); }
+
+.status { margin: 0; padding: 12px 14px; border-left: 3px solid var(--truth); background: var(--panel); font-size: 15px; max-width: 80ch; }
+.status.warn { border-left-color: var(--c-miss); }
+
+aside { display: grid; gap: 18px; background: var(--panel); border: 1px solid var(--line); border-radius: 0; padding: 16px; min-width: 0; }
+aside h2 { font-family: var(--f-display); font-stretch: 85%; font-weight: 700; font-size: 13px; letter-spacing: .1em; text-transform: uppercase; margin: 0 0 8px; color: var(--muted); }
+.ctl { display: grid; gap: 12px; }
+.seg { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line); border-radius: 0; overflow: hidden; }
+.seg.three { grid-template-columns: repeat(3, 1fr); }
+.seg input { position: absolute; opacity: 0; pointer-events: none; }
+.seg label { text-align: center; padding: 7px 6px; font-size: 13px; cursor: pointer; color: var(--muted); }
+.seg input:checked + label { background: var(--fg); color: var(--bg); }
+.seg input:focus-visible + label { outline: 2px solid var(--truth); outline-offset: -2px; }
+.range { display: grid; gap: 2px; }
+.range .top { display: flex; justify-content: space-between; font-size: 13.5px; gap: 8px; }
+.range output { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+input[type=range] { width: 100%; accent-color: var(--truth); }
+.check { display: flex; gap: 8px; align-items: flex-start; font-size: 13.5px; cursor: pointer; }
+.check input { margin-top: 3px; accent-color: var(--truth); }
+.btns { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+button { font: inherit; font-size: 13.5px; padding: 7px 12px; border-radius: 0; border: 1px solid var(--line); background: var(--bg); color: var(--fg); cursor: pointer; }
+button.primary { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+button:hover { border-color: var(--muted); }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--truth); outline-offset: 2px; }
+
+.nums { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 13.5px; }
+.nums th, .nums td { padding: 5px 4px; text-align: right; border-bottom: 1px solid var(--line); }
+.nums th:first-child, .nums td:first-child { text-align: left; }
+.nums thead th { font-weight: 500; color: var(--muted); font-size: 12px; }
+.nums td { font-family: var(--f-mono); }
+.nums td:first-child { font-family: var(--f-body); font-weight: 600; }
+.nums tr.t td:first-child { color: var(--truth); } .nums tr.r td:first-child { color: var(--reco); }
+.resp { display: flex; justify-content: space-between; align-items: baseline; margin-top: 8px; font-size: 13.5px; gap: 8px; }
+.resp b { font-family: var(--f-mono); font-size: 20px; font-weight: 500; }
+
+.bars { display: grid; gap: 6px; }
+.bar { display: grid; grid-template-columns: 44px minmax(0,1fr); gap: 8px; align-items: center; font-size: 12px; color: var(--muted); }
+.track { height: 14px; display: flex; background: color-mix(in srgb, var(--line) 50%, transparent); border-radius: 2px; overflow: hidden; }
+.track i { display: block; height: 100%; transition: width .25s; }
+.track i.ch { background: var(--c-ch); } .track i.ph { background: var(--c-ph); } .track i.nh { background: var(--c-nh); } .track i.lep { background: var(--c-lep); }
+.track i.nu { background: repeating-linear-gradient(135deg, var(--c-nu) 0 3px, transparent 3px 6px); }
+.barnote { font-size: 12px; color: var(--muted); margin: 2px 0 0; }
+
+.plist { max-height: 250px; overflow: auto; border: 1px solid var(--line); border-radius: 0; }
+.plist table { width: 100%; border-collapse: collapse; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.plist th { position: sticky; top: 0; background: var(--panel); font-weight: 500; color: var(--muted); text-align: right; padding: 5px 8px; border-bottom: 1px solid var(--line); font-size: 11.5px; }
+.plist td { padding: 3px 8px; text-align: right; font-family: var(--f-mono); }
+.plist th:first-child, .plist td:first-child { text-align: left; }
+.plist tbody tr { cursor: default; }
+.plist tbody tr:hover, .plist tbody tr.on { background: color-mix(in srgb, var(--truth) 12%, transparent); }
+.plist td.lost { color: var(--c-miss); } .plist td.inv { color: var(--c-nu); }
+.plist .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: 1px; }
+
+.defs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; border-top: 1px solid var(--line); padding-top: 24px; }
+@media (max-width: 820px) { .defs { grid-template-columns: minmax(0, 1fr); gap: 20px; } }
+.defs h3 { font-family: var(--f-display); font-stretch: 80%; font-weight: 700; font-size: 20px; margin: 0 0 6px; text-wrap: balance; }
+.defs h3 .k { font-family: var(--f-mono); font-size: 12px; font-weight: 400; color: var(--muted); display: block; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 4px; }
+.defs p { margin: 0; color: var(--fg); max-width: 60ch; }
+.defs p + p { margin-top: 8px; }
+.fine { font-size: 12.5px; color: var(--muted); margin: 0; max-width: 90ch; }
+
+/* ---- truth tab ---- */
+.pipe { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; border: 1px solid var(--line); border-radius: 0; overflow: hidden; background: var(--panel); }
+@media (max-width: 900px) { .pipe { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 480px) { .pipe { grid-template-columns: minmax(0, 1fr); } }
+.pipe button { text-align: left; border: 0; border-radius: 0; background: transparent; padding: 14px 16px; display: grid; gap: 4px; align-content: start; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); margin: 0 -1px -1px 0; }
+.pipe button:hover { background: color-mix(in srgb, var(--truth) 7%, transparent); }
+.pipe .n { font-family: var(--f-mono); font-size: 12px; color: var(--truth); }
+.pipe b { font-family: var(--f-display); font-stretch: 85%; font-size: 18px; }
+.pipe .chip { font-family: var(--f-mono); font-size: 11.5px; color: var(--muted); }
+.pipe span[data-i18n] { font-size: 13px; color: var(--muted); line-height: 1.45; }
+.pipe button { grid-template-rows: auto auto auto auto 1fr; }
+.pic { width: 100%; height: 46px; margin-top: 6px; overflow: visible; align-self: end; }
+.pic path, .pic line { fill: none; stroke-linecap: round; }
+.pic .p { stroke: var(--fg); stroke-width: 1.6; } .pic .gl { stroke: var(--truth); stroke-width: 1.6; }
+.pic .fade { opacity: .35; }
+.pic .str { stroke: var(--truth); stroke-width: 5; }
+.pic .q { fill: var(--c-ch); } .pic .qb { fill: var(--c-lep); } .pic .had { fill: var(--c-nh); } .pic .hB { fill: var(--c-ph); }
+.pic .fl { stroke: var(--c-ph); stroke-width: 1.8; stroke-dasharray: 4 3; }
+.pic .trk { stroke: var(--c-ch); stroke-width: 1.5; } .pic .nu { stroke: var(--c-nu); stroke-width: 1.4; stroke-dasharray: 2 3; }
+.pic .v { fill: var(--fg); } .pic .ar { fill: var(--muted); }
+.pic text { font-family: var(--f-mono); font-size: 9px; fill: var(--muted); }
+
+.tsec { display: grid; gap: 18px; border-top: 1px solid var(--line); padding-top: 26px; scroll-margin-top: 16px; }
+.tsec > h2 { display: flex; gap: 14px; align-items: baseline; margin: 0; font-family: var(--f-display); font-stretch: 78%; font-weight: 800; font-size: clamp(26px, 3.4vw, 36px); line-height: 1.05; text-wrap: balance; }
+.tsec > h2 .n { font-family: var(--f-mono); font-weight: 400; font-size: 14px; color: var(--truth); flex: none; }
+.prose { display: grid; gap: 10px; max-width: 68ch; }
+.prose p { margin: 0; }
+.prose .aside { font-size: 13.5px; color: var(--muted); }
+.two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 28px; align-items: start; }
+@media (max-width: 860px) { .two { grid-template-columns: minmax(0, 1fr); } }
+.fig { background: var(--panel); border: 1px solid var(--line); border-radius: 0; padding: 14px; display: grid; gap: 10px; min-width: 0; }
+.fig svg { display: block; width: 100%; height: auto; }
+.cap { font-size: 13px; color: var(--muted); margin: 0; }
+.cap b { color: var(--fg); font-weight: 600; }
+
+.fy path, .fy line { fill: none; stroke-width: 1.8; stroke-linecap: round; }
+.fy .f { stroke: var(--fg); } .fy .g { stroke: var(--truth); } .fy .w { stroke: var(--c-lep); }
+.fy .nu { stroke: var(--c-nu); stroke-dasharray: 5 4; }
+.fy .colr { stroke: var(--muted); stroke-dasharray: 3 4; stroke-width: 1.3; }
+.fy .arrow { fill: var(--fg); stroke: none; } .fy .arrow.nu { fill: var(--c-nu); }
+.fy .vtx { fill: var(--fg); }
+.fy text { fill: var(--fg); font-family: var(--f-mono); font-size: 14px; }
+.fy text.sm { font-size: 11px; fill: var(--muted); }
+.fy text.it { font-family: var(--f-body); font-style: italic; font-size: 12px; fill: var(--muted); }
+.fy .recoil { stroke: var(--c-miss); stroke-width: 1.6; }
+.fy .recoilhead { fill: var(--c-miss); }
+
+.lundwrap { position: relative; }
+#lund { display: block; width: 100%; height: 320px; }
+.lundbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+.lundbar .seg { min-width: min(100%, 330px); }
+.who { font-family: var(--f-mono); font-size: 12px; color: var(--truth); }
+
+.cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 900px) { .cards { grid-template-columns: minmax(0, 1fr); } }
+.card { display: grid; gap: 8px; align-content: start; padding: 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 0; }
+.card h3 { margin: 0; font-family: var(--f-display); font-stretch: 82%; font-weight: 700; font-size: 18px; }
+.card p { margin: 0; font-size: 14px; }
+.card svg { width: 100%; height: auto; max-height: 130px; }
+
+.hadro { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 760px) { .hadro { grid-template-columns: minmax(0, 1fr); } }
+.hd .phase { font-family: var(--f-mono); font-size: 12px; fill: var(--muted); }
+.hd .str { stroke: var(--truth); stroke-width: 7; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+.hd .cl { stroke: var(--muted); stroke-dasharray: 3 4; stroke-width: 1.3; fill: none; }
+.hd .q { fill: var(--c-ch); } .hd .qb { fill: var(--c-lep); } .hd .gl { fill: var(--c-ph); }
+.hd .had { fill: var(--c-nh); }
+.hd .clu { fill: color-mix(in srgb, var(--truth) 25%, transparent); stroke: var(--truth); stroke-width: 1.5; }
+.hd text { font-family: var(--f-mono); font-size: 11px; fill: var(--fg); }
+.hkey { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; color: var(--muted); }
+.hkey span { display: inline-flex; gap: 6px; align-items: center; }
+.hkey i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.hctl { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; }
+.hctl output { font-family: var(--f-mono); font-size: 12.5px; min-width: 3ch; }
+
+.chain .pv { fill: var(--fg); } .chain .sv { fill: none; stroke: var(--c-ph); stroke-width: 2; }
+.chain .fl { stroke: var(--c-ph); stroke-width: 2; stroke-dasharray: 6 4; }
+.chain .trk { stroke: var(--c-ch); stroke-width: 1.8; } .chain .lep { stroke: var(--c-lep); stroke-width: 1.8; }
+.chain .nuL { stroke: var(--c-nu); stroke-width: 1.6; stroke-dasharray: 3 4; }
+.chain .frag { stroke: var(--muted); stroke-width: 1.2; opacity: .6; }
+.chain text { font-family: var(--f-mono); font-size: 12px; fill: var(--fg); }
+.chain text.sm { font-size: 10.5px; fill: var(--muted); }
+.scalewrap { overflow-x: auto; }
+.scalewrap svg { min-width: 560px; }
+.sc .ax { stroke: var(--fg); stroke-width: 1.2; } .sc .tk { stroke: var(--muted); }
+.sc .thr { stroke: var(--truth); stroke-width: 2; stroke-dasharray: 5 4; }
+.sc .dec { fill: var(--c-ph); } .sc .stb { fill: var(--c-nh); }
+.sc .zone { fill: color-mix(in srgb, var(--c-nh) 10%, transparent); }
+.sc text { font-family: var(--f-mono); font-size: 11.5px; fill: var(--fg); }
+.sc text.sm { font-size: 10.5px; fill: var(--muted); }
+.sc text.thl { fill: var(--truth); }
+.sc .lead { stroke: var(--line); }
+
+.gen { overflow-x: auto; }
+.gen table { width: 100%; min-width: 560px; border-collapse: collapse; font-size: 14px; }
+.gen th, .gen td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.gen th { font-weight: 500; color: var(--muted); font-size: 12.5px; }
+.gen td:first-child { font-family: var(--f-display); font-stretch: 85%; font-weight: 700; font-size: 16px; white-space: nowrap; }
+.gen td small { color: var(--muted); font-size: 12.5px; display: block; }
+
+/* ---- tagging tab ---- */
+.tgbar { display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: center; }
+.tgbar .seg.three { min-width: min(100%, 330px); }
+.tgbar .seg.three label { font-family: var(--f-display); font-stretch: 85%; font-weight: 700; font-size: 15px; padding: 8px 10px; }
+.seg.four { grid-template-columns: repeat(4, 1fr); }
+.tv { display: block; width: 100%; height: auto; background: var(--scene); border-radius: 0; }
+.tv line, .tv path { fill: none; }
+.tv .layer { fill: none; stroke: var(--line); stroke-width: 6; }
+.tv .layer.pipe { stroke-width: 2; stroke: var(--muted); opacity: .5; }
+.tv .axis { stroke: var(--fg); stroke-dasharray: 6 5; opacity: .35; stroke-width: 1; }
+.tv .trk { stroke-linecap: round; }
+.tv .back { stroke-dasharray: 2 3; stroke-width: 1; opacity: .8; }
+.tv .t-Primary { stroke: var(--muted); } .tv .t-FromB { stroke: var(--c-ph); } .tv .t-FromBC, .tv .t-FromC { stroke: var(--c-nh); }
+.tv .t-OtherSecondary { stroke: var(--c-ch); } .tv .t-Fake { stroke: var(--c-miss); } .tv .t-lep { stroke: var(--c-lep); }
+.tv .hit { fill: var(--fg); }
+.tv .fl { stroke-width: 2.4; stroke-dasharray: 7 4; }
+.tv .fl-B { stroke: var(--c-ph); } .tv .fl-C { stroke: var(--c-nh); } .tv .fl-V0 { stroke: var(--c-ch); }
+.tv .nuT { stroke: var(--c-nu); stroke-dasharray: 2 4; stroke-width: 1.4; }
+.tv .rv { fill: color-mix(in srgb, var(--fg) 8%, transparent); stroke: var(--fg); stroke-width: 1.6; }
+.tv .rv.v0 { stroke: var(--c-ch); stroke-dasharray: 3 2; }
+.tv .pv { fill: var(--fg); }
+.tv text { font-family: var(--f-mono); font-size: 11.5px; fill: var(--fg); }
+.tv text.sm { font-size: 10.5px; fill: var(--muted); }
+.tv text.hl { font-weight: 500; paint-order: stroke; stroke: var(--scene); stroke-width: 3px; }
+.tv .dim { opacity: .12; }
+.tlegend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; color: var(--muted); }
+.tlegend span { display: inline-flex; align-items: center; gap: 6px; }
+.tlegend i { width: 16px; height: 3px; display: inline-block; border-radius: 2px; }
+.dlist { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.dlist li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 6px 8px; border-radius: 0; font-size: 13px; color: var(--muted); border: 1px solid transparent; }
+.dlist li b { font-family: var(--f-mono); font-weight: 500; }
+.dlist li.on { color: var(--fg); border-color: var(--line); background: var(--bg); }
+.dlist li.on b { color: var(--truth); }
+.chainbox { display: grid; gap: 6px; font-size: 13.5px; }
+.chainbox .step { font-family: var(--f-mono); font-size: 12.5px; padding-left: 10px; border-left: 3px solid var(--line); }
+.chainbox .step.B { border-left-color: var(--c-ph); } .chainbox .step.C { border-left-color: var(--c-nh); } .chainbox .step.V0 { border-left-color: var(--c-ch); }
+.outnum { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.outnum b { font-family: var(--f-mono); font-size: 26px; font-weight: 500; }
+.chip2 { font-size: 12.5px; padding: 3px 8px; border-radius: 0; border: 1px solid var(--line); }
+.chip2.pass { color: var(--c-nh); border-color: var(--c-nh); } .chip2.fail { color: var(--c-miss); border-color: var(--c-miss); }
+.ttab { max-height: 300px; overflow: auto; border: 1px solid var(--line); border-radius: 0; }
+.ttab table { width: 100%; border-collapse: collapse; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.ttab th { position: sticky; top: 0; background: var(--panel); font-weight: 500; color: var(--muted); text-align: right; padding: 5px 8px; border-bottom: 1px solid var(--line); font-size: 11.5px; }
+.ttab td { padding: 3px 8px; text-align: right; font-family: var(--f-mono); }
+.ttab th:first-child, .ttab td:first-child, .ttab th:nth-child(2), .ttab td:nth-child(2) { text-align: left; }
+.ttab tbody tr:hover, .ttab tbody tr.on { background: color-mix(in srgb, var(--truth) 12%, transparent); }
+.ttab tr.heavy td:first-child { font-weight: 500; color: var(--fg); }
+.ttab .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: 1px; }
+.dist text { font-family: var(--f-mono); font-size: 10.5px; fill: var(--muted); }
+.dist .ax { stroke: var(--line); }
+.dist .h-l { stroke: var(--reco); fill: color-mix(in srgb, var(--reco) 14%, transparent); }
+.dist .h-c { stroke: var(--c-nh); fill: color-mix(in srgb, var(--c-nh) 14%, transparent); }
+.dist .h-b { stroke: var(--c-ph); fill: color-mix(in srgb, var(--c-ph) 14%, transparent); }
+.dist path { stroke-width: 1.6; }
+.dist .cut { stroke: var(--fg); stroke-width: 1.5; stroke-dasharray: 4 3; }
+.dist .pass { fill: color-mix(in srgb, var(--fg) 6%, transparent); }
+.dist .mk { stroke: var(--bg); stroke-width: 1; }
+.effs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.effs div { display: grid; gap: 0; }
+.effs span { font-size: 12px; color: var(--muted); }
+.effs b { font-family: var(--f-mono); font-weight: 500; font-size: 18px; }
+.cards table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+.cards th, .cards td { text-align: right; padding: 3px 4px; border-bottom: 1px solid var(--line); }
+.cards th { font-weight: 500; color: var(--muted); font-size: 11.5px; }
+.cards th:first-child, .cards td:first-child { text-align: left; }
+.cards td { font-family: var(--f-mono); }
+.cards ul { margin: 0; padding-left: 18px; font-size: 14px; display: grid; gap: 4px; }
+.card.fb { border-top: 3px solid var(--c-ph); } .card.fc { border-top: 3px solid var(--c-nh); } .card.fl { border-top: 3px solid var(--reco); }
+
+/* ---- instrument look: square edges, rules instead of boxes ---- */
+.wrap { gap: 22px; padding-block: 0 56px; }
+.appbar { max-width: none; display: flex; align-items: stretch; gap: 8px 28px; flex-wrap: wrap; border-bottom: 1px solid var(--fg); padding-top: 14px; }
+.brand { display: flex; align-items: center; gap: 10px; margin: 0 0 10px; font-family: var(--f-display); font-weight: 500; font-size: 22px; letter-spacing: .01em; line-height: 1; }
+.brand b { font-weight: 700; color: var(--truth); }
+.brand svg { width: 30px; height: 20px; }
+.brand .cone-t { fill: color-mix(in srgb, var(--truth) 35%, transparent); stroke: var(--truth); stroke-width: 1.2; }
+.brand .cone-r { fill: color-mix(in srgb, var(--reco) 30%, transparent); stroke: var(--reco); stroke-width: 1.2; }
+.brand circle { fill: var(--fg); }
+.appbar .tabs { border-bottom: 0; align-self: flex-end; flex: 1 1 auto; gap: 0; }
+.appbar .prefs { margin-bottom: 10px; align-self: center; }
+.tabs a { font-family: var(--f-display); font-weight: 600; font-size: 14px; letter-spacing: .06em; text-transform: uppercase; padding: 10px 14px 9px; margin-bottom: -1px; }
+.tabs a[aria-selected="true"] { color: var(--truth); }
+.tagline { font-family: var(--f-display); font-weight: 600; letter-spacing: -.005em; font-size: clamp(26px, 3.4vw, 38px); line-height: 1.08; }
+header:not(.appbar) { padding-top: 10px; }
+.lede { font-size: 17px; }
+aside { background: transparent; border: 0; border-left: 1px solid var(--line); padding: 2px 0 0 20px; }
+@media (max-width: 920px) { aside { border-left: 0; border-top: 1px solid var(--line); padding: 18px 0 0; } }
+aside h2 { font-family: var(--f-mono); font-weight: 500; font-size: 11px; letter-spacing: .12em; color: var(--muted); border-bottom: 1px solid var(--line); padding-bottom: 5px; }
+.viewport { border-color: var(--line); }
+.fig { background: transparent; border: 0; border-top: 1px solid var(--fg); padding: 12px 0 0; }
+.card { background: transparent; border: 0; border-top: 1px solid var(--fg); padding: 12px 0 0; }
+.card.fb, .card.fc, .card.fl { border-top-width: 3px; }
+.card h3, .defs h3 { font-family: var(--f-display); font-weight: 600; }
+.pipe { background: transparent; border-color: var(--fg); }
+.pipe b { font-family: var(--f-display); font-weight: 600; }
+.status { background: transparent; padding: 4px 0 4px 14px; }
+.tsec { border-top: 1px solid var(--fg); }
+.tsec > h2 { font-family: var(--f-display); font-weight: 600; letter-spacing: -.005em; }
+.tsec > h2 .n { font-size: 13px; padding: 2px 6px; border: 1px solid var(--truth); line-height: 1; align-self: center; }
+.defs { border-top-color: var(--fg); }
+.defs h3 .k, .eyebrow { font-size: 11px; letter-spacing: .12em; }
+button { font-family: var(--f-display); font-weight: 600; font-size: 13px; letter-spacing: .05em; text-transform: uppercase; padding: 7px 14px; }
+.themebtn { text-transform: none; letter-spacing: 0; font-family: var(--f-body); font-weight: 500; }
+.seg { border-color: var(--fg); }
+.seg label { font-family: var(--f-display); font-weight: 600; letter-spacing: .03em; }
+.seg.mini label { font-family: var(--f-mono); }
+.tgbar .seg.three label { font-family: var(--f-display); font-weight: 600; font-size: 15px; }
+.nums td:first-child { font-family: var(--f-display); }
+.who { font-size: 11.5px; }
+.chip2 { font-family: var(--f-mono); font-size: 11.5px; }
+.dlist li.on { background: transparent; border-color: var(--fg); }
+
+@media (prefers-reduced-motion: reduce) { body, .track i { transition: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="appbar">
+    <h1 class="brand"><svg viewBox="0 0 30 20" aria-hidden="true"><path class="cone-t" d="M2 10 L15 4.5 L15 15.5 Z"/><path class="cone-r" d="M15 4.5 L28 1 L28 19 L15 15.5 Z"/><circle cx="2" cy="10" r="1.6"/></svg><span>Jet<b>Anatomy</b></span></h1>
+    <nav class="tabs" role="tablist">
+    <a href="#explorer" role="tab" id="tab-explorer" data-i18n="tabExplorer"></a>
+    <a href="#truth" role="tab" id="tab-truth" data-i18n="tabTruth"></a>
+    <a href="#tagging" role="tab" id="tab-tagging" data-i18n="tabTag"></a>
+    </nav>
+    <div class="prefs">
+      <div class="seg mini" role="radiogroup" aria-label="Idioma / Language">
+        <input type="radio" name="lang" id="lang-es" value="es" checked><label for="lang-es">ES</label>
+        <input type="radio" name="lang" id="lang-en" value="en"><label for="lang-en">EN</label>
+      </div>
+      <button class="themebtn" id="themeBtn" type="button"></button>
+    </div>
+  </header>
+
+  <!-- ================= EXPLORER ================= -->
+  <div class="panel" id="panel-explorer" role="tabpanel">
+    <header>
+      <p class="tagline" data-i18n="tagline"></p>
+      <p class="lede" data-i18n="lede"></p>
+    </header>
+
+    <section class="stage">
+      <div class="viewcol">
+        <div class="viewport" id="viewport">
+          <div class="lbl pill truth" id="lblTruth" data-i18n="lblTruth"></div>
+          <div class="lbl pill reco" id="lblReco" data-i18n="lblReco"></div>
+          <div class="lbl note" id="lblIP">IP</div>
+          <div class="lbl note" id="lblBeam" data-i18n="lblBeam"></div>
+          <div class="lbl note" id="lblCalo" data-i18n="lblCalo"></div>
+          <div class="lbl nu" id="lblNu" data-i18n="lblNu" hidden></div>
+          <div class="vhint" data-i18n="vhint"></div>
+        </div>
+        <div class="legend">
+          <span><i class="sw ch"></i><span data-i18n="lgCh"></span></span>
+          <span><i class="sw ph"></i><span data-i18n="lgPh"></span></span>
+          <span><i class="sw nh"></i><span data-i18n="lgNh"></span></span>
+          <span><i class="sw lep"></i><span data-i18n="lgLep"></span></span>
+          <span><i class="sw nu"></i><span data-i18n="lgNu"></span></span>
+          <span><i class="sw miss"></i><span data-i18n="lgMiss"></span></span>
+        </div>
+        <p class="status" id="status"></p>
+      </div>
+
+      <aside>
+        <div class="ctl">
+          <h2 data-i18n="hEvt"></h2>
+          <div class="seg" role="radiogroup" id="jtGroup">
+            <input type="radio" name="jtype" id="jt-b" value="b" checked><label for="jt-b" data-i18n="jtB"></label>
+            <input type="radio" name="jtype" id="jt-l" value="light"><label for="jt-l" data-i18n="jtL"></label>
+          </div>
+          <div class="btns">
+            <button class="primary" id="newEvt" type="button" data-i18n="newEvt"></button>
+            <button id="rot" type="button" aria-pressed="false"></button>
+            <button id="resetView" type="button" data-i18n="resetView"></button>
+          </div>
+        </div>
+
+        <div class="ctl">
+          <h2 data-i18n="hDet"></h2>
+          <div class="range">
+            <div class="top"><label for="bnd" data-i18n="bnd"></label><output id="bndOut"></output></div>
+            <input type="range" id="bnd" min="10" max="90" value="45">
+          </div>
+          <div class="range">
+            <div class="top"><label for="eff" data-i18n="eff"></label><output id="effOut"></output></div>
+            <input type="range" id="eff" min="40" max="100" value="100">
+          </div>
+          <label class="check"><input type="checkbox" id="smear"> <span data-i18n="smear"></span></label>
+          <label class="check"><input type="checkbox" id="nuIn"> <span data-i18n="nuIn"></span></label>
+        </div>
+
+        <div>
+          <h2 data-i18n="hJet"></h2>
+          <table class="nums">
+            <thead><tr><th></th><th>p<sub>T</sub> [GeV]</th><th>m [GeV]</th><th>N</th></tr></thead>
+            <tbody>
+              <tr class="t"><td>Truth</td><td id="tPt"></td><td id="tM"></td><td id="tN"></td></tr>
+              <tr class="r"><td>Reco</td><td id="rPt"></td><td id="rM"></td><td id="rN"></td></tr>
+            </tbody>
+          </table>
+          <div class="resp"><span data-i18n="resp"></span><b id="resp"></b></div>
+        </div>
+
+        <div class="bars">
+          <h2 data-i18n="hBars"></h2>
+          <div class="bar"><span>truth</span><div class="track" id="barT"></div></div>
+          <div class="bar"><span>reco</span><div class="track" id="barR"></div></div>
+          <p class="barnote" data-i18n="barnote"></p>
+        </div>
+
+        <div>
+          <h2 data-i18n="hConst"></h2>
+          <div class="plist">
+            <table>
+              <thead><tr><th data-i18n="thPart"></th><th>E truth</th><th>E reco</th><th>ΔR</th></tr></thead>
+              <tbody id="plist"></tbody>
+            </table>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="defs">
+      <div data-i18n="def1"></div>
+      <div data-i18n="def2"></div>
+      <div data-i18n="def3"></div>
+    </section>
+
+    <p class="fine" data-i18n="fine"></p>
+  </div>
+
+  <!-- ================= TRUTH ================= -->
+  <div class="panel" id="panel-truth" role="tabpanel" hidden>
+    <header>
+      <p class="tagline" data-i18n="trTag"></p>
+      <p class="lede" data-i18n="trLede"></p>
+    </header>
+
+    <nav class="pipe" aria-label="Etapas">
+      <button type="button" data-go="sec-hard"><span class="n">1</span><b data-i18n="s1"></b><span class="chip">Q ~ 100 GeV</span><span data-i18n="s1d"></span><svg class="pic" viewBox="0 0 120 46" aria-hidden="true"><path class="p" d="M2 6 L40 23"/><path class="gl" d="M2 40 L40 23"/><path class="gl" d="M40 23 q3.75 -6 7.5 0 t7.5 0 t7.5 0 t7.5 0"/><path class="p" d="M70 23 L120 23"/><path class="gl fade" d="M70 23 L108 42"/><circle class="v" cx="40" cy="23" r="2.4"/><circle class="v" cx="70" cy="23" r="2.4"/></svg></button>
+      <button type="button" data-go="sec-ps"><span class="n">2</span><b>Parton shower</b><span class="chip">Q → Q₀ ≈ 1 GeV</span><span data-i18n="s2d"></span><svg class="pic" viewBox="0 0 120 46" aria-hidden="true"><path class="p" d="M0 23 L120 23"/><path class="gl" d="M22 23 L120 4"/><path class="gl" d="M48 23 L120 42"/><path class="gl" d="M70 15.3 L120 15"/><path class="gl" d="M80 23 L120 31"/><path class="gl" d="M92 36 L120 36"/><circle class="v" cx="22" cy="23" r="2"/><circle class="v" cx="48" cy="23" r="2"/><circle class="v" cx="70" cy="15.3" r="2"/><circle class="v" cx="80" cy="23" r="2"/><circle class="v" cx="92" cy="36" r="2"/></svg></button>
+      <button type="button" data-go="sec-had"><span class="n">3</span><b data-i18n="s3"></b><span class="chip">~ Λ<sub>QCD</sub> · 1 fm</span><span data-i18n="s3d"></span><svg class="pic" viewBox="0 0 120 46" aria-hidden="true"><line class="str" x1="6" y1="23" x2="20" y2="23"/><line class="str" x1="30" y1="23" x2="44" y2="23"/><line class="str" x1="54" y1="23" x2="62" y2="23"/><circle class="q" cx="6" cy="23" r="3.5"/><circle class="qb" cx="22.5" cy="23" r="3"/><circle class="q" cx="28" cy="23" r="3"/><circle class="qb" cx="46.5" cy="23" r="3"/><circle class="q" cx="52" cy="23" r="3"/><circle class="qb" cx="62" cy="23" r="3.5"/><path class="ar" d="M70 23 l-6 -4 v8 Z" transform="translate(6 0)"/><circle class="had" cx="88" cy="14" r="5"/><circle class="had" cx="104" cy="28" r="5"/><circle class="had" cx="90" cy="34" r="4"/><circle class="had" cx="114" cy="12" r="4"/></svg></button>
+      <button type="button" data-go="sec-dec"><span class="n">4</span><b data-i18n="s4"></b><span class="chip">cτ: nm → mm</span><span data-i18n="s4d"></span><svg class="pic" viewBox="0 0 120 46" aria-hidden="true"><circle class="hB" cx="7" cy="23" r="5.5"/><line class="fl" x1="13" y1="23" x2="56" y2="23"/><text x="34" y="37" text-anchor="middle">cτ</text><path class="trk" d="M56 23 L120 6"/><path class="trk" d="M56 23 L120 20"/><path class="trk" d="M56 23 L120 31"/><path class="nu" d="M56 23 L118 43"/><circle class="v" cx="56" cy="23" r="2.4"/></svg></button>
+    </nav>
+
+    <!-- 1 hard -->
+    <section class="tsec" id="sec-hard">
+      <h2><span class="n">1</span><span data-i18n="hHard"></span></h2>
+      <div class="two">
+        <div class="prose" data-i18n="hardP"></div>
+        <div class="fig">
+          <div class="seg three" role="radiogroup" id="procGroup">
+            <input type="radio" name="proc" id="pr-gg" value="gg" checked><label for="pr-gg">gg → gg</label>
+            <input type="radio" name="proc" id="pr-qg" value="qg"><label for="pr-qg">qg → qg</label>
+            <input type="radio" name="proc" id="pr-bb" value="bb"><label for="pr-bb">gg → b b̄</label>
+          </div>
+          <svg class="fy" id="feyHard" viewBox="0 0 330 215" role="img" aria-label="Feynman diagram"></svg>
+          <p class="cap" id="procCap"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2 shower -->
+    <section class="tsec" id="sec-ps">
+      <h2><span class="n">2</span><span>Parton shower</span></h2>
+      <div class="two">
+        <div class="prose" data-i18n="psP"></div>
+        <div class="fig">
+          <div class="lundbar">
+            <div class="seg three" role="radiogroup" id="ordGroup">
+              <input type="radio" name="ord" id="ord-angle" value="angle" checked><label for="ord-angle" data-i18n="ordAngle"></label>
+              <input type="radio" name="ord" id="ord-kt" value="kt"><label for="ord-kt">k<sub>t</sub></label>
+              <input type="radio" name="ord" id="ord-virt" value="virt"><label for="ord-virt" data-i18n="ordVirt"></label>
+            </div>
+            <div class="btns">
+              <button class="primary" type="button" id="lundPlay" data-i18n="play"></button>
+              <button type="button" id="lundNew" data-i18n="newShower"></button>
+            </div>
+          </div>
+          <div class="who" id="ordWho"></div>
+          <div class="lundwrap"><canvas id="lund"></canvas></div>
+          <p class="cap" data-i18n="lundCap"></p>
+        </div>
+      </div>
+      <div class="cards">
+        <div class="card"><svg class="fy" id="sk1" viewBox="0 0 200 110" aria-hidden="true"></svg><h3 data-i18n="c1h"></h3><div class="who">Herwig 7 (q̃)</div><p data-i18n="c1p"></p></div>
+        <div class="card"><svg class="fy" id="sk2" viewBox="0 0 200 110" aria-hidden="true"></svg><h3 data-i18n="c2h"></h3><div class="who">Pythia 8 · Sherpa CSShower · Herwig 7 dipole · Dire</div><p data-i18n="c2p"></p></div>
+        <div class="card"><svg class="fy" id="sk3" viewBox="0 0 200 110" aria-hidden="true"></svg><h3 data-i18n="c3h"></h3><div class="who">Vincia · PanScales · Alaric (Sherpa 3)</div><p data-i18n="c3p"></p></div>
+      </div>
+    </section>
+
+    <!-- 3 hadronization -->
+    <section class="tsec" id="sec-had">
+      <h2><span class="n">3</span><span data-i18n="s3"></span></h2>
+      <div class="prose" data-i18n="hadP"></div>
+      <div class="hctl">
+        <button class="primary" type="button" id="hadPlay" data-i18n="play"></button>
+        <input type="range" id="hadT" min="0" max="100" value="100" aria-label="t">
+        <output id="hadOut"></output>
+      </div>
+      <div class="hadro">
+        <div class="fig">
+          <svg class="hd" id="hdString" viewBox="0 0 300 215" role="img" aria-label="Lund string"></svg>
+          <h3 class="card-h" style="margin:0;font-family:var(--f-display);font-stretch:82%;font-size:19px" data-i18n="strH"></h3>
+          <div class="who">Pythia 8 · Sherpa</div>
+          <p class="cap" style="color:var(--fg);font-size:14px" data-i18n="strP"></p>
+        </div>
+        <div class="fig">
+          <svg class="hd" id="hdCluster" viewBox="0 0 300 215" role="img" aria-label="Cluster model"></svg>
+          <h3 style="margin:0;font-family:var(--f-display);font-stretch:82%;font-size:19px" data-i18n="cluH"></h3>
+          <div class="who">Herwig 7 · Sherpa (AHADIC++)</div>
+          <p class="cap" style="color:var(--fg);font-size:14px" data-i18n="cluP"></p>
+        </div>
+      </div>
+      <div class="hkey">
+        <span><i style="background:var(--c-ch)"></i>q</span>
+        <span><i style="background:var(--c-lep)"></i>q̄</span>
+        <span><i style="background:var(--c-ph)"></i>g</span>
+        <span><i style="background:var(--c-nh)"></i><span data-i18n="hadron"></span></span>
+      </div>
+      <p class="fine" data-i18n="hadNote"></p>
+    </section>
+
+    <!-- 4 decays -->
+    <section class="tsec" id="sec-dec">
+      <h2><span class="n">4</span><span data-i18n="hDec"></span></h2>
+      <div class="prose" data-i18n="decP"></div>
+      <div class="two">
+        <div class="fig">
+          <svg class="chain" id="chain" viewBox="0 0 330 200" role="img" aria-label="B decay chain"></svg>
+          <p class="cap" data-i18n="chainCap"></p>
+        </div>
+        <div class="fig">
+          <svg class="fy" id="feyDec" viewBox="0 0 330 215" role="img" aria-label="b → c ℓ ν"></svg>
+          <p class="cap" data-i18n="feyDecCap"></p>
+        </div>
+      </div>
+      <div class="fig">
+        <div class="scalewrap"><svg class="sc" id="scale" viewBox="0 0 640 150" role="img" aria-label="cτ"></svg></div>
+        <p class="cap" data-i18n="scaleCap"></p>
+      </div>
+    </section>
+
+    <!-- generators -->
+    <section class="tsec">
+      <h2><span data-i18n="hGen"></span></h2>
+      <div class="gen">
+        <table>
+          <thead><tr><th data-i18n="thGen"></th><th data-i18n="thPS"></th><th data-i18n="thHad"></th></tr></thead>
+          <tbody>
+            <tr><td>Pythia 8.3</td><td data-i18n="genPy"></td><td data-i18n="genPyH"></td></tr>
+            <tr><td>Herwig 7</td><td data-i18n="genHw"></td><td data-i18n="genHwH"></td></tr>
+            <tr><td>Sherpa 3</td><td data-i18n="genSh"></td><td data-i18n="genShH"></td></tr>
+            <tr><td>PanScales</td><td data-i18n="genPan"></td><td data-i18n="genPanH"></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="fine" data-i18n="genNote"></p>
+    </section>
+  </div>
+
+  <!-- ================= TAGGING ================= -->
+  <div class="panel" id="panel-tagging" role="tabpanel" hidden>
+    <header>
+      <p class="tagline" data-i18n="tgTag"></p>
+      <p class="lede" data-i18n="tgLede"></p>
+    </header>
+
+    <div class="tgbar">
+      <div class="seg three" role="radiogroup" id="flGroup">
+        <input type="radio" name="fl" id="fl-l" value="l"><label for="fl-l" data-i18n="flL"></label>
+        <input type="radio" name="fl" id="fl-c" value="c"><label for="fl-c" data-i18n="flC"></label>
+        <input type="radio" name="fl" id="fl-b" value="b" checked><label for="fl-b" data-i18n="flB"></label>
+      </div>
+      <div class="seg" role="radiogroup" id="tvGroup">
+        <input type="radio" name="tv" id="tv-vtx" value="vtx" checked><label for="tv-vtx" data-i18n="tvVtx"></label>
+        <input type="radio" name="tv" id="tv-wide" value="wide"><label for="tv-wide" data-i18n="tvWide"></label>
+      </div>
+      <label class="check"><input type="checkbox" id="tgTruth" checked> <span data-i18n="tgTruth"></span></label>
+      <button class="primary" type="button" id="tgNew" data-i18n="tgNew"></button>
+    </div>
+
+    <section class="stage">
+      <div class="viewcol">
+        <div class="fig">
+          <svg class="tv" id="tagView" viewBox="0 0 720 300" role="img" aria-label="Transverse view"></svg>
+          <div class="tlegend">
+            <span><i style="background:var(--muted)"></i><span data-i18n="lgPrim"></span></span>
+            <span><i style="background:var(--c-ph)"></i>FromB</span>
+            <span><i style="background:var(--c-nh)"></i>FromBC / FromC</span>
+            <span><i style="background:var(--c-lep)"></i><span data-i18n="lgLepT"></span></span>
+            <span><i style="background:var(--c-ch)"></i><span data-i18n="lgV0"></span></span>
+            <span><i style="background:var(--c-miss)"></i>Fake</span>
+            <span><i style="background:repeating-linear-gradient(90deg,var(--c-nu) 0 2px,transparent 2px 5px)"></i>ν (truth)</span>
+          </div>
+          <p class="cap" data-i18n="viewCap"></p>
+        </div>
+      </div>
+
+      <aside>
+        <div>
+          <h2 data-i18n="hLabel"></h2>
+          <ul class="dlist" id="dlist"></ul>
+          <p class="barnote" data-i18n="labelNote"></p>
+        </div>
+        <div>
+          <h2 data-i18n="hChain"></h2>
+          <div class="chainbox" id="chainbox"></div>
+        </div>
+        <div>
+          <h2 data-i18n="hInputs"></h2>
+          <table class="nums" id="inputs"></table>
+        </div>
+        <div>
+          <h2 data-i18n="hOut"></h2>
+          <div class="outnum"><span>D<sub>b</sub></span><b id="dbOut"></b></div>
+          <div id="passChip"></div>
+        </div>
+      </aside>
+    </section>
+
+    <div class="two">
+      <div class="fig">
+        <h3 style="margin:0;font-family:var(--f-display);font-stretch:82%;font-size:19px" data-i18n="hTracks"></h3>
+        <div class="ttab">
+          <table>
+            <thead><tr><th data-i18n="thOrig"></th><th data-i18n="thPart"></th><th>p<sub>T</sub> [GeV]</th><th>d₀ [μm]</th><th>S<sub>d0</sub></th></tr></thead>
+            <tbody id="ttab"></tbody>
+          </table>
+        </div>
+        <p class="cap" data-i18n="tracksCap"></p>
+      </div>
+      <div class="fig">
+        <h3 style="margin:0;font-family:var(--f-display);font-stretch:82%;font-size:19px" data-i18n="hDist"></h3>
+        <div class="seg four" role="radiogroup" id="wpGroup">
+          <input type="radio" name="wp" id="wp-60" value="60"><label for="wp-60">60 %</label>
+          <input type="radio" name="wp" id="wp-70" value="70"><label for="wp-70">70 %</label>
+          <input type="radio" name="wp" id="wp-77" value="77" checked><label for="wp-77">77 %</label>
+          <input type="radio" name="wp" id="wp-85" value="85"><label for="wp-85">85 %</label>
+        </div>
+        <svg class="dist" id="dist" viewBox="0 0 520 240" role="img" aria-label="D_b"></svg>
+        <div class="effs" id="effs"></div>
+        <p class="cap" data-i18n="distCap"></p>
+      </div>
+    </div>
+
+    <section class="tsec">
+      <h2><span data-i18n="hFoot"></span></h2>
+      <div class="cards">
+        <div class="card fl" data-i18n="footL"></div>
+        <div class="card fc" data-i18n="footC"></div>
+        <div class="card fb" data-i18n="footB"></div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(() => {
+  // ---------- text ----------
+  const TXT = {
+    es: {
+      eyebrow: 'Física experimental · jets en colisionadores hadrónicos',
+      tabExplorer: 'Truth vs reco', tabTruth: 'Cómo nace un jet truth',
+      tagline: 'Anatomía de un jet: <span class="t">truth</span> y <span class="r">reco</span>',
+      lede: 'Un jet es una definición: un algoritmo (acá anti-k<sub>T</sub>, R = 0.4) aplicado a una lista de partículas. Si la lista sale del generador, obtenés el jet <em>truth</em>. Si sale del detector, el jet <em>reconstruido</em>. El cono muestra los dos lados del mismo objeto; mové el plano que los separa y cambiá el detector para ver cuándo coinciden.',
+      lblTruth: 'TRUTH<small>nivel partícula</small>', lblReco: 'RECO<small>nivel detector</small>',
+      lblBeam: 'eje del haz (z)', lblCalo: 'calorímetro', lblNu: 'ν escapa',
+      vhint: 'arrastrá para rotar · rueda para zoom',
+      lgCh: 'hadrones cargados (π±, K±, p): traza + HCAL', lgPh: 'fotones (de π⁰ → γγ): ECAL',
+      lgNh: 'hadrones neutros (n, K⁰<sub>L</sub>): HCAL', lgLep: 'leptones (e, μ)',
+      lgNu: 'neutrino: invisible', lgMiss: 'perdida por ineficiencia',
+      hEvt: 'Evento', jtB: 'jet b → ℓ ν', jtL: 'jet ligero (q, g)',
+      newEvt: 'Nuevo evento', rotOn: 'Rotar', rotOff: 'Detener', resetView: 'Vista inicial',
+      hDet: 'Detector', bnd: 'Plano truth | reco', eff: 'Eficiencia de reconstrucción',
+      smear: 'Resolución finita (trazas ~1 %, ECAL 10 %/√E, HCAL 50 %/√E)',
+      nuIn: 'Incluir neutrinos en la definición truth',
+      hJet: 'El jet', resp: 'Respuesta p<sub>T</sub><sup>reco</sup> / p<sub>T</sub><sup>truth</sup>',
+      hBars: 'Energía por tipo de partícula',
+      barnote: 'Ambas barras a la misma escala: la energía total del evento, neutrinos incluidos (rayado).',
+      hConst: 'Constituyentes', thPart: 'partícula',
+      def1: '<h3><span class="k">Nivel partícula</span>El jet truth</h3><p>Se arma con las partículas estables del generador (cτ &gt; 10 mm) después de la hadronización. Los neutrinos quedan afuera porque ningún detector los ve; algunas convenciones excluyen también a los muones.</p><p>Excluirlos es lo que hace que el jet truth sea medible en principio. <a href="#truth">Cómo se generan esas partículas →</a></p>',
+      def2: '<h3><span class="k">Nivel detector</span>El jet reconstruido</h3><p>Las partículas cargadas dejan trazas en el tracker y su curvatura en el campo magnético da el momento. Fotones y electrones depositan energía en el calorímetro electromagnético; los hadrones neutros, en el hadrónico.</p><p>Particle flow combina todo en candidatos que reemplazan a las partículas, y el mismo anti-k<sub>T</sub> los agrupa. <a href="#tagging">Sabor y tagging →</a></p>',
+      def3: '<h3><span class="k">Detector ideal</span>Cuando reco = truth</h3><p>Con eficiencia 100 % y resolución perfecta, cada partícula de la definición truth tiene su candidato reconstruido con la misma energía y dirección, y los dos jets son idénticos. Todo lo que el detector real hace distinto (pérdidas, resolución, ruido) lo corrige la calibración y el unfolding.</p>',
+      fine: 'El cono es una aproximación: anti-k<sub>T</sub> produce jets casi circulares de radio R en el plano (η, φ); en η = 0, R = 0.4 equivale a ~23°. El evento sale de un modelo de juguete con energías y multiplicidades plausibles, no de un generador real. El campo magnético apunta a lo largo del haz, así que las trazas de bajo p<sub>T</sub> se curvan y pueden salir del cono: la pertenencia al jet la decide la dirección del momento en el vértice.',
+      themeDark: 'Fondo oscuro', themeLight: 'Fondo claro', jtAria: 'Tipo de jet',
+      ofCone: '% del cono', invisible: 'invisible', lost: 'perdida',
+      cls: { ch: 'hadrones cargados', ph: 'fotones', nh: 'hadrones neutros', lep: 'leptones', nu: 'neutrinos' },
+      idealA: 'Detector ideal.', idealB: 'Cada partícula de la definición truth tiene su candidato reconstruido con la misma energía y dirección, así que el jet reco es idéntico al jet truth.',
+      idealNu: e => `El ν existe en el evento (${e} GeV) pero no forma parte de la definición, así que no hace falta medirlo.`,
+      nuEsc: (e, r) => `<b>Aun con un detector perfecto, el ν se escapa.</b> Si la definición truth lo incluye, al jet reco le faltan ${e} GeV y la respuesta queda en ${r}. Ninguna mejora del detector cierra esa diferencia.`,
+      noNu: 'Este jet no tiene neutrinos, así que incluirlos no cambia nada. Probá un jet b → ℓ ν.',
+      lostP: (n, e) => `se perdieron ${n} partícula${n > 1 ? 's' : ''} (${e} GeV) por ineficiencia`,
+      smearP: 'la resolución finita corre la energía medida de cada candidato',
+      nuP: e => `el ν (${e} GeV) está en la definición truth pero es invisible`,
+      real: 'Detector real.', respW: 'Respuesta',
+      realNone: 'pero en este evento ninguna partícula cayó fuera de la eficiencia.',
+
+      trTag: 'De dos partones a cien hadrones',
+      trLede: 'La lista de partículas estables que usa el jet truth sale de una cadena de simulación en cuatro etapas. Cada una trabaja a otra escala de energía, y para el shower y la hadronización conviven varios modelos. Esta pestaña recorre la cadena desde el choque de partones hasta los hadrones que llegan al detector.',
+      s1: 'Interacción dura', s1d: 'Elementos de matriz perturbativos: entran dos partones, salen dos o más.',
+      s2d: 'Emisiones sucesivas de gluones y pares q q̄, cada vez más blandas o colineales.',
+      s3: 'Hadronización', s3d: 'Los partones con color se convierten en hadrones sin color. No es perturbativa: se modela.',
+      s4: 'Decaimientos', s4d: 'Los hadrones inestables decaen hasta que solo quedan partículas con cτ > 10 mm.',
+      hHard: 'La interacción dura',
+      hardP: '<p>Dos partones de los protones (quarks o gluones, con fracciones de momento x dadas por las PDFs) chocan a una escala Q del orden del p<sub>T</sub> del jet. Ahí α<sub>s</sub> es chico y el proceso se calcula en teoría de perturbaciones: a orden dominante con diagramas como estos, y de rutina a NLO, emparejado con el shower (POWHEG, MC@NLO) o combinando multiplicidades (CKKW-L, FxFx, MEPS@NLO).</p><p>Cada partón saliente lleva carga de color. Es la semilla del jet; las etapas siguientes deciden en qué partículas se convierte.</p><p class="aside">El evento también tiene interacciones múltiples de partones (MPI) y restos del haz. Lo que caiga dentro del cono entra al jet truth.</p>',
+      procCap: { gg: '<b>gg → gg.</b> El canal más abundante para dijets de p<sub>T</sub> moderado en el LHC, porque a x chico dominan los gluones.', qg: '<b>qg → qg.</b> Intercambio de un gluón en el canal t. Gana peso a p<sub>T</sub> alto, donde los quarks de valencia aportan más.', bb: '<b>gg → b b̄.</b> Producción directa de quarks b. Los jets b también salen de g → b b̄ dentro del shower y de flavour excitation.' },
+      time: 'tiempo →',
+      psP: '<p>Un quark o gluón con mucho momento radia. Emitir un gluón es más probable cuando es blando o colineal: dP ≈ (2α<sub>s</sub>C/π) · (dθ/θ) · (dz/z). El shower aplica esa regla emisión por emisión, bajando la escala desde Q hasta un corte Q<sub>0</sub> ≈ 1 GeV, donde α<sub>s</sub> deja de ser chico.</p><p>En el plano de Lund cada emisión es un punto: a la derecha, ángulos más chicos; arriba, más k<sub>t</sub>. Las emisiones blando-colineales llenan el triángulo con densidad casi uniforme. Lo que distingue a los modelos es la variable de evolución, es decir, el orden en que generan las emisiones. Elegí una y reproducí: el mismo conjunto de puntos se recorre distinto.</p>',
+      ordAngle: 'Ángulo', ordVirt: 'Virtualidad',
+      ordWho: { angle: 'Herwig 7 (q̃): cada emisión a menor ángulo', kt: 'Pythia 8, Vincia, Sherpa CSS, Dire, PanScales (β = 0): cada emisión con menor k<sub>t</sub>', virt: 'PYTHIA 6 (histórico): cada emisión con menor virtualidad m² ∼ k<sub>t</sub>·θ' },
+      play: 'Reproducir', newShower: 'Nuevo shower',
+      lundCap: 'Plano de Lund de las emisiones primarias de un jet de p<sub>T</sub> = 200 GeV, R = 0.4 (modelo de juguete). En el límite blando-colineal los tres órdenes llenan el mismo plano; las diferencias aparecen en emisiones duras o de gran ángulo, en el reparto del retroceso y en la coherencia de color, y se notan en la masa del jet o en el número de constituyentes.',
+      lund: { x: 'ln(R/Δ)  →  ángulo más chico', y: 'k_t', np: 'k_t < Q₀: hadronización', edge: 'k_t = p_T·Δ' },
+      c1h: 'Ordenamiento angular', c1p: 'Cada emisión sale a un ángulo menor que la anterior. Así incorpora la coherencia de color: un gluón blando a gran ángulo no resuelve a los hijos y ve solo la carga total. Deja zonas muertas en el espacio de fase que se llenan con correcciones de elemento de matriz.',
+      c2h: 'Dipolos ordenados en k<sub>t</sub>', c2p: 'Cada emisión la hace un dipolo de color: un emisor radia y un espectador absorbe el retroceso, así se conserva el momento en cada paso. Ordenar en k<sub>t</sub> facilita combinar con elementos de matriz de varias multiplicidades.',
+      c3h: 'Antenas y showers NLL', c3p: 'Una antena trata al par de color como un único radiador. La generación reciente cuida cómo se reparte el retroceso para alcanzar precisión logarítmica de siguiente orden (NLL), que los showers anteriores pierden en algunos observables.',
+      sk: { emit: 'emisor', spec: 'espectador', recoil: 'retroceso', ant: 'antena' },
+      hadP: '<p>Al llegar a Q<sub>0</sub> el shower termina con decenas de quarks y gluones con color. El confinamiento los convierte en hadrones a distancias de ~1 fm, donde no hay teoría perturbativa: se usan modelos con parámetros ajustados a datos, sobre todo de LEP. Mové el tiempo para comparar los dos que se usan hoy.</p>',
+      strH: 'Cuerdas de Lund', strP: 'Entre un quark y un antiquark se estira un tubo de flujo de color con tensión κ ≈ 1 GeV/fm. Los gluones son quiebres (kinks) en la cuerda. Cuando hay energía suficiente, la cuerda se rompe creando pares q q̄ por efecto túnel, y cada tramo forma un hadrón. Describe bien la supresión de quarks s y las correlaciones entre hadrones vecinos.',
+      cluH: 'Clusters', cluP: 'Por preconfinamiento, los partones vecinos en color forman sistemas sin color de masa acotada. Cada gluón se parte en un par q q̄, los pares vecinos forman clusters y cada cluster decae en dos hadrones, casi por espacio de fase. Los clusters muy pesados primero se dividen.',
+      hadron: 'hadrón',
+      phS: ['los partones se separan', 'la cuerda se rompe: pares q q̄', 'cada tramo es un hadrón'],
+      phC: ['partones con color', 'g → q q̄', 'vecinos de color forman clusters', 'cada cluster decae en 2 hadrones'],
+      hadNote: 'Hay variaciones activas: reconexión de color, y "ropes" y "shoving" en Pythia para sistemas densos. La hadronización aprendida con machine learning (MLhad, HADML) es tema de investigación. La fragmentación independiente fue la primera aproximación y ya no se usa.',
+      hDec: 'Decaimientos y la frontera de cτ = 10 mm',
+      decP: '<p>Muchos hadrones primarios son inestables. El generador los hace decaer, y la definición truth corta en cτ &gt; 10 mm: lo que vive más se considera estable y entra al jet; lo que vive menos se reemplaza por sus productos. Así el K⁰<sub>S</sub> y el Λ cuentan como estables aunque decaen dentro del tracker, y el π⁰ nunca aparece: en su lugar están sus dos fotones.</p>',
+      chainCap: '<b>Un jet b típico.</b> El B⁻ recorre unos milímetros antes de decaer (βγcτ) y el D⁰ un poco menos. Ni el B ni el D están en la lista de constituyentes; están sus productos, y el ν̄ queda fuera. Para etiquetar el jet como b se usa el hadrón B del registro del generador, asociado por ángulo o por ghost association.',
+      feyDecCap: '<b>A nivel de quarks:</b> b → c W⁻, y el W⁻ virtual da ℓ⁻ ν̄. El ū es espectador: B⁻ (b ū) → D⁰ (c ū) ℓ⁻ ν̄.',
+      scaleCap: 'cτ de algunas partículas en escala logarítmica. p, n, e± y γ son estables.',
+      sc: { dec: 'decae en el generador', stb: 'estable a nivel truth' },
+      chainLbl: { frag: 'hadrones de fragmentación', excl: 'fuera del jet truth' },
+      hGen: 'Quién hace qué', thGen: 'Generador', thPS: 'Parton shower', thHad: 'Hadronización',
+      genPy: 'Dipolos ordenados en p<sub>T</sub> ("simple shower")<small>alternativas: Vincia (antenas), Dire</small>', genPyH: 'Cuerdas de Lund',
+      genHw: 'Ordenamiento angular (q̃)<small>alternativa: shower de dipolos</small>', genHwH: 'Clusters',
+      genSh: 'CSShower (dipolos de Catani–Seymour)<small>alternativa: Alaric (NLL)</small>', genShH: 'Clusters (AHADIC++)<small>o cuerdas de Lund vía interfaz</small>',
+      genPan: 'Showers NLL (PanLocal, PanGlobal)<small>se usa sobre Pythia 8</small>', genPanH: 'Cuerdas de Lund (de Pythia 8)',
+      genNote: 'Comparar dos generadores, típicamente Pythia 8 y Herwig 7, es la forma estándar de estimar la incertidumbre de modelado de jets.',
+
+      tabTag: 'Reco y flavour tagging',
+      tgTag: '¿De qué sabor es este jet?',
+      tgLede: 'El detector reconstruye todos los jets igual: trazas, depósitos y anti-k<sub>T</sub>. Lo que delata a un jet b o c pasa en el primer centímetro: el hadrón pesado que nace del quark vuela unos milímetros antes de decaer, y sus productos dejan trazas que no apuntan al vértice primario. Elegí el sabor y mirá la región del vértice en el plano transversal al haz.',
+      flL: 'jet ligero', flC: 'jet c', flB: 'jet b',
+      tvVtx: 'Vértice · 15 mm', tvWide: 'Tracker · 60 mm',
+      tgTruth: 'Mostrar hadrones truth', tgNew: 'Nuevo jet',
+      lgPrim: 'Primary (fragmentación)', lgLepT: 'leptón (e, μ)', lgV0: 'OtherSecondary (K⁰S)',
+      viewCap: 'Plano transversal, jet hacia la derecha. Las líneas finas punteadas extrapolan cada traza desplazada hacia atrás, hasta su punto de máxima aproximación al vértice primario (PV): esa distancia es d₀. Las elipses son los vértices que reconstruye el algoritmo; los hadrones truth (rayados) el detector no los ve.',
+      vw: { pipe: 'tubo del haz', ibl: 'IBL', l0: 'Pixel L0' },
+      hLabel: 'Etiqueta truth',
+      labRows: ['Hadrón b con p<sub>T</sub> &gt; 5 GeV ghost-asociado', 'si no: hadrón c con p<sub>T</sub> &gt; 5 GeV', 'si no: leptón τ', 'si no'],
+      labelNote: 'El sabor lo define el hadrón del registro del generador, no el partón: es la convención de ATLAS y CMS.',
+      hChain: 'El hadrón del sabor',
+      flies: 'vuela', noHeavy: 'Sin hadrón pesado: todas las trazas salen del vértice primario.',
+      v0note: 'decae lejos y forma un vértice V0; su masa lo delata y el tagger lo descarta.',
+      hInputs: 'Lo que ve el tagger',
+      inp: { nS3: 'Trazas con S<sub>d0</sub> &gt; 3', sv: 'Vértice secundario', msv: 'Masa del SV (hip. π)', lsig: 'L<sub>xy</sub> / σ', nv: 'Vértices en la cadena', lep: 'Leptón en el jet', nu: 'p<sub>T</sub> del ν (invisible)' },
+      yes: 'sí', no: 'no', found: 'encontrado', notFound: 'no', vetoed: 'solo V0, vetado',
+      hOut: 'Salida del tagger (juguete)', pass: wp => `pasa el WP de ${wp} %`, fail: wp => `no pasa el WP de ${wp} %`,
+      hTracks: 'Trazas del jet', thOrig: 'origen',
+      tracksCap: 'Ordenadas por significancia. Las etiquetas de origen son las que GN2 aprende a predecir como tarea auxiliar. d₀ lleva signo: positivo si el punto de máxima aproximación queda delante del PV en la dirección del jet. Las trazas de fragmentación dan |S<sub>d0</sub>| ≲ 3 con ambos signos; las del hadrón pesado dan valores grandes y positivos.',
+      hDist: 'Discriminante y working points',
+      distCap: 'D<sub>b</sub> de juguete para miles de jets simulados con el mismo modelo (en los taggers reales, D<sub>b</sub> = ln[p<sub>b</sub> / (f<sub>c</sub>p<sub>c</sub> + (1−f<sub>c</sub>)p<sub>light</sub>)]). Cada working point fija la eficiencia b y con eso cuántos jets c y light se cuelan. Los números de GN2 o UParT son otros; la forma del compromiso es la misma.',
+      eff: { b: 'eficiencia b', c: 'rechazo c', l: 'rechazo light', y: 'fracción de jets', jet: 'este jet' },
+      hFoot: 'Las huellas de cada sabor',
+      footL: '<h3>Jet ligero (u, d, s, g)</h3><p>No hay hadrón pesado. Las trazas desplazadas vienen de:</p><ul><li>K⁰<sub>S</sub> → π⁺π⁻ (cτ = 2.68 cm) y Λ → pπ⁻ (7.89 cm): vértices V0 de masa conocida, que se vetan.</li><li>Conversiones γ → e⁺e⁻ e interacciones hadrónicas en el material.</li><li>Colas de resolución de d₀ y trazas mal reconstruidas.</li></ul><p>El rechazo de light depende de cuánto se controlan esas colas.</p>',
+      footC: '<h3>Jet c</h3><table><thead><tr><th>hadrón</th><th>fracción</th><th>cτ</th></tr></thead><tbody><tr><td>D⁰</td><td>≈ 59 %</td><td>123 μm</td></tr><tr><td>D⁺</td><td>≈ 24 %</td><td>312 μm</td></tr><tr><td>D⁺<sub>s</sub></td><td>≈ 9 %</td><td>151 μm</td></tr><tr><td>Λ<sub>c</sub>⁺</td><td>≈ 8 %</td><td>61 μm</td></tr></tbody></table><ul><li>Fragmentación intermedia: ⟨x<sub>D</sub>⟩ ≈ 0.5–0.6.</li><li>Vidas medias muy distintas: el D⁺ vuela 2.5 veces más que el D⁰.</li><li>Masa ~1.9 GeV: un SV liviano, con 2–3 trazas.</li><li>Es el sabor más difícil: queda entre light y b.</li></ul><p class="barnote">Fracciones medidas en e⁺e⁻; en pp a bajo p<sub>T</sub> los bariones Λ<sub>c</sub> aparecen bastante más.</p>',
+      footB: '<h3>Jet b</h3><table><thead><tr><th>hadrón</th><th>fracción</th><th>cτ</th></tr></thead><tbody><tr><td>B⁰</td><td>≈ 40 %</td><td>455 μm</td></tr><tr><td>B⁺</td><td>≈ 40 %</td><td>491 μm</td></tr><tr><td>B⁰<sub>s</sub></td><td>≈ 10 %</td><td>453 μm</td></tr><tr><td>Λ<sub>b</sub>⁰</td><td>≈ 10 %</td><td>441 μm</td></tr></tbody></table><ul><li>Fragmentación dura: el hadrón B lleva ~70 % del momento del quark b.</li><li>Masa ~5.3 GeV: productos abiertos en ángulo y SV de masa alta.</li><li>Cadena B → D: dos vértices desplazados sobre la línea de vuelo.</li><li>~5 trazas cargadas del decaimiento; ~20 % con un leptón directo y su ν.</li></ul>',
+      hTaggers: 'De la significancia a los transformers',
+      taggersP: '<p>Los primeros algoritmos usaban una sola huella: la significancia del parámetro de impacto (IP2D, IP3D, JetProb), un vértice secundario (SV1) o la cadena B → D sobre una línea (JetFitter). Después se combinaron con redes neuronales (DL1r en ATLAS; DeepCSV y DeepJet en CMS).</p><p>Los taggers actuales toman la lista completa de trazas y aprenden las relaciones entre ellas: GN2 en ATLAS, un transformer con tareas auxiliares que predicen el origen de cada traza y qué trazas comparten vértice, y ParticleNet, ParT y UParT en CMS. Usan la misma información de este panel, aprendida en lugar de diseñada a mano.</p><p class="aside"><b>La energía también depende del sabor.</b> En los decaimientos semileptónicos el ν se lleva energía y el μ atraviesa el calorímetro casi sin depositar. Por eso los jets b tienen respuesta más baja y peor resolución, y se corrigen aparte (μ dentro del jet, regresión de energía para jets b).</p>',
+    },
+    en: {
+      eyebrow: 'Experimental particle physics · jets at hadron colliders',
+      tabExplorer: 'Truth vs reco', tabTruth: 'How a truth jet is born',
+      tagline: 'Anatomy of a jet: <span class="t">truth</span> and <span class="r">reco</span>',
+      lede: 'A jet is a definition: an algorithm (here anti-k<sub>T</sub>, R = 0.4) applied to a list of particles. Feed it the generator\'s particles and you get the <em>truth</em> jet. Feed it what the detector measured and you get the <em>reconstructed</em> jet. The cone shows both sides of the same object; move the plane between them and change the detector to see when they agree.',
+      lblTruth: 'TRUTH<small>particle level</small>', lblReco: 'RECO<small>detector level</small>',
+      lblBeam: 'beam axis (z)', lblCalo: 'calorimeter', lblNu: 'ν escapes',
+      vhint: 'drag to rotate · scroll to zoom',
+      lgCh: 'charged hadrons (π±, K±, p): track + HCAL', lgPh: 'photons (from π⁰ → γγ): ECAL',
+      lgNh: 'neutral hadrons (n, K⁰<sub>L</sub>): HCAL', lgLep: 'leptons (e, μ)',
+      lgNu: 'neutrino: invisible', lgMiss: 'lost to inefficiency',
+      hEvt: 'Event', jtB: 'b jet → ℓ ν', jtL: 'light jet (q, g)',
+      newEvt: 'New event', rotOn: 'Rotate', rotOff: 'Stop', resetView: 'Reset view',
+      hDet: 'Detector', bnd: 'Truth | reco plane', eff: 'Reconstruction efficiency',
+      smear: 'Finite resolution (tracks ~1 %, ECAL 10 %/√E, HCAL 50 %/√E)',
+      nuIn: 'Include neutrinos in the truth definition',
+      hJet: 'The jet', resp: 'Response p<sub>T</sub><sup>reco</sup> / p<sub>T</sub><sup>truth</sup>',
+      hBars: 'Energy by particle type',
+      barnote: 'Both bars share one scale: the total event energy, neutrinos included (hatched).',
+      hConst: 'Constituents', thPart: 'particle',
+      def1: '<h3><span class="k">Particle level</span>The truth jet</h3><p>Built from the generator\'s stable particles (cτ &gt; 10 mm) after hadronization. Neutrinos are left out because no detector sees them; some conventions also drop muons.</p><p>Leaving them out is what makes the truth jet measurable in principle. <a href="#truth">How those particles are generated →</a></p>',
+      def2: '<h3><span class="k">Detector level</span>The reconstructed jet</h3><p>Charged particles leave tracks in the tracker, and their curvature in the magnetic field gives the momentum. Photons and electrons deposit energy in the electromagnetic calorimeter; neutral hadrons, in the hadronic one.</p><p>Particle flow combines everything into candidates that stand in for the particles, and the same anti-k<sub>T</sub> clusters them. <a href="#tagging">Flavour and tagging →</a></p>',
+      def3: '<h3><span class="k">Ideal detector</span>When reco = truth</h3><p>With 100 % efficiency and perfect resolution, every particle in the truth definition has a reconstructed candidate with the same energy and direction, and the two jets are identical. Everything a real detector does differently (losses, resolution, noise) is corrected by calibration and unfolding.</p>',
+      fine: 'The cone is an approximation: anti-k<sub>T</sub> produces nearly circular jets of radius R in the (η, φ) plane; at η = 0, R = 0.4 is about 23°. The event comes from a toy model with plausible energies and multiplicities, not from a real generator. The magnetic field points along the beam, so low-p<sub>T</sub> tracks bend and can leave the cone: jet membership is set by the momentum direction at the vertex.',
+      themeDark: 'Dark background', themeLight: 'Light background', jtAria: 'Jet type',
+      ofCone: '% of the cone', invisible: 'invisible', lost: 'lost',
+      cls: { ch: 'charged hadrons', ph: 'photons', nh: 'neutral hadrons', lep: 'leptons', nu: 'neutrinos' },
+      idealA: 'Ideal detector.', idealB: 'Every particle in the truth definition has a reconstructed candidate with the same energy and direction, so the reco jet is identical to the truth jet.',
+      idealNu: e => `The ν is in the event (${e} GeV) but not in the definition, so it never needs to be measured.`,
+      nuEsc: (e, r) => `<b>Even a perfect detector lets the ν escape.</b> If the truth definition includes it, the reco jet is missing ${e} GeV and the response drops to ${r}. No detector upgrade closes that gap.`,
+      noNu: 'This jet has no neutrinos, so including them changes nothing. Try a b jet → ℓ ν.',
+      lostP: (n, e) => `${n} particle${n > 1 ? 's were' : ' was'} lost to inefficiency (${e} GeV)`,
+      smearP: 'finite resolution shifts the measured energy of each candidate',
+      nuP: e => `the ν (${e} GeV) is in the truth definition but invisible`,
+      real: 'Real detector.', respW: 'Response',
+      realNone: 'but in this event no particle fell outside the efficiency.',
+
+      trTag: 'From two partons to a hundred hadrons',
+      trLede: 'The list of stable particles behind a truth jet comes out of a four-stage simulation chain. Each stage works at a different energy scale, and for the shower and hadronization several models are in use. This tab follows the chain from the parton collision to the hadrons that reach the detector.',
+      s1: 'Hard interaction', s1d: 'Perturbative matrix elements: two partons in, two or more out.',
+      s2d: 'Successive emissions of gluons and q q̄ pairs, each softer or more collinear.',
+      s3: 'Hadronization', s3d: 'Coloured partons turn into colourless hadrons. It is not perturbative, so it is modelled.',
+      s4: 'Decays', s4d: 'Unstable hadrons decay until only particles with cτ > 10 mm remain.',
+      hHard: 'The hard interaction',
+      hardP: '<p>Two partons from the protons (quarks or gluons, carrying momentum fractions x given by the PDFs) collide at a scale Q of the order of the jet p<sub>T</sub>. There α<sub>s</sub> is small and the process is computed in perturbation theory: at leading order with diagrams like these, and routinely at NLO, matched to the shower (POWHEG, MC@NLO) or merged across multiplicities (CKKW-L, FxFx, MEPS@NLO).</p><p>Each outgoing parton carries colour charge. It is the seed of the jet; the next stages decide which particles it becomes.</p><p class="aside">The event also has multiple parton interactions (MPI) and beam remnants. Whatever lands inside the cone joins the truth jet.</p>',
+      procCap: { gg: '<b>gg → gg.</b> The most common channel for moderate-p<sub>T</sub> dijets at the LHC, because gluons dominate at small x.', qg: '<b>qg → qg.</b> A gluon exchanged in the t channel. It grows in weight at high p<sub>T</sub>, where valence quarks contribute more.', bb: '<b>gg → b b̄.</b> Direct production of b quarks. b jets also come from g → b b̄ inside the shower and from flavour excitation.' },
+      time: 'time →',
+      psP: '<p>A high-momentum quark or gluon radiates. Emitting a gluon is most likely when it is soft or collinear: dP ≈ (2α<sub>s</sub>C/π) · (dθ/θ) · (dz/z). The shower applies that rule emission by emission, lowering the scale from Q down to a cutoff Q<sub>0</sub> ≈ 1 GeV, where α<sub>s</sub> stops being small.</p><p>In the Lund plane each emission is a point: smaller angles to the right, more k<sub>t</sub> upwards. Soft-collinear emissions fill the triangle with nearly uniform density. What sets the models apart is the evolution variable, the order in which they generate emissions. Pick one and press play: the same set of points is visited in a different order.</p>',
+      ordAngle: 'Angle', ordVirt: 'Virtuality',
+      ordWho: { angle: 'Herwig 7 (q̃): each emission at a smaller angle', kt: 'Pythia 8, Vincia, Sherpa CSS, Dire, PanScales (β = 0): each emission at lower k<sub>t</sub>', virt: 'PYTHIA 6 (historical): each emission at lower virtuality m² ∼ k<sub>t</sub>·θ' },
+      play: 'Play', newShower: 'New shower',
+      lundCap: 'Lund plane of the primary emissions of a jet with p<sub>T</sub> = 200 GeV, R = 0.4 (toy model). In the soft-collinear limit all three orderings fill the same plane; the differences show up in hard or wide-angle emissions, in how recoil is shared and in colour coherence, and they matter for the jet mass and the number of constituents.',
+      lund: { x: 'ln(R/Δ)  →  smaller angle', y: 'k_t', np: 'k_t < Q₀: hadronization', edge: 'k_t = p_T·Δ' },
+      c1h: 'Angular ordering', c1p: 'Each emission comes out at a smaller angle than the previous one. This builds in colour coherence: a soft wide-angle gluon cannot resolve the daughters and sees only their total charge. It leaves dead zones in phase space that are filled with matrix-element corrections.',
+      c2h: 'k<sub>t</sub>-ordered dipoles', c2p: 'Each emission comes from a colour dipole: an emitter radiates and a spectator absorbs the recoil, so momentum is conserved at every step. Ordering in k<sub>t</sub> makes it easier to merge with matrix elements of several multiplicities.',
+      c3h: 'Antennae and NLL showers', c3p: 'An antenna treats the colour pair as a single radiator. The latest generation takes care of how recoil is shared so the shower reaches next-to-leading-logarithmic (NLL) accuracy, which earlier showers lose for some observables.',
+      sk: { emit: 'emitter', spec: 'spectator', recoil: 'recoil', ant: 'antenna' },
+      hadP: '<p>When it reaches Q<sub>0</sub> the shower ends with dozens of coloured quarks and gluons. Confinement turns them into hadrons at distances of ~1 fm, where there is no perturbative theory, so models with parameters tuned to data (mostly from LEP) are used. Move the time slider to compare the two in use today.</p>',
+      strH: 'Lund strings', strP: 'A colour flux tube with tension κ ≈ 1 GeV/fm stretches between a quark and an antiquark. Gluons are kinks on the string. Once there is enough energy, the string breaks by tunnelling q q̄ pairs out of the vacuum, and each piece becomes a hadron. It describes strangeness suppression and correlations between neighbouring hadrons well.',
+      cluH: 'Clusters', cluP: 'Thanks to preconfinement, colour-neighbouring partons form colourless systems of limited mass. Each gluon splits into a q q̄ pair, neighbouring pairs form clusters, and each cluster decays into two hadrons, close to phase space. Very heavy clusters split first.',
+      hadron: 'hadron',
+      phS: ['partons fly apart', 'the string breaks: q q̄ pairs', 'each piece is a hadron'],
+      phC: ['coloured partons', 'g → q q̄', 'colour neighbours form clusters', 'each cluster decays to 2 hadrons'],
+      hadNote: 'Variations are under active study: colour reconnection, and "ropes" and "shoving" in Pythia for dense systems. Machine-learned hadronization (MLhad, HADML) is a research topic. Independent fragmentation was the first approach and is no longer used.',
+      hDec: 'Decays and the cτ = 10 mm boundary',
+      decP: '<p>Many primary hadrons are unstable. The generator decays them, and the truth definition cuts at cτ &gt; 10 mm: anything longer-lived counts as stable and joins the jet; anything shorter-lived is replaced by its products. So K⁰<sub>S</sub> and Λ count as stable even though they decay inside the tracker, and the π⁰ never appears: its two photons do.</p>',
+      chainCap: '<b>A typical b jet.</b> The B⁻ travels a few millimetres before decaying (βγcτ), and the D⁰ a little less. Neither the B nor the D is in the constituent list; their products are, and the ν̄ is left out. To label the jet as b, the B hadron from the generator record is matched by angle or by ghost association.',
+      feyDecCap: '<b>At quark level:</b> b → c W⁻, and the virtual W⁻ gives ℓ⁻ ν̄. The ū is a spectator: B⁻ (b ū) → D⁰ (c ū) ℓ⁻ ν̄.',
+      scaleCap: 'cτ of some particles on a log scale. p, n, e± and γ are stable.',
+      sc: { dec: 'decays in the generator', stb: 'stable at truth level' },
+      chainLbl: { frag: 'fragmentation hadrons', excl: 'not in the truth jet' },
+      hGen: 'Who does what', thGen: 'Generator', thPS: 'Parton shower', thHad: 'Hadronization',
+      genPy: 'p<sub>T</sub>-ordered dipoles ("simple shower")<small>alternatives: Vincia (antennae), Dire</small>', genPyH: 'Lund strings',
+      genHw: 'Angular ordering (q̃)<small>alternative: dipole shower</small>', genHwH: 'Clusters',
+      genSh: 'CSShower (Catani–Seymour dipoles)<small>alternative: Alaric (NLL)</small>', genShH: 'Clusters (AHADIC++)<small>or Lund strings via an interface</small>',
+      genPan: 'NLL showers (PanLocal, PanGlobal)<small>run on top of Pythia 8</small>', genPanH: 'Lund strings (from Pythia 8)',
+      genNote: 'Comparing two generators, typically Pythia 8 and Herwig 7, is the standard way to estimate the jet modelling uncertainty.',
+
+      tabTag: 'Reco and flavour tagging',
+      tgTag: 'What flavour is this jet?',
+      tgLede: 'The detector reconstructs every jet the same way: tracks, deposits and anti-k<sub>T</sub>. What gives away a b or c jet happens in the first centimetre: the heavy hadron born from the quark flies a few millimetres before decaying, and its products leave tracks that do not point back to the primary vertex. Pick a flavour and look at the vertex region in the plane transverse to the beam.',
+      flL: 'light jet', flC: 'c jet', flB: 'b jet',
+      tvVtx: 'Vertex · 15 mm', tvWide: 'Tracker · 60 mm',
+      tgTruth: 'Show truth hadrons', tgNew: 'New jet',
+      lgPrim: 'Primary (fragmentation)', lgLepT: 'lepton (e, μ)', lgV0: 'OtherSecondary (K⁰S)',
+      viewCap: 'Transverse plane, jet pointing right. The thin dotted lines extrapolate each displaced track backwards to its point of closest approach to the primary vertex (PV): that distance is d₀. The ellipses are the vertices the algorithm reconstructs; the detector never sees the truth hadrons (dashed).',
+      vw: { pipe: 'beam pipe', ibl: 'IBL', l0: 'Pixel L0' },
+      hLabel: 'Truth label',
+      labRows: ['b hadron with p<sub>T</sub> &gt; 5 GeV ghost-associated', 'else: c hadron with p<sub>T</sub> &gt; 5 GeV', 'else: τ lepton', 'else'],
+      labelNote: 'The flavour is set by the hadron in the generator record, not by the parton: this is the ATLAS and CMS convention.',
+      hChain: 'The flavour hadron',
+      flies: 'flies', noHeavy: 'No heavy hadron: every track comes from the primary vertex.',
+      v0note: 'decays far away and forms a V0 vertex; its mass gives it away and the tagger discards it.',
+      hInputs: 'What the tagger sees',
+      inp: { nS3: 'Tracks with S<sub>d0</sub> &gt; 3', sv: 'Secondary vertex', msv: 'SV mass (π hyp.)', lsig: 'L<sub>xy</sub> / σ', nv: 'Vertices in the chain', lep: 'Lepton in the jet', nu: 'ν p<sub>T</sub> (invisible)' },
+      yes: 'yes', no: 'no', found: 'found', notFound: 'no', vetoed: 'V0 only, vetoed',
+      hOut: 'Tagger output (toy)', pass: wp => `passes the ${wp} % WP`, fail: wp => `fails the ${wp} % WP`,
+      hTracks: 'Jet tracks', thOrig: 'origin',
+      tracksCap: 'Sorted by significance. The origin labels are the ones GN2 learns to predict as an auxiliary task. d₀ is signed: positive if the point of closest approach lies ahead of the PV along the jet. Fragmentation tracks give |S<sub>d0</sub>| ≲ 3 with either sign; heavy-hadron tracks give large positive values.',
+      hDist: 'Discriminant and working points',
+      distCap: 'Toy D<sub>b</sub> for thousands of jets simulated with the same model (in real taggers, D<sub>b</sub> = ln[p<sub>b</sub> / (f<sub>c</sub>p<sub>c</sub> + (1−f<sub>c</sub>)p<sub>light</sub>)]). Each working point fixes the b efficiency, and with it how many c and light jets get through. GN2 or UParT numbers differ; the shape of the trade-off is the same.',
+      eff: { b: 'b efficiency', c: 'c rejection', l: 'light rejection', y: 'fraction of jets', jet: 'this jet' },
+      hFoot: 'The fingerprints of each flavour',
+      footL: '<h3>Light jet (u, d, s, g)</h3><p>There is no heavy hadron. Displaced tracks come from:</p><ul><li>K⁰<sub>S</sub> → π⁺π⁻ (cτ = 2.68 cm) and Λ → pπ⁻ (7.89 cm): V0 vertices with a known mass, which are vetoed.</li><li>Photon conversions γ → e⁺e⁻ and hadronic interactions in the material.</li><li>Tails of the d₀ resolution and badly reconstructed tracks.</li></ul><p>Light rejection depends on how well those tails are controlled.</p>',
+      footC: '<h3>c jet</h3><table><thead><tr><th>hadron</th><th>fraction</th><th>cτ</th></tr></thead><tbody><tr><td>D⁰</td><td>≈ 59 %</td><td>123 μm</td></tr><tr><td>D⁺</td><td>≈ 24 %</td><td>312 μm</td></tr><tr><td>D⁺<sub>s</sub></td><td>≈ 9 %</td><td>151 μm</td></tr><tr><td>Λ<sub>c</sub>⁺</td><td>≈ 8 %</td><td>61 μm</td></tr></tbody></table><ul><li>Intermediate fragmentation: ⟨x<sub>D</sub>⟩ ≈ 0.5–0.6.</li><li>Very different lifetimes: a D⁺ flies 2.5 times further than a D⁰.</li><li>Mass ~1.9 GeV: a light SV with 2–3 tracks.</li><li>The hardest flavour: it sits between light and b.</li></ul><p class="barnote">Fractions measured in e⁺e⁻; in pp at low p<sub>T</sub>, Λ<sub>c</sub> baryons show up considerably more often.</p>',
+      footB: '<h3>b jet</h3><table><thead><tr><th>hadron</th><th>fraction</th><th>cτ</th></tr></thead><tbody><tr><td>B⁰</td><td>≈ 40 %</td><td>455 μm</td></tr><tr><td>B⁺</td><td>≈ 40 %</td><td>491 μm</td></tr><tr><td>B⁰<sub>s</sub></td><td>≈ 10 %</td><td>453 μm</td></tr><tr><td>Λ<sub>b</sub>⁰</td><td>≈ 10 %</td><td>441 μm</td></tr></tbody></table><ul><li>Hard fragmentation: the B hadron carries ~70 % of the b-quark momentum.</li><li>Mass ~5.3 GeV: wide-angle products and a high-mass SV.</li><li>B → D chain: two displaced vertices along the flight line.</li><li>~5 charged tracks from the decay; ~20 % with a direct lepton and its ν.</li></ul>',
+      hTaggers: 'From significance to transformers',
+      taggersP: '<p>The first algorithms used a single fingerprint: impact-parameter significance (IP2D, IP3D, JetProb), a secondary vertex (SV1) or the B → D chain along a line (JetFitter). Later they were combined with neural networks (DL1r in ATLAS; DeepCSV and DeepJet in CMS).</p><p>Current taggers take the full list of tracks and learn the relations between them: GN2 in ATLAS, a transformer with auxiliary tasks that predict each track\'s origin and which tracks share a vertex, and ParticleNet, ParT and UParT in CMS. They use the same information as this panel, learned instead of hand-designed.</p><p class="aside"><b>The energy depends on flavour too.</b> In semileptonic decays the ν carries energy away and the μ crosses the calorimeter depositing very little. That is why b jets have a lower response and worse resolution, and get their own corrections (muon-in-jet, b-jet energy regression).</p>',
+    },
+  };
+  const store = {
+    get: k => { try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} },
+  };
+
+  const V3 = THREE.Vector3;
+  const L = 10, HALF = 0.4, TANH = Math.tan(HALF);
+  const MASS = { pi: 0.1396, K: 0.4937, p: 0.9383, n: 0.9396, K0L: 0.4976, gamma: 0, e: 0.000511, mu: 0.1057, nu: 0 };
+  const CLS = { pi: 'ch', K: 'ch', p: 'ch', n: 'nh', K0L: 'nh', gamma: 'ph', e: 'lep', mu: 'lep', nu: 'nu' };
+
+  const state = { seed: 20261102, type: 'b', b: 0.45, eff: 1, smear: false, nuIn: false, hover: -1, lang: store.get('easejets-lang') === 'en' ? 'en' : 'es', view: 'explorer' };
+  const T_ = () => TXT[state.lang];
+  let P = [];
+
+  // ---------- toy event ----------
+  function mulberry32(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+  function genEvent(seed, type) {
+    const R = mulberry32(seed);
+    const gauss = () => Math.sqrt(-2 * Math.log(R() + 1e-12)) * Math.cos(2 * Math.PI * R());
+    const out = [];
+    const spread = (E) => 0.012 + HALF * 0.93 * Math.pow(R(), 1.3) * Math.min(1, 5 / (E + 2));
+    const add = (kind, E, q, r, phi) => out.push({ kind, E, q, r, phi });
+    const Ej = 70 + R() * 70;
+    let rem = Ej;
+    if (type === 'b') {
+      const lk = R() < 0.5 ? 'e' : 'mu';
+      const El = Ej * (0.09 + 0.10 * R()), En = Ej * (0.06 + 0.09 * R());
+      add(lk, El, R() < 0.5 ? 1 : -1, 0.04 + 0.12 * R(), 2 * Math.PI * R());
+      add('nu', En, 0, 0.05 + 0.14 * R(), 2 * Math.PI * R());
+      rem -= El + En;
+    }
+    while (rem > 1.2) {
+      let E = Math.max(1.0, rem * (0.04 + 0.32 * R() * R()));
+      if (rem - E < 1.0) E = rem;
+      const u = R(), r = spread(E), phi = 2 * Math.PI * R();
+      if (u < 0.6) {
+        const k = R() < 0.72 ? 'pi' : (R() < 0.7 ? 'K' : 'p');
+        E = Math.max(E, MASS[k] + 0.6);
+        add(k, E, R() < 0.5 ? 1 : -1, r, phi);
+      } else if (u < 0.86) {
+        const f = 0.2 + 0.6 * R();
+        add('gamma', E * f, 0, r, phi);
+        add('gamma', E * (1 - f), 0, r + 0.012, phi + 0.03);
+      } else {
+        const k = R() < 0.6 ? 'n' : 'K0L';
+        E = Math.max(E, MASS[k] + 0.6);
+        add(k, E, 0, r, phi);
+      }
+      rem -= E;
+    }
+    out.forEach((o, i) => {
+      o.id = i; o.m = MASS[o.kind]; o.cls = CLS[o.kind];
+      o.p = Math.sqrt(Math.max(o.E * o.E - o.m * o.m, 0));
+      o.d = new V3(Math.cos(o.r), Math.sin(o.r) * Math.cos(o.phi), Math.sin(o.r) * Math.sin(o.phi));
+      o.u = R(); o.g = Math.max(-2.5, Math.min(2.5, gauss()));
+    });
+    // align the truth-jet axis (visible particles) with +x
+    const S = new V3();
+    out.forEach(o => { if (o.kind !== 'nu') S.addScaledVector(o.d, o.p); });
+    const q = new THREE.Quaternion().setFromUnitVectors(S.normalize(), new V3(1, 0, 0));
+    const axis = new V3(1, 0, 0);
+    out.forEach(o => {
+      o.d.applyQuaternion(q);
+      o.dr = Math.acos(Math.min(1, o.d.dot(axis)));
+      o.path = makePath(o);
+    });
+    out.sort((a, b) => b.E - a.E);
+    return out;
+  }
+
+  // Charged particles bend in a field along the beam (z); neutrals fly straight.
+  function makePath(o) {
+    const endX = o.kind === 'nu' ? L + 4 : o.kind === 'mu' ? L + 2.6 : L;
+    const pts = [new V3(0, 0, 0)];
+    const d = o.d;
+    if (!o.q) {
+      const t = endX / d.x, n = 24;
+      for (let i = 1; i <= n; i++) pts.push(d.clone().multiplyScalar(t * i / n));
+      return pts;
+    }
+    const pT = o.p * Math.hypot(d.x, d.y);
+    const ds = 0.05, w = o.q * ds / (9 * pT), c = Math.cos(w), s = Math.sin(w);
+    let x = 0, y = 0, z = 0, dx = d.x, dy = d.y; const dz = d.z;
+    for (let k = 1; k < 1500 && x < endX; k++) {
+      x += dx * ds; y += dy * ds; z += dz * ds;
+      const nx = dx * c - dy * s; dy = dx * s + dy * c; dx = nx;
+      if (k % 4 === 0) pts.push(new V3(x, y, z));
+      if (dx < 0.05) break;
+    }
+    pts.push(new V3(x, y, z));
+    return pts;
+  }
+
+  function splitAt(pts, xb) {
+    const i = pts.findIndex(p => p.x >= xb);
+    if (i === -1) return { t: pts, r: [] };
+    if (i === 0) return { t: [], r: pts };
+    const a = pts[i - 1], c = pts[i];
+    const m = a.clone().lerp(c, (xb - a.x) / (c.x - a.x));
+    return { t: [...pts.slice(0, i), m], r: [m, ...pts.slice(i)] };
+  }
+
+  const sigma = o => o.cls === 'ch' || o.kind === 'mu' ? 0.01 + 0.0004 * o.E
+    : o.cls === 'ph' || o.kind === 'e' ? 0.10 / Math.sqrt(o.E) + 0.01
+    : 0.50 / Math.sqrt(o.E) + 0.05;
+  const detected = o => o.kind !== 'nu' && o.u < state.eff;
+  const recoE = o => state.smear ? Math.max(o.m + 0.01, o.E * (1 + sigma(o) * o.g)) : o.E;
+
+  function jetSum(list, eOf) {
+    let E = 0, px = 0, py = 0, pz = 0;
+    list.forEach(o => {
+      const e = eOf(o), pm = Math.sqrt(Math.max(e * e - o.m * o.m, 0));
+      E += e; px += o.d.x * pm; py += o.d.y * pm; pz += o.d.z * pm;
+    });
+    return { E, pT: Math.hypot(px, py), m: Math.sqrt(Math.max(E * E - px * px - py * py - pz * pz, 0)), n: list.length, dir: new V3(px, py, pz).normalize() };
+  }
+
+  // ---------- three.js scene ----------
+  const vp = document.getElementById('viewport');
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  vp.prepend(renderer.domElement);
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 200);
+  const controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true; controls.dampingFactor = 0.08; controls.autoRotateSpeed = 0.8;
+  scene.add(new THREE.AmbientLight(0xffffff, 0.75));
+  const sun = new THREE.DirectionalLight(0xffffff, 0.55); sun.position.set(4, 10, 8); scene.add(sun);
+  const group = new THREE.Group(); scene.add(group);
+  const sphereGeo = new THREE.SphereGeometry(1, 10, 8);
+  let disposables = [];
+
+  function resetView() {
+    const narrow = vp.clientWidth / vp.clientHeight < 1.1;
+    const k = narrow ? 1.55 : 1;
+    camera.position.set(5 + 1.5 * k, 6.2 * k, 13.5 * k);
+    controls.target.set(5.6, 0, 0);
+    controls.update();
+  }
+
+  function resize() {
+    const w = vp.clientWidth, h = vp.clientHeight;
+    if (!w || !h) return;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h; camera.updateProjectionMatrix();
+  }
+  new ResizeObserver(resize).observe(vp);
+
+  let C = {};
+  function readColors() {
+    const cs = getComputedStyle(document.documentElement);
+    const g = n => new THREE.Color(cs.getPropertyValue(n).trim() || '#888');
+    C = { scene: g('--scene'), fg: g('--fg'), muted: g('--muted'), truth: g('--truth'), reco: g('--reco'),
+      ch: g('--c-ch'), ph: g('--c-ph'), nh: g('--c-nh'), lep: g('--c-lep'), nu: g('--c-nu'), miss: g('--c-miss'),
+      coneA: parseFloat(cs.getPropertyValue('--cone-opacity')) || 0.1 };
+    scene.background = C.scene;
+  }
+
+  function mat(color, opacity = 1, basic = false) {
+    const m = basic
+      ? new THREE.MeshBasicMaterial({ color, transparent: opacity < 1, opacity, depthWrite: opacity >= 1, side: THREE.DoubleSide })
+      : new THREE.MeshStandardMaterial({ color, roughness: 0.5, metalness: 0, transparent: opacity < 1, opacity, depthWrite: opacity >= 1 });
+    disposables.push(m); return m;
+  }
+  function add(geo, material, keepGeo) { if (!keepGeo) disposables.push(geo); const mesh = new THREE.Mesh(geo, material); group.add(mesh); return mesh; }
+
+  function clean(pts) { return pts.filter((p, i) => i === 0 || p.distanceTo(pts[i - 1]) > 1e-3); }
+  function tube(pts, radius, color, opacity) {
+    pts = clean(pts); if (pts.length < 2) return;
+    const curve = pts.length === 2 ? new THREE.LineCurve3(pts[0], pts[1]) : new THREE.CatmullRomCurve3(pts);
+    add(new THREE.TubeGeometry(curve, Math.min(200, pts.length * 3), radius, 7, false), mat(color, opacity));
+  }
+  function dots(pts, spacing, radius, color, opacity, skipFirst) {
+    pts = clean(pts); if (pts.length < 2) return;
+    const m = mat(color, opacity);
+    let acc = skipFirst ? spacing * 0.5 : 0;
+    for (let i = 1; i < pts.length; i++) {
+      const a = pts[i - 1], b = pts[i], seg = a.distanceTo(b);
+      let t = acc;
+      while (t <= seg) {
+        const s = add(sphereGeo, m, true); s.scale.setScalar(radius); s.position.copy(a).lerp(b, t / seg);
+        t += spacing;
+      }
+      acc = t - seg;
+    }
+  }
+  function line(a, b, color, opacity, dashed) {
+    const g = new THREE.BufferGeometry().setFromPoints([a, b]);
+    const m = dashed ? new THREE.LineDashedMaterial({ color, dashSize: 0.25, gapSize: 0.18, transparent: true, opacity })
+      : new THREE.LineBasicMaterial({ color, transparent: true, opacity });
+    disposables.push(g, m);
+    const l = new THREE.Line(g, m); if (dashed) l.computeLineDistances(); group.add(l);
+  }
+  function ring(x, r, color, opacity) {
+    const pts = []; for (let i = 0; i <= 96; i++) { const a = i / 96 * Math.PI * 2; pts.push(new V3(x, r * Math.cos(a), r * Math.sin(a))); }
+    const g = new THREE.BufferGeometry().setFromPoints(pts), m = new THREE.LineBasicMaterial({ color, transparent: true, opacity });
+    disposables.push(g, m); group.add(new THREE.Line(g, m));
+  }
+  function frustum(x0, x1, color, opacity) {
+    const g = new THREE.CylinderGeometry(x1 * TANH, Math.max(x0 * TANH, 1e-3), x1 - x0, 72, 1, true);
+    g.rotateZ(-Math.PI / 2); g.translate((x0 + x1) / 2, 0, 0);
+    add(g, mat(color, opacity, true));
+  }
+  function tower(at, E, color, opacity) {
+    const len = 0.12 + 0.055 * E, w = 0.26;
+    const t = add(new THREE.BoxGeometry(len, w, w), mat(color, opacity));
+    t.position.set(at.x + len / 2, at.y, at.z);
+  }
+
+  let nuTip = null;
+  function build() {
+    while (group.children.length) group.remove(group.children[0]);
+    disposables.forEach(d => d.dispose()); disposables = [];
+    const xb = state.b * L;
+    const dimmed = id => state.hover >= 0 && state.hover !== id;
+
+    // cones, boundary, axes
+    frustum(0, xb, C.truth, C.coneA);
+    frustum(xb, L, C.reco, C.coneA);
+    ring(xb, xb * TANH, C.truth, 0.9);
+    ring(L, L * TANH, C.reco, 0.9);
+    for (let x = 2; x < L; x += 2) if (Math.abs(x - xb) > 0.3) ring(x, x * TANH, x < xb ? C.truth : C.reco, 0.25);
+    const disk = new THREE.RingGeometry(xb * TANH, xb * TANH + 0.9, 72); disk.rotateY(Math.PI / 2); disk.translate(xb, 0, 0);
+    add(disk, mat(C.fg, 0.08, true));
+    line(new V3(0, 0, -8), new V3(0, 0, 8), C.muted, 0.6, false);
+    line(new V3(0, 0, 0), new V3(L + 2, 0, 0), C.fg, 0.45, true);
+    const ip = add(sphereGeo, mat(C.fg), true); ip.scale.setScalar(0.09);
+
+    nuTip = null;
+    P.forEach(o => {
+      const col = C[o.cls], dim = dimmed(o.id) ? 0.12 : 1;
+      const { t, r } = splitAt(o.path, xb);
+      const rad = 0.018 + 0.011 * Math.log1p(o.E);
+      // truth side: every particle in the event
+      if (o.kind === 'nu') dots(t, 0.22, 0.045, col, 0.85 * dim);
+      else tube(t, rad, col, dim === 1 ? 1 : dim);
+      // reco side: what the detector makes of it
+      if (!r.length) return;
+      const end = o.path[o.path.length - 1];
+      const reachedCalo = end.x >= L - 0.01;
+      if (o.kind === 'nu') {
+        dots(r, 0.32, 0.03, col, 0.45 * dim, true);
+        nuTip = end.clone();
+        return;
+      }
+      if (!detected(o)) { dots(r, 0.28, 0.035, C.miss, 0.7 * dim, true); return; }
+      const Er = recoE(o);
+      if (o.q) {
+        tube(r, 0.014, col, 0.75 * dim);
+        dots(r.filter(p => p.x <= L - 1.5), 0.6, 0.055, col, dim, true);
+      } else {
+        tube(r, 0.008, col, 0.35 * dim);
+      }
+      if (reachedCalo && o.kind !== 'mu') {
+        const at = r.reduce((best, p) => (p.x <= L + 1e-3 ? p : best), r[0]);
+        tower(at, Er, col, 0.92 * dim);
+      }
+    });
+
+    // reco jet axis (dashed, reco colour) when it differs visibly
+    const reco = jetSum(P.filter(detected), recoE);
+    if (reco.n) line(reco.dir.clone().multiplyScalar(xb / reco.dir.x), reco.dir.clone().multiplyScalar((L + 2) / reco.dir.x), C.reco, 0.9, true);
+  }
+
+  // ---------- labels ----------
+  const lbl = id => document.getElementById(id);
+  const labels = [
+    { el: lbl('lblTruth'), pos: () => new V3(state.b * L * 0.55, state.b * L * 0.55 * TANH + 0.75, 0) },
+    { el: lbl('lblReco'), pos: () => new V3((state.b * L + L) / 2, ((state.b * L + L) / 2) * TANH + 0.85, 0) },
+    { el: lbl('lblIP'), pos: () => new V3(-0.45, -0.3, 0) },
+    { el: lbl('lblBeam'), pos: () => new V3(0, -0.45, 7.2) },
+    { el: lbl('lblCalo'), pos: () => new V3(L, -L * TANH - 0.6, 0) },
+    { el: lbl('lblNu'), pos: () => nuTip ? nuTip.clone().add(new V3(0.6, 0.35, 0)) : null },
+  ];
+  const tmp = new V3();
+  function placeLabels() {
+    const w = vp.clientWidth, h = vp.clientHeight;
+    labels.forEach(({ el, pos }) => {
+      const p = pos();
+      if (!p) { el.hidden = true; return; }
+      tmp.copy(p).project(camera);
+      const off = tmp.z > 1 || tmp.x < -1.1 || tmp.x > 1.1 || tmp.y < -1.1 || tmp.y > 1.1;
+      el.hidden = off;
+      el.style.left = ((tmp.x + 1) / 2 * w) + 'px';
+      el.style.top = ((1 - tmp.y) / 2 * h) + 'px';
+    });
+  }
+
+  // ---------- panel ----------
+  const f1 = x => x.toFixed(1), NAME = { pi: 'π', K: 'K', p: 'p', n: 'n', K0L: 'K⁰L', gamma: 'γ', e: 'e', mu: 'μ', nu: 'ν' };
+  const pname = o => {
+    if (o.kind === 'p') return o.q > 0 ? 'p' : 'p̄';
+    if (o.kind === 'e') return o.q > 0 ? 'e⁺' : 'e⁻';
+    if (o.kind === 'mu') return o.q > 0 ? 'μ⁺' : 'μ⁻';
+    return NAME[o.kind] + (o.q > 0 ? '⁺' : o.q < 0 ? '⁻' : '');
+  };
+
+  function updatePanel() {
+    const tx = T_();
+    const truthList = P.filter(o => o.kind !== 'nu' || state.nuIn);
+    const recoList = P.filter(detected);
+    const T = jetSum(truthList, o => o.E), R = jetSum(recoList, recoE);
+    document.getElementById('tPt').textContent = f1(T.pT);
+    document.getElementById('tM').textContent = f1(T.m);
+    document.getElementById('tN').textContent = T.n;
+    document.getElementById('rPt').textContent = f1(R.pT);
+    document.getElementById('rM').textContent = f1(R.m);
+    document.getElementById('rN').textContent = R.n;
+    const resp = R.pT / T.pT;
+    document.getElementById('resp').textContent = resp.toFixed(3);
+
+    const tot = P.reduce((s, o) => s + o.E, 0);
+    const byCls = (list, eOf) => ['ch', 'ph', 'nh', 'lep'].map(c => [c, list.filter(o => o.cls === c).reduce((s, o) => s + eOf(o), 0)]);
+    const nuE = P.filter(o => o.kind === 'nu').reduce((s, o) => s + o.E, 0);
+    const seg = (c, e) => `<i class="${c}" style="width:${(100 * e / tot).toFixed(2)}%" title="${tx.cls[c]}: ${f1(e)} GeV"></i>`;
+    document.getElementById('barT').innerHTML = byCls(P, o => o.E).map(([c, e]) => seg(c, e)).join('') + (nuE ? seg('nu', nuE) : '');
+    document.getElementById('barR').innerHTML = byCls(recoList, recoE).map(([c, e]) => seg(c, e)).join('');
+
+    document.getElementById('plist').innerHTML = P.map(o => {
+      let rec;
+      if (o.kind === 'nu') rec = `<td class="inv">${tx.invisible}</td>`;
+      else if (!detected(o)) rec = `<td class="lost">${tx.lost}</td>`;
+      else rec = `<td>${f1(recoE(o))}</td>`;
+      return `<tr data-id="${o.id}"${o.id === state.hover ? ' class="on"' : ''}><td><span class="dot" style="background:var(--c-${o.cls})"></span>${pname(o)}</td><td>${f1(o.E)}</td>${rec}<td>${o.dr.toFixed(2)}</td></tr>`;
+    }).join('');
+
+    // status sentence
+    const lost = P.filter(o => o.kind !== 'nu' && !detected(o));
+    const lostE = lost.reduce((s, o) => s + o.E, 0);
+    const ideal = state.eff >= 1 && !state.smear;
+    const st = document.getElementById('status');
+    let msg;
+    if (ideal && !state.nuIn) {
+      msg = `<b>${tx.idealA}</b> ${tx.idealB}`;
+      if (nuE) msg += ' ' + tx.idealNu(f1(nuE));
+    } else if (ideal && state.nuIn) {
+      msg = nuE ? tx.nuEsc(f1(nuE), resp.toFixed(3)) : tx.noNu;
+    } else {
+      const parts = [];
+      if (lost.length) parts.push(tx.lostP(lost.length, f1(lostE)));
+      if (state.smear) parts.push(tx.smearP);
+      if (state.nuIn && nuE) parts.push(tx.nuP(f1(nuE)));
+      msg = parts.length
+        ? `<b>${tx.real}</b> ${parts.join('; ').replace(/^./, c => c.toUpperCase())}. ${tx.respW}: ${resp.toFixed(3)}.`
+        : `<b>${tx.real}</b> ${tx.realNone} ${tx.respW}: ${resp.toFixed(3)}.`;
+    }
+    st.innerHTML = msg;
+    st.classList.toggle('warn', !(ideal && !state.nuIn));
+  }
+
+  function refresh() { build(); updatePanel(); }
+  function regen() { P = genEvent(state.seed, state.type); refresh(); }
+
+  // =====================================================================
+  // ---------- truth tab: Feynman-style SVG helper ----------
+  function fey(lines, extra = '') {
+    let h = '';
+    for (const l of lines) {
+      const [ax, ay] = l.a, [bx, by] = l.b;
+      const dx = bx - ax, dy = by - ay, len = Math.hypot(dx, dy), ux = dx / len, uy = dy / len, nx = -uy, ny = ux;
+      if (l.t === 'f' || l.t === 'nu') {
+        h += `<line class="${l.t}" x1="${ax}" y1="${ay}" x2="${bx}" y2="${by}"/>`;
+        if (!l.noArrow) {
+          const mx = ax + dx * 0.55, my = ay + dy * 0.55;
+          h += `<path class="arrow${l.t === 'nu' ? ' nu' : ''}" d="M${mx + ux * 5} ${my + uy * 5} L${mx - ux * 4 + nx * 4.5} ${my - uy * 4 + ny * 4.5} L${mx - ux * 4 - nx * 4.5} ${my - uy * 4 - ny * 4.5} Z"/>`;
+        }
+      } else if (l.t === 'g') {
+        // prolate cycloid: loops along the line
+        const N = Math.max(3, Math.round(len / 9)), r = len / (2 * Math.PI * N), d = 4.2, steps = N * 18;
+        let p = '';
+        for (let i = 0; i <= steps; i++) {
+          const t = i / steps * 2 * Math.PI * N, al = r * t - d * Math.sin(t) + d * Math.sin(0), off = d - d * Math.cos(t);
+          p += (i ? 'L' : 'M') + (ax + ux * al + nx * off).toFixed(1) + ' ' + (ay + uy * al + ny * off).toFixed(1);
+        }
+        h += `<path class="g" d="${p}"/>`;
+      } else if (l.t === 'w') {
+        const N = Math.max(2, Math.round(len / 11)); let p = '';
+        for (let i = 0; i <= 80; i++) {
+          const s = i / 80 * len, off = 4.5 * Math.sin(2 * Math.PI * N * i / 80);
+          p += (i ? 'L' : 'M') + (ax + ux * s + nx * off).toFixed(1) + ' ' + (ay + uy * s + ny * off).toFixed(1);
+        }
+        h += `<path class="w" d="${p}"/>`;
+      } else if (l.t === 'colr') {
+        h += `<line class="colr" x1="${ax}" y1="${ay}" x2="${bx}" y2="${by}"/>`;
+      }
+      if (l.lab) h += `<text x="${l.l[0]}" y="${l.l[1]}" text-anchor="${l.anchor || 'middle'}" dominant-baseline="middle"${l.sm ? ' class="sm"' : ''}>${l.lab}</text>`;
+    }
+    return h + extra;
+  }
+  const vtx = pts => pts.map(([x, y]) => `<circle class="vtx" cx="${x}" cy="${y}" r="3.2"/>`).join('');
+
+  const PROC = {
+    gg: () => fey([
+      { t: 'g', a: [40, 30], b: [125, 100], lab: 'g', l: [26, 26] },
+      { t: 'g', a: [40, 170], b: [125, 100], lab: 'g', l: [26, 176] },
+      { t: 'g', a: [125, 100], b: [215, 100], lab: 'g*', l: [170, 82] },
+      { t: 'g', a: [215, 100], b: [300, 30], lab: 'g', l: [314, 26] },
+      { t: 'g', a: [215, 100], b: [300, 170], lab: 'g', l: [314, 176] },
+    ], vtx([[125, 100], [215, 100]])),
+    qg: () => fey([
+      { t: 'f', a: [30, 40], b: [165, 55], lab: 'q', l: [18, 38] },
+      { t: 'f', a: [165, 55], b: [300, 40], lab: 'q', l: [314, 38] },
+      { t: 'g', a: [30, 160], b: [165, 145], lab: 'g', l: [18, 162] },
+      { t: 'g', a: [165, 145], b: [300, 160], lab: 'g', l: [314, 162] },
+      { t: 'g', a: [165, 55], b: [165, 145], lab: 'g*', l: [190, 100] },
+    ], vtx([[165, 55], [165, 145]])),
+    bb: () => fey([
+      { t: 'g', a: [40, 30], b: [125, 100], lab: 'g', l: [26, 26] },
+      { t: 'g', a: [40, 170], b: [125, 100], lab: 'g', l: [26, 176] },
+      { t: 'g', a: [125, 100], b: [215, 100], lab: 'g*', l: [170, 82] },
+      { t: 'f', a: [215, 100], b: [300, 30], lab: 'b', l: [314, 26] },
+      { t: 'f', a: [300, 170], b: [215, 100], lab: 'b̄', l: [314, 176] },
+    ], vtx([[125, 100], [215, 100]])),
+  };
+  const timeArrow = () => `<text class="it" x="165" y="207" text-anchor="middle">${T_().time}</text>`;
+  function drawHard() {
+    const p = document.querySelector('input[name=proc]:checked').value;
+    document.getElementById('feyHard').innerHTML = PROC[p]() + timeArrow();
+    document.getElementById('procCap').innerHTML = T_().procCap[p];
+  }
+
+  function drawSketches() {
+    const sk = T_().sk;
+    // angular ordering: successive emissions at shrinking angles
+    document.getElementById('sk1').innerHTML = fey([
+      { t: 'f', a: [10, 92], b: [192, 92], lab: 'q', l: [6, 80], anchor: 'start' },
+      { t: 'g', a: [40, 92], b: [130, 14] },
+      { t: 'g', a: [95, 92], b: [185, 46] },
+      { t: 'g', a: [145, 92], b: [195, 72] },
+    ], `<text x="128" y="10" class="sm">θ₁</text><text x="176" y="38" class="sm">θ₂</text><text x="188" y="64" class="sm">θ₃</text><text x="60" y="106" class="sm">θ₁ &gt; θ₂ &gt; θ₃</text>` + vtx([[40, 92], [95, 92], [145, 92]]));
+    // dipole: emitter radiates, spectator recoils
+    document.getElementById('sk2').innerHTML = fey([
+      { t: 'f', a: [100, 104], b: [28, 26], lab: 'q', l: [18, 18] },
+      { t: 'f', a: [100, 104], b: [172, 26] , lab: 'q̄', l: [182, 18] },
+      { t: 'colr', a: [28, 26], b: [172, 26] },
+      { t: 'g', a: [58, 58], b: [10, 64] },
+    ], `<text x="64" y="50" class="sm">${sk.emit}</text><text x="128" y="50" class="sm">${sk.spec}</text>` +
+      `<line class="recoil" x1="168" y1="40" x2="186" y2="52"/><path class="recoilhead" d="M190 55 L180 53 L186 46 Z"/><text x="150" y="80" class="sm">${sk.recoil}</text>` + vtx([[58, 58]]));
+    // antenna: the colour pair radiates as one
+    document.getElementById('sk3').innerHTML = fey([
+      { t: 'f', a: [100, 104], b: [22, 40], lab: 'q', l: [12, 34] },
+      { t: 'f', a: [100, 104], b: [178, 40], lab: 'q̄', l: [188, 34] },
+      { t: 'g', a: [100, 46], b: [100, 4] },
+    ], `<path class="colr" d="M22 40 Q100 60 178 40"/><text x="112" y="70" class="sm">${sk.ant}</text>` + vtx([[100, 50]]));
+  }
+
+  // ---------- Lund plane ----------
+  const lund = { order: 'angle', seed: 11, s: 1, playing: false, pts: [] };
+  const LY = Math.log(200 * 0.4); // ln(pT R / GeV)
+  function genLund() {
+    const R = mulberry32(lund.seed); lund.pts = [];
+    while (lund.pts.length < 18) {
+      const x = R() * LY, y = R() * LY;
+      if (y > LY - x) continue;
+      if (R() > 1 / (1 + 0.45 * y)) continue; // running coupling: more emissions at low kt
+      lund.pts.push({ x, y });
+    }
+  }
+  const lscore = p => lund.order === 'angle' ? -p.x : lund.order === 'kt' ? p.y : p.y - p.x;
+  const lrange = () => lund.order === 'angle' ? [-LY, 0] : lund.order === 'kt' ? [0, LY] : [-LY, LY];
+  const cv = document.getElementById('lund');
+  function drawLund() {
+    const w = cv.clientWidth, h = cv.clientHeight; if (!w) return;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    cv.width = w * dpr; cv.height = h * dpr;
+    const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+    const cs = getComputedStyle(document.documentElement), tok = n => cs.getPropertyValue(n).trim();
+    const fg = tok('--fg'), muted = tok('--muted'), line = tok('--line'), truth = tok('--truth'), bg = tok('--panel');
+    const pad = { l: 52, r: 14, t: 14, b: 44 };
+    const X0 = 0, X1 = LY + 0.3, Y0 = -0.9, Y1 = LY + 0.3;
+    const sx = x => pad.l + (x - X0) / (X1 - X0) * (w - pad.l - pad.r);
+    const sy = y => h - pad.b - (y - Y0) / (Y1 - Y0) * (h - pad.t - pad.b);
+    const tx = T_().lund;
+    g.font = '11px "JetBrains Mono", monospace';
+    // non-perturbative band
+    g.fillStyle = muted; g.globalAlpha = 0.1; g.fillRect(sx(X0), sy(0), sx(X1) - sx(X0), sy(Y0) - sy(0)); g.globalAlpha = 1;
+    g.fillStyle = muted; g.textAlign = 'right'; g.fillText(tx.np, sx(X1) - 4, sy(-0.5) + 4);
+    // kinematic triangle
+    g.beginPath(); g.moveTo(sx(0), sy(0)); g.lineTo(sx(0), sy(LY)); g.lineTo(sx(LY), sy(0)); g.closePath();
+    g.fillStyle = truth; g.globalAlpha = 0.08; g.fill(); g.globalAlpha = 1;
+    g.strokeStyle = truth; g.lineWidth = 1.2; g.beginPath(); g.moveTo(sx(0), sy(LY)); g.lineTo(sx(LY), sy(0)); g.stroke();
+    g.save(); g.translate(sx(LY * 0.55) + 6, sy(LY * 0.45) - 6); g.rotate(-Math.atan2(sy(0) - sy(LY), sx(LY) - sx(0))); g.fillStyle = truth; g.textAlign = 'center'; g.fillText(tx.edge, 0, -4); g.restore();
+    // axes + ticks in real units
+    g.strokeStyle = line; g.fillStyle = muted; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(sx(X0), sy(Y0)); g.lineTo(sx(X1), sy(Y0)); g.moveTo(sx(X0), sy(Y0)); g.lineTo(sx(X0), sy(Y1)); g.stroke();
+    g.textAlign = 'center';
+    for (let x = 0; x <= 4; x++) { g.beginPath(); g.moveTo(sx(x), sy(Y0)); g.lineTo(sx(x), sy(Y0) + 4); g.stroke(); g.fillText('Δ=' + (0.4 * Math.exp(-x)).toPrecision(2), sx(x), sy(Y0) + 15); }
+    g.fillText(tx.x, (sx(X0) + sx(X1)) / 2, h - 8);
+    g.textAlign = 'right';
+    for (let y = 0; y <= 4; y++) { g.beginPath(); g.moveTo(sx(X0) - 4, sy(y)); g.lineTo(sx(X0), sy(y)); g.stroke(); g.fillText(Math.exp(y).toPrecision(2), sx(X0) - 6, sy(y) + 4); }
+    g.save(); g.translate(13, (sy(Y0) + sy(Y1)) / 2); g.rotate(-Math.PI / 2); g.textAlign = 'center'; g.fillText(tx.y + ' [GeV]', 0, 0); g.restore();
+    // sweep line
+    const [lo, hi] = lrange(), v = hi - lund.s * (hi - lo);
+    g.save(); g.beginPath(); g.rect(sx(X0), sy(Y1), sx(X1) - sx(X0), sy(Y0) - sy(Y1)); g.clip();
+    g.strokeStyle = fg; g.setLineDash([5, 4]); g.lineWidth = 1.3; g.globalAlpha = lund.s >= 1 ? 0.25 : 0.8; g.beginPath();
+    if (lund.order === 'angle') { g.moveTo(sx(-v), sy(Y0)); g.lineTo(sx(-v), sy(Y1)); }
+    else if (lund.order === 'kt') { g.moveTo(sx(X0), sy(v)); g.lineTo(sx(X1), sy(v)); }
+    else { g.moveTo(sx(X0), sy(v + X0)); g.lineTo(sx(X1), sy(v + X1)); }
+    g.stroke(); g.restore(); g.setLineDash([]); g.globalAlpha = 1;
+    // emissions, numbered in evolution order
+    const order = lund.pts.slice().sort((a, b) => lscore(b) - lscore(a));
+    g.textAlign = 'center'; g.font = '600 10px "JetBrains Mono", monospace';
+    order.forEach((p, i) => {
+      const on = lscore(p) >= v - 1e-9, X = sx(p.x), Y = sy(p.y);
+      g.beginPath(); g.arc(X, Y, 8, 0, Math.PI * 2);
+      if (on) { g.fillStyle = truth; g.fill(); g.fillStyle = bg; g.fillText(String(i + 1), X, Y + 3.5); }
+      else { g.strokeStyle = muted; g.globalAlpha = 0.5; g.lineWidth = 1; g.stroke(); g.globalAlpha = 1; }
+    });
+  }
+  function syncOrdWho() { document.getElementById('ordWho').innerHTML = T_().ordWho[lund.order]; }
+  function playLund() {
+    if (lund.playing) return;
+    lund.playing = true; lund.s = 0; const t0 = performance.now(), dur = 4200;
+    const step = now => { lund.s = Math.min(1, (now - t0) / dur); drawLund(); if (lund.s < 1) requestAnimationFrame(step); else lund.playing = false; };
+    requestAnimationFrame(step);
+  }
+
+  // ---------- hadronization ----------
+  const lerp2 = (a, b, f) => [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f];
+  const smooth = (t, a, b) => Math.max(0, Math.min(1, (t - a) / (b - a)));
+  function drawString(t) {
+    const ph = T_().phS;
+    const s = smooth(t, 0, 0.45);
+    const q = [150 - 128 * s, 180], gl = [158, 180 - 140 * s], qb = [150 + 128 * s, 180];
+    const at = u => u <= 1 ? lerp2(q, gl, u) : lerp2(gl, qb, u - 1);
+    const breaks = [0.3, 0.64, 1.36, 1.72];
+    const nb = t < 0.45 ? 0 : Math.min(4, Math.floor(smooth(t, 0.45, 0.68) * 4.999));
+    const edges = [0, ...breaks.slice(0, nb).sort((a, b) => a - b), 2];
+    const names = ['π⁻', 'ρ⁺', 'K⁰', 'K⁻', 'π⁺'];
+    const k = smooth(t, 0.7, 0.95);
+    let h = `<text class="phase" x="8" y="16">${t < 0.45 ? ph[0] : t < 0.7 ? ph[1] : ph[2]}</text>`;
+    const samples = (a, b) => { const pts = []; const n = 12; for (let i = 0; i <= n; i++) pts.push(at(a + (b - a) * i / n)); if (a < 1 && b > 1) pts.splice(Math.round(n * (1 - a) / (b - a)), 0, at(1)); return pts; };
+    for (let i = 0; i < edges.length - 1; i++) {
+      const a = edges[i] + (i ? 0.035 : 0), b = edges[i + 1] - (i < edges.length - 2 ? 0.035 : 0);
+      const c = at((edges[i] + edges[i + 1]) / 2);
+      const pts = samples(a, b).map(p => lerp2(c, p, 1 - k));
+      if (k < 1) h += `<polyline class="str" style="opacity:${1 - k}" points="${pts.map(p => p.join(',')).join(' ')}"/>`;
+      if (nb === 4 && k > 0) h += `<circle class="had" cx="${c[0]}" cy="${c[1]}" r="${4 + 7 * k}" opacity="${k}"/><text x="${c[0]}" y="${c[1] - 14}" text-anchor="middle" opacity="${k}">${names[i]}</text>`;
+    }
+    if (k < 1) {
+      const o = 1 - k;
+      breaks.slice(0, nb).forEach(u => {
+        const p1 = at(u - 0.03), p2 = at(u + 0.03);
+        h += `<circle class="qb" cx="${p1[0]}" cy="${p1[1]}" r="3.6" opacity="${o}"/><circle class="q" cx="${p2[0]}" cy="${p2[1]}" r="3.6" opacity="${o}"/>`;
+      });
+      h += `<circle class="q" cx="${q[0]}" cy="${q[1]}" r="5" opacity="${o}"/><circle class="gl" cx="${gl[0]}" cy="${gl[1]}" r="5" opacity="${o}"/><circle class="qb" cx="${qb[0]}" cy="${qb[1]}" r="5" opacity="${o}"/>`;
+      if (t < 0.3) h += `<text x="${q[0] - 2}" y="${q[1] + 18}" text-anchor="middle" opacity="${o}">q</text><text x="${gl[0] + 12}" y="${gl[1]}" opacity="${o}">g</text><text x="${qb[0] + 2}" y="${qb[1] + 18}" text-anchor="middle" opacity="${o}">q̄</text>`;
+    }
+    document.getElementById('hdString').innerHTML = h;
+  }
+  function drawCluster(t) {
+    const ph = T_().phC;
+    const s = smooth(t, 0, 0.35), Rr = 28 + 92 * s, O = [150, 200];
+    const ang = [-160, -116, -64, -20].map(a => a * Math.PI / 180);
+    const pos = ang.map(a => [O[0] + Rr * Math.cos(a), O[1] + Rr * Math.sin(a)]);
+    const sp = smooth(t, 0.35, 0.55) * 13;
+    // q of P0, gluon 1 -> (qbar, q), gluon 2 -> (qbar, q), qbar of P3
+    const tang = (i, dir) => { const a = ang[i] + dir * Math.PI / 2; return [Math.cos(a), Math.sin(a)]; };
+    const g1b = [pos[1][0] + tang(1, 1)[0] * -sp, pos[1][1] + tang(1, 1)[1] * -sp], g1q = [pos[1][0] + tang(1, 1)[0] * sp, pos[1][1] + tang(1, 1)[1] * sp];
+    const g2b = [pos[2][0] + tang(2, 1)[0] * -sp, pos[2][1] + tang(2, 1)[1] * -sp], g2q = [pos[2][0] + tang(2, 1)[0] * sp, pos[2][1] + tang(2, 1)[1] * sp];
+    const pairs = [[pos[0], g1b], [g1q, g2b], [g2q, pos[3]]];
+    const kc = smooth(t, 0.55, 0.75), kd = smooth(t, 0.78, 1);
+    const names = [['π⁺', 'π⁰'], ['K⁻', 'π⁺'], ['ρ⁰', 'π⁻']], dirs = [0.6, 2.1, -0.9];
+    let h = `<text class="phase" x="8" y="16">${t < 0.35 ? ph[0] : t < 0.55 ? ph[1] : t < 0.78 ? ph[2] : ph[3]}</text>`;
+    if (t < 0.55) {
+      // colour connections
+      h += `<polyline class="cl" points="${pos.map(p => p.join(',')).join(' ')}"/>`;
+      h += `<circle class="q" cx="${pos[0][0]}" cy="${pos[0][1]}" r="5"/><circle class="qb" cx="${pos[3][0]}" cy="${pos[3][1]}" r="5"/>`;
+      if (sp < 1) h += `<circle class="gl" cx="${pos[1][0]}" cy="${pos[1][1]}" r="5"/><circle class="gl" cx="${pos[2][0]}" cy="${pos[2][1]}" r="5"/>`;
+      else h += [g1b, g2b].map(p => `<circle class="qb" cx="${p[0]}" cy="${p[1]}" r="4"/>`).join('') + [g1q, g2q].map(p => `<circle class="q" cx="${p[0]}" cy="${p[1]}" r="4"/>`).join('');
+      if (t < 0.3) h += `<text x="${pos[0][0] - 12}" y="${pos[0][1] + 4}" text-anchor="end">q</text><text x="${pos[1][0]}" y="${pos[1][1] - 10}" text-anchor="middle">g</text><text x="${pos[2][0]}" y="${pos[2][1] - 10}" text-anchor="middle">g</text><text x="${pos[3][0] + 12}" y="${pos[3][1] + 4}">q̄</text>`;
+    } else {
+      pairs.forEach(([a, b], i) => {
+        const c = lerp2(a, b, 0.5);
+        if (kd === 0) {
+          const pa = lerp2(a, c, kc * 0.75), pb = lerp2(b, c, kc * 0.75);
+          const dx = b[0] - a[0], dy = b[1] - a[1], rx = Math.hypot(dx, dy) / 2 * (1 - kc * 0.6) + 10, rot = Math.atan2(dy, dx) * 180 / Math.PI;
+          h += `<ellipse class="clu" cx="${c[0]}" cy="${c[1]}" rx="${rx}" ry="${10 + 4 * kc}" transform="rotate(${rot} ${c[0]} ${c[1]})" opacity="${0.3 + 0.7 * kc}"/>`;
+          h += `<circle class="q" cx="${pa[0]}" cy="${pa[1]}" r="4"/><circle class="qb" cx="${pb[0]}" cy="${pb[1]}" r="4"/>`;
+        } else {
+          const d = [Math.cos(dirs[i]), Math.sin(dirs[i])], r = 24 * kd;
+          h += `<ellipse class="clu" cx="${c[0]}" cy="${c[1]}" rx="14" ry="14" opacity="${1 - kd}"/>`;
+          [1, -1].forEach((sg, j) => {
+            const p = [c[0] + sg * d[0] * r, c[1] + sg * d[1] * r];
+            h += `<circle class="had" cx="${p[0]}" cy="${p[1]}" r="${5 + 4 * kd}"/><text x="${p[0]}" y="${p[1] - 13}" text-anchor="middle" opacity="${kd}">${names[i][j]}</text>`;
+          });
+        }
+      });
+    }
+    document.getElementById('hdCluster').innerHTML = h;
+  }
+  const hadT = document.getElementById('hadT');
+  function drawHad() { const t = hadT.value / 100; drawString(t); drawCluster(t); document.getElementById('hadOut').textContent = t.toFixed(2); }
+  let hadPlaying = false;
+  function playHad() {
+    if (hadPlaying) return; hadPlaying = true;
+    const t0 = performance.now(), dur = 6000;
+    const step = now => { const f = Math.min(1, (now - t0) / dur); hadT.value = Math.round(f * 100); drawHad(); if (f < 1) requestAnimationFrame(step); else hadPlaying = false; };
+    requestAnimationFrame(step);
+  }
+
+  // ---------- decays ----------
+  function drawChain() {
+    const cl = T_().chainLbl;
+    const PV = [24, 130], SV = [150, 92], TV = [228, 118];
+    let h = '';
+    [[310, 150], [310, 170], [300, 188], [310, 135]].forEach(p => { h += `<line class="frag" x1="${PV[0]}" y1="${PV[1]}" x2="${p[0]}" y2="${p[1]}"/>`; });
+    h += `<text class="sm" x="300" y="198" text-anchor="end">${cl.frag}</text>`;
+    h += `<line class="fl" x1="${PV[0]}" y1="${PV[1]}" x2="${SV[0]}" y2="${SV[1]}"/><text x="70" y="98">B⁻</text><text class="sm" x="44" y="146">cτ ≈ 0.49 mm · βγcτ ~ 4 mm</text>`;
+    h += `<line class="lep" x1="${SV[0]}" y1="${SV[1]}" x2="310" y2="22"/><text x="312" y="20">ℓ⁻</text>`;
+    h += `<line class="nuL" x1="${SV[0]}" y1="${SV[1]}" x2="304" y2="58"/><text x="306" y="60" fill="var(--c-nu)" style="fill:var(--c-nu)">ν̄</text><text class="sm" x="232" y="50">${cl.excl}</text>`;
+    h += `<line class="fl" x1="${SV[0]}" y1="${SV[1]}" x2="${TV[0]}" y2="${TV[1]}"/><text x="180" y="122">D⁰</text><text class="sm" x="150" y="134">cτ ≈ 0.12 mm</text>`;
+    h += `<line class="trk" x1="${TV[0]}" y1="${TV[1]}" x2="310" y2="88"/><text x="312" y="86">K⁻</text>`;
+    h += `<line class="trk" x1="${TV[0]}" y1="${TV[1]}" x2="310" y2="112"/><text x="312" y="112">π⁺</text>`;
+    h += `<circle class="pv" cx="${PV[0]}" cy="${PV[1]}" r="4.5"/><text class="sm" x="${PV[0]}" y="${PV[1] - 10}" text-anchor="middle">PV</text>`;
+    h += `<circle class="sv" cx="${SV[0]}" cy="${SV[1]}" r="5"/><text class="sm" x="${SV[0] - 4}" y="${SV[1] - 10}" text-anchor="middle">SV</text>`;
+    h += `<circle class="sv" cx="${TV[0]}" cy="${TV[1]}" r="5"/><text class="sm" x="${TV[0]}" y="${TV[1] + 18}" text-anchor="middle">TV</text>`;
+    document.getElementById('chain').innerHTML = h;
+  }
+  function drawFeyDec() {
+    document.getElementById('feyDec').innerHTML = fey([
+      { t: 'f', a: [30, 60], b: [150, 60], lab: 'b', l: [18, 60] },
+      { t: 'f', a: [150, 60], b: [300, 60], lab: 'c', l: [312, 60] },
+      { t: 'w', a: [150, 60], b: [215, 128], lab: 'W⁻', l: [166, 104] },
+      { t: 'f', a: [215, 128], b: [300, 100], lab: 'ℓ⁻', l: [314, 98] },
+      { t: 'nu', a: [300, 160], b: [215, 128], lab: 'ν̄', l: [314, 162] },
+      { t: 'f', a: [300, 190], b: [30, 190], lab: 'ū', l: [18, 190] },
+    ], `<text x="312" y="190" dominant-baseline="middle">ū</text>` + vtx([[150, 60], [215, 128]]) +
+      `<text class="sm" x="6" y="128">B⁻</text><text class="sm" x="324" y="128" text-anchor="end">D⁰</text>` + timeArrow());
+  }
+  function drawScale() {
+    const tx = T_().sc;
+    const D = [['π⁰', 2.55e-8], ['τ', 8.7e-5], ['D⁰', 1.23e-4], ['B±', 4.91e-4], ['K⁰S', 2.684e-2], ['Λ', 7.89e-2], ['K±', 3.711], ['π±', 7.804], ['K⁰L', 15.34], ['μ±', 658.6]];
+    const lo = -9, hi = 3, x0 = 20, x1 = 620, AY = 96;
+    const sx = v => x0 + (Math.log10(v) - lo) / (hi - lo) * (x1 - x0);
+    const thr = sx(1e-2);
+    let h = `<rect class="zone" x="${thr}" y="20" width="${x1 - thr}" height="${AY - 20}"/>`;
+    h += `<text class="sm" x="${thr - 8}" y="32" text-anchor="end">← ${tx.dec}</text><text class="sm" x="${thr + 8}" y="32">${tx.stb} →</text>`;
+    h += `<line class="ax" x1="${x0}" y1="${AY}" x2="${x1}" y2="${AY}"/>`;
+    const tl = { '-9': '1 nm', '-6': '1 μm', '-3': '1 mm', '0': '1 m', '3': '1 km' };
+    for (let e = lo; e <= hi; e++) {
+      const x = sx(10 ** e);
+      h += `<line class="tk" x1="${x}" y1="${AY}" x2="${x}" y2="${AY + (tl[e] ? 6 : 3)}"/>`;
+      if (tl[e]) h += `<text class="sm" x="${x}" y="${AY + 20}" text-anchor="middle">${tl[e]}</text>`;
+    }
+    h += `<line class="thr" x1="${thr}" y1="14" x2="${thr}" y2="${AY + 30}"/><text class="thl" x="${thr}" y="${AY + 44}" text-anchor="middle">cτ = 10 mm</text>`;
+    const rows = [-Infinity, -Infinity, -Infinity];
+    D.forEach(([n, v]) => {
+      const x = sx(v); let r = rows.findIndex(last => x - last > 34); if (r < 0) r = 2; rows[r] = x;
+      const y = AY - 16 - r * 15;
+      h += `<line class="lead" x1="${x}" y1="${AY}" x2="${x}" y2="${y + 3}"/><circle class="${v > 1e-2 ? 'stb' : 'dec'}" cx="${x}" cy="${AY}" r="4.5"/><text x="${x}" y="${y}" text-anchor="middle">${n}</text>`;
+    });
+    document.getElementById('scale').innerHTML = h;
+  }
+
+  function drawTruthTab() { drawHard(); drawSketches(); syncOrdWho(); drawLund(); drawHad(); drawChain(); drawFeyDec(); drawScale(); }
+
+  // =====================================================================
+  // ---------- tagging tab: toy heavy-flavour jets in the transverse plane ----------
+  // [name, mass GeV, cτ mm, fraction]
+  const HAD = {
+    b: [['B⁰', 5.2797, 0.455, 0.40], ['B⁺', 5.2793, 0.491, 0.40], ['B⁰s', 5.3669, 0.453, 0.10], ['Λb⁰', 5.6196, 0.441, 0.10]],
+    c: [['D⁰', 1.8648, 0.1229, 0.59], ['D⁺', 1.8697, 0.3118, 0.24], ['D⁺s', 1.9683, 0.1512, 0.09], ['Λc⁺', 2.2865, 0.0607, 0.08]],
+  };
+  const K0S = ['K⁰S', 0.4976, 26.84, 1];
+  const MP = { pi: 0.13957, K: 0.49368, p: 0.93827, e: 0.000511, mu: 0.10566, pi0: 0.13498, nu: 0 };
+  const SYM = { pi: 'π', K: 'K', p: 'p', e: 'e', mu: 'μ', pi0: 'π⁰', nu: 'ν' };
+  const tag = { fl: 'b', seed: 7, truth: true, view: 'vtx', wp: 77, hover: -1, jet: null, samples: null };
+  const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+  const norm3 = v => { const n = Math.hypot(...v); return v.map(c => c / n); };
+  const pickH = (list, R) => { let u = R(), acc = 0; for (const h of list) { acc += h[3]; if (u < acc) return h; } return list[list.length - 1]; };
+
+  function products(name, R) {
+    const lep = () => (R() < 0.5 ? 'e' : 'mu');
+    const ks = a => a.map(k => typeof k === 'string' ? { k } : k);
+    if (name === 'K⁰S') return ks(['pi', 'pi']);
+    if (name[0] === 'B' || name.startsWith('Λb')) {
+      const D = { k: 'D', h: pickH(HAD.c, R) };
+      if (R() < 0.2) return ks([D, lep(), 'nu', ...(R() < 0.4 ? ['pi'] : [])]);
+      return ks([D, 'pi', 'pi', ...(R() < 0.5 ? ['pi'] : []), ...(R() < 0.5 ? ['pi0'] : [])]);
+    }
+    if (name === 'D⁰') return R() < 0.12 ? ks(['K', lep(), 'nu']) : R() < 0.55 ? ks(['K', 'pi', ...(R() < 0.5 ? ['pi0'] : [])]) : ks(['K', 'pi', 'pi', 'pi']);
+    if (name === 'D⁺') return R() < 0.16 ? ks(['K', lep(), 'nu']) : ks(['K', 'pi', 'pi', ...(R() < 0.3 ? ['pi0'] : [])]);
+    if (name === 'D⁺s') return ks(['K', 'K', 'pi']);
+    return ks(['p', 'K', 'pi']); // Λc
+  }
+
+  // isotropic n-body decay in the rest frame (energy fixed by bisection on a common momentum scale)
+  function nbody(M, ms, R) {
+    let v = ms.map(() => { const c = 2 * R() - 1, ph = 2 * Math.PI * R(), s = Math.sqrt(1 - c * c), r = 0.3 + 0.7 * R(); return [r * s * Math.cos(ph), r * s * Math.sin(ph), r * c]; });
+    const mean = [0, 1, 2].map(k => v.reduce((a, x) => a + x[k], 0) / v.length);
+    v = v.map(x => x.map((c, k) => c - mean[k]));
+    const Et = s => v.reduce((a, x, i) => a + Math.sqrt(ms[i] ** 2 + s * s * (x[0] ** 2 + x[1] ** 2 + x[2] ** 2)), 0);
+    let lo = 0, hi = 60;
+    for (let it = 0; it < 50; it++) { const mid = (lo + hi) / 2; if (Et(mid) > M) hi = mid; else lo = mid; }
+    return v.map((x, i) => { const p = x.map(c => c * lo); return [Math.sqrt(ms[i] ** 2 + p[0] ** 2 + p[1] ** 2 + p[2] ** 2), ...p]; });
+  }
+  function boost(p4, b) {
+    const b2 = b[0] ** 2 + b[1] ** 2 + b[2] ** 2, g = 1 / Math.sqrt(1 - b2), bp = b[0] * p4[1] + b[1] * p4[2] + b[2] * p4[3];
+    const g2 = b2 > 0 ? (g - 1) / b2 : 0;
+    return [g * (p4[0] + bp), ...[0, 1, 2].map(k => p4[k + 1] + g2 * bp * b[k] + g * b[k] * p4[0])];
+  }
+
+  function genTagJet(fl, seed) {
+    const R = mulberry32(seed), G = () => Math.sqrt(-2 * Math.log(R() + 1e-12)) * Math.cos(2 * Math.PI * R());
+    const pJ = 60 + 60 * R();
+    const J = { fl, pJ, tracks: [], chain: [], nu: [], rv: [] };
+    const track = (p3, O, src, k, node) => { const pT = Math.hypot(p3[0], p3[1]); if (pT >= 1) J.tracks.push({ p3, O, src, k, node, pT }); };
+    function fly(h, p3, O, src, cls, cap) {
+      const [name, M, ctau] = h, p = Math.hypot(...p3), bg = p / M;
+      const L = Math.min(-bg * ctau * Math.log(R() + 1e-9), 3 * bg * ctau, cap);
+      const dir = norm3(p3), V = O.map((c, i) => c + dir[i] * L);
+      const node = { name, M, p, L, O, V, cls, prods: [] }; J.chain.push(node);
+      const prods = products(name, R), ms = prods.map(x => x.k === 'D' ? x.h[1] : MP[x.k]);
+      const beta = p3.map(c => c / Math.hypot(p, M));
+      nbody(M, ms, R).forEach((p4, i) => {
+        const lab = boost(p4, beta).slice(1), x = prods[i];
+        node.prods.push(x.k === 'D' ? x.h[0] : SYM[x.k]);
+        if (x.k === 'D') fly(x.h, lab, V, 'FromBC', 'C', 20);
+        else if (x.k === 'nu') J.nu.push({ p3: lab, O: V });
+        else if (x.k !== 'pi0') track(lab, V, src, x.k, node);
+      });
+    }
+    let xH = 0;
+    if (fl !== 'l') {
+      const h = pickH(HAD[fl], R);
+      xH = fl === 'b' ? clamp(0.7 + 0.13 * G(), 0.35, 0.95) : clamp(0.55 + 0.17 * G(), 0.25, 0.9);
+      const p3 = norm3([1, 0.03 * G(), 0.03 * G()]).map(c => c * xH * pJ);
+      fly(h, p3, [0, 0, 0], fl === 'b' ? 'FromB' : 'FromC', fl === 'b' ? 'B' : 'C', 20);
+      J.xH = xH;
+    }
+    // fragmentation: charged share of the rest of the jet
+    const nF = fl === 'l' ? 9 + Math.floor(R() * 5) : 6 + Math.floor(R() * 4);
+    const w = Array.from({ length: nF }, () => R() ** 1.6 + 0.05), ws = w.reduce((a, b) => a + b, 0);
+    w.forEach(wi => {
+      const p = (1 - xH) * pJ * 0.62 * wi / ws, spread = 0.05 + 0.25 / Math.sqrt(p + 1);
+      // a small fraction of tracks are badly reconstructed (GN2's "Fake" class)
+      const fake = R() < 0.015, n0 = J.tracks.length;
+      track(norm3([1, spread * G(), spread * G()]).map(c => c * p), [0, 0, 0], fake ? 'Fake' : 'Primary', R() < 0.85 ? 'pi' : 'K', null);
+      if (fake && J.tracks.length > n0) J.tracks[n0].fakeOff = (R() < 0.5 ? -1 : 1) * (0.3 + 1.7 * R());
+    });
+    if (fl === 'l' && R() < 0.55) {
+      const p = 3 + 8 * R();
+      fly(K0S, norm3([1, 0.08 * G(), 0.08 * G()]).map(c => c * p), [0, 0, 0], 'OtherSecondary', 'V0', 58);
+    }
+    // measurement: signed transverse impact parameter with a resolution that grows at low pT
+    J.tracks.forEach((t, i) => {
+      t.id = i;
+      const n = Math.hypot(t.p3[0], t.p3[1]); t.u = [t.p3[0] / n, t.p3[1] / n];
+      t.d0g = t.O[0] * t.u[1] - t.O[1] * t.u[0] + (t.fakeOff || 0);
+      t.sig = Math.hypot(0.010, 0.075 / t.pT);
+      const m = t.d0g + t.sig * (R() < 0.05 ? 3 : 1) * G();
+      t.d0 = Math.abs(m) * (m * t.u[1] >= 0 ? 1 : -1);
+      t.S = t.d0 / t.sig;
+    });
+    // vertex finding: heavy-flavour tracks with S > 2 that share a decay vertex
+    const svMass = ts => {
+      let E = 0, px = 0, py = 0, pz = 0;
+      ts.forEach(t => { const p2 = t.p3[0] ** 2 + t.p3[1] ** 2 + t.p3[2] ** 2; E += Math.sqrt(p2 + MP.pi ** 2); px += t.p3[0]; py += t.p3[1]; pz += t.p3[2]; });
+      return Math.sqrt(Math.max(E * E - px * px - py * py - pz * pz, 0));
+    };
+    const smearV = (V, along) => { const a = Math.atan2(V[1], V[0]), dl = 0.08 * G(), dt = 0.02 * G(); return [V[0] + dl * Math.cos(a) - dt * Math.sin(a), V[1] + dl * Math.sin(a) + dt * Math.cos(a)]; };
+    const vpos = t => t.node ? t.node.V : [t.d0g * t.u[1], -t.d0g * t.u[0]];
+    const hf = J.tracks.filter(t => (t.src === 'FromB' || t.src === 'FromBC' || t.src === 'FromC' || t.src === 'Fake') && t.S > 2);
+    if (hf.length >= 2) {
+      const groups = new Map(); hf.forEach(t => { if (!groups.has(t.node)) groups.set(t.node, []); groups.get(t.node).push(t); });
+      const nodes = [...groups.keys()];
+      const sep = nodes.length === 2 && nodes.every(Boolean) ? Math.hypot(nodes[0].V[0] - nodes[1].V[0], nodes[0].V[1] - nodes[1].V[1]) : 0;
+      if (sep > 0.6) nodes.forEach(nd => J.rv.push({ pos: smearV(nd.V), n: groups.get(nd).length }));
+      else {
+        const pos = [0, 1].map(k => hf.reduce((a, t) => a + vpos(t)[k], 0) / hf.length);
+        J.rv.push({ pos: smearV(pos), n: hf.length });
+      }
+      const Lxy = Math.hypot(...J.rv[0].pos);
+      J.sv = { mass: svMass(hf), Lsig: Lxy / 0.08, nv: J.rv.length };
+    }
+    const v0t = J.tracks.filter(t => t.src === 'OtherSecondary' && Math.abs(t.S) > 2);
+    if (v0t.length === 2) {
+      // the V0 mass veto almost always works; the rare leak is a classic light-jet mistag
+      const m = svMass(v0t), pos = smearV(v0t[0].node.V);
+      if (R() < 0.993) { J.v0 = true; J.rv.push({ pos, n: 2, v0: true, mass: m }); }
+      else if (!J.sv) { J.rv.push({ pos, n: 2 }); J.sv = { mass: m, Lsig: Math.hypot(...pos) / 0.08, nv: 1 }; }
+    }
+    // toy discriminant from the same features the panel shows
+    const used = J.tracks.filter(t => !(t.src === 'OtherSecondary' && J.v0));
+    const top = used.map(t => t.S).sort((a, b) => b - a).slice(0, 3);
+    const ip = top.reduce((a, s) => a + (s > 0 ? Math.min(s, 15) / 3 : Math.max(s, -10) / 6), 0);
+    const sv = J.sv ? 1.5 + 1.2 * Math.min(J.sv.mass, 5) + Math.min(J.sv.Lsig, 50) / 10 : 0;
+    J.lep = J.tracks.some(t => (t.k === 'e' || t.k === 'mu') && t.pT > 4);
+    J.D = ip + sv + (J.lep ? 1.2 : 0) - 3 + 0.8 * G();
+    J.nS3 = J.tracks.filter(t => t.S > 3).length;
+    J.nuPt = J.nu.reduce((a, n) => a + Math.hypot(n.p3[0], n.p3[1]), 0);
+    return J;
+  }
+
+  function ensureSamples() {
+    if (tag.samples) return;
+    tag.samples = {};
+    [['l', 5000], ['c', 2500], ['b', 2500]].forEach(([fl, n]) => {
+      const a = new Float64Array(n);
+      for (let i = 0; i < n; i++) a[i] = genTagJet(fl, 1000003 * (i + 1) + fl.charCodeAt(0)).D;
+      tag.samples[fl] = a.sort();
+    });
+  }
+  const fracAbove = (arr, cut) => { let lo = 0, hi = arr.length; while (lo < hi) { const m = (lo + hi) >> 1; if (arr[m] < cut) lo = m + 1; else hi = m; } return (arr.length - lo) / arr.length; };
+  const wpCut = () => { const b = tag.samples.b; return b[Math.floor(b.length * (1 - tag.wp / 100))]; };
+
+  const TCLS = t => (t.k === 'e' || t.k === 'mu') ? 't-lep' : 't-' + t.src;
+  const TCOL = t => (t.k === 'e' || t.k === 'mu') ? 'var(--c-lep)' : { Primary: 'var(--muted)', Fake: 'var(--c-miss)', FromB: 'var(--c-ph)', FromBC: 'var(--c-nh)', FromC: 'var(--c-nh)', OtherSecondary: 'var(--c-ch)' }[t.src];
+  const tname = t => SYM[t.k] + (t.k === 'p' ? '' : (t.id % 2 ? '⁺' : '⁻'));
+
+  function drawTagView() {
+    const J = tag.jet, W = 720, H = 300, vw = T_().vw;
+    const [x0, x1, y0, y1] = tag.view === 'vtx' ? [-1.2, 15, -3.2, 3.2] : [-4, 62, -14, 14];
+    const k = Math.min(W / (x1 - x0), H / (y1 - y0)), cx = W / 2 - k * (x0 + x1) / 2, cy = H / 2 + k * (y0 + y1) / 2;
+    const X = x => (cx + k * x).toFixed(1), Y = y => (cy - k * y).toFixed(1);
+    const dim = t => tag.hover >= 0 && tag.hover !== t.id ? ' dim' : '';
+    let h = '';
+    if (tag.view === 'wide') {
+      [[23.5, vw.pipe, 'pipe'], [33.25, vw.ibl, ''], [50.5, vw.l0, '']].forEach(([r, name, c]) => {
+        h += `<circle class="layer ${c}" cx="${X(0)}" cy="${Y(0)}" r="${(k * r).toFixed(1)}"/>`;
+        h += `<text class="sm" x="${X(r * Math.cos(-0.36)) - 2}" y="${Y(r * Math.sin(-0.36))}" text-anchor="end">${name}</text>`;
+      });
+    }
+    h += `<line class="axis" x1="${X(0)}" y1="${Y(0)}" x2="${X(x1 + 5)}" y2="${Y(0)}"/>`;
+    // tracks, with backward extrapolation to the point of closest approach
+    J.tracks.forEach(t => {
+      const far = 120, sw = (1 + 0.45 * Math.log(t.pT)).toFixed(2);
+      h += `<line class="trk ${TCLS(t)}${dim(t)}" stroke-width="${sw}" x1="${X(t.O[0])}" y1="${Y(t.O[1])}" x2="${X(t.O[0] + t.u[0] * far)}" y2="${Y(t.O[1] + t.u[1] * far)}"/>`;
+      if (t.src !== 'Primary') {
+        const P = [t.d0g * t.u[1], -t.d0g * t.u[0]];
+        h += `<line class="back ${TCLS(t)}${dim(t)}" x1="${X(P[0])}" y1="${Y(P[1])}" x2="${X(t.O[0])}" y2="${Y(t.O[1])}"/>`;
+      }
+      if (tag.view === 'wide') [33.25, 50.5].forEach(r => {
+        const ou = t.O[0] * t.u[0] + t.O[1] * t.u[1], o2 = t.O[0] ** 2 + t.O[1] ** 2, disc = ou * ou - (o2 - r * r);
+        if (disc < 0) return; const s = -ou + Math.sqrt(disc); if (s <= 0) return;
+        h += `<circle class="hit${dim(t)}" cx="${X(t.O[0] + s * t.u[0])}" cy="${Y(t.O[1] + s * t.u[1])}" r="2.2"/>`;
+      });
+    });
+    // truth hadrons
+    if (tag.truth) {
+      J.chain.forEach(nd => {
+        h += `<line class="fl fl-${nd.cls}" x1="${X(nd.O[0])}" y1="${Y(nd.O[1])}" x2="${X(nd.V[0])}" y2="${Y(nd.V[1])}"/>`;
+        const mx = (nd.O[0] + nd.V[0]) / 2, my = (nd.O[1] + nd.V[1]) / 2, up = nd.cls === 'C' ? -1 : 1;
+        h += `<text class="hl" x="${X(mx)}" y="${+Y(my) - up * 10}" text-anchor="middle">${nd.name} · ${nd.L.toFixed(1)} mm</text>`;
+      });
+      J.nu.forEach(n => { const u = norm3([n.p3[0], n.p3[1], 0]); h += `<line class="nuT" x1="${X(n.O[0])}" y1="${Y(n.O[1])}" x2="${X(n.O[0] + u[0] * 120)}" y2="${Y(n.O[1] + u[1] * 120)}"/>`; });
+    }
+    // reconstructed vertices
+    J.rv.forEach((v, i) => {
+      const rot = -Math.atan2(v.pos[1], v.pos[0]) * 180 / Math.PI, rx = Math.max(6, k * 0.16), ry = Math.max(4, k * 0.045);
+      h += `<ellipse class="rv${v.v0 ? ' v0' : ''}" cx="${X(v.pos[0])}" cy="${Y(v.pos[1])}" rx="${rx.toFixed(1)}" ry="${ry.toFixed(1)}" transform="rotate(${rot.toFixed(1)} ${X(v.pos[0])} ${Y(v.pos[1])})"/>`;
+      h += `<text class="hl" x="${X(v.pos[0])}" y="${+Y(v.pos[1]) + ry + 14}" text-anchor="middle">${v.v0 ? 'V0' : J.rv.filter(r => !r.v0).length > 1 ? 'SV' + (i + 1) : 'SV'}</text>`;
+    });
+    h += `<circle class="pv" cx="${X(0)}" cy="${Y(0)}" r="4"/><text class="hl" x="${X(0)}" y="${+Y(0) - 10}" text-anchor="middle">PV</text>`;
+    const sb = tag.view === 'vtx' ? 1 : 10;
+    h += `<line stroke="var(--fg)" stroke-width="2" x1="14" y1="${H - 14}" x2="${14 + k * sb}" y2="${H - 14}"/><text class="sm" x="14" y="${H - 20}">${sb} mm</text>`;
+    document.getElementById('tagView').innerHTML = h;
+  }
+
+  function drawTagSide() {
+    const J = tag.jet, tx = T_();
+    const idx = { b: 0, c: 1, l: 3 }[J.fl];
+    document.getElementById('dlist').innerHTML = tx.labRows.map((r, i) => `<li class="${i === idx ? 'on' : ''}"><span>${r}</span><b>${['b', 'c', 'τ', 'light'][i]}</b></li>`).join('');
+    let ch = '';
+    J.chain.forEach(nd => {
+      const extra = nd.cls === 'V0' ? ` ${tx.v0note}` : '';
+      ch += `<div class="step ${nd.cls}">${nd.name} · p = ${nd.p.toFixed(0)} GeV · ${tx.flies} ${nd.L.toFixed(2)} mm<br>→ ${nd.prods.join(' ')}${extra}</div>`;
+    });
+    if (J.xH) ch = `<div>x = p<sub>had</sub>/p<sub>jet</sub> = ${J.xH.toFixed(2)}</div>` + ch;
+    if (J.fl === 'l') ch = `<div>${tx.noHeavy}</div>` + ch;
+    document.getElementById('chainbox').innerHTML = ch;
+    const i = tx.inp, sv = J.sv;
+    const rows = [
+      [i.nS3, J.nS3],
+      [i.sv, sv ? tx.found : J.v0 ? tx.vetoed : tx.notFound],
+      [i.msv, sv ? sv.mass.toFixed(2) + ' GeV' : '–'],
+      [i.lsig, sv ? sv.Lsig.toFixed(0) : '–'],
+      [i.nv, sv ? sv.nv : '–'],
+      [i.lep, J.lep ? tx.yes : tx.no],
+      [i.nu, J.nuPt ? J.nuPt.toFixed(1) + ' GeV' : '–'],
+    ];
+    document.getElementById('inputs').innerHTML = '<tbody>' + rows.map(([a, b]) => `<tr><td style="font-weight:400">${a}</td><td>${b}</td></tr>`).join('') + '</tbody>';
+    document.getElementById('dbOut').textContent = J.D.toFixed(2);
+    const pass = J.D >= wpCut();
+    document.getElementById('passChip').innerHTML = `<span class="chip2 ${pass ? 'pass' : 'fail'}">${pass ? tx.pass(tag.wp) : tx.fail(tag.wp)}</span>`;
+  }
+
+  function drawTracks() {
+    const ts = tag.jet.tracks.slice().sort((a, b) => b.S - a.S);
+    document.getElementById('ttab').innerHTML = ts.map(t => `<tr data-id="${t.id}" class="${t.src !== 'Primary' && t.src !== 'Fake' ? 'heavy' : ''}${t.id === tag.hover ? ' on' : ''}"><td><span class="dot" style="background:${TCOL(t)}"></span>${t.src}</td><td>${tname(t)}</td><td>${t.pT.toFixed(1)}</td><td>${(t.d0 * 1000).toFixed(0)}</td><td>${t.S.toFixed(1)}</td></tr>`).join('');
+  }
+
+  function drawDist() {
+    const S = tag.samples, tx = T_().eff, W = 520, H = 240, pad = { l: 44, r: 10, t: 12, b: 34 };
+    const lo = -6, hi = 34, nb = 40, bw = (hi - lo) / nb;
+    const hist = arr => { const c = new Array(nb).fill(0); arr.forEach(v => { const i = Math.floor((clamp(v, lo, hi - 1e-9) - lo) / bw); c[i]++; }); return c.map(x => x / arr.length); };
+    const yl = -4, yh = 0;
+    const sx = v => pad.l + (v - lo) / (hi - lo) * (W - pad.l - pad.r);
+    const sy = f => { const l = f > 0 ? clamp(Math.log10(f), yl, yh) : yl; return H - pad.b - (l - yl) / (yh - yl) * (H - pad.t - pad.b); };
+    const cut = wpCut();
+    let h = `<rect class="pass" x="${sx(cut)}" y="${pad.t}" width="${sx(hi) - sx(cut)}" height="${H - pad.t - pad.b}"/>`;
+    h += `<line class="ax" x1="${pad.l}" y1="${H - pad.b}" x2="${W - pad.r}" y2="${H - pad.b}"/><line class="ax" x1="${pad.l}" y1="${pad.t}" x2="${pad.l}" y2="${H - pad.b}"/>`;
+    for (let v = -5; v <= 30; v += 5) h += `<text x="${sx(v)}" y="${H - pad.b + 14}" text-anchor="middle">${v}</text>`;
+    h += `<text x="${(pad.l + W - pad.r) / 2}" y="${H - 4}" text-anchor="middle">D_b</text>`;
+    for (let e = yl; e <= yh; e++) h += `<text x="${pad.l - 6}" y="${sy(10 ** e) + 3}" text-anchor="end">10${e ? String(e).replace('-', '⁻').replace('1', '¹').replace('2', '²').replace('3', '³').replace('4', '⁴') : '⁰'}</text>`;
+    h += `<text x="12" y="${(pad.t + H - pad.b) / 2}" transform="rotate(-90 12 ${(pad.t + H - pad.b) / 2})" text-anchor="middle">${tx.y}</text>`;
+    [['l', S.l], ['c', S.c], ['b', S.b]].forEach(([fl, arr]) => {
+      const c = hist(arr); let d = `M${sx(lo)} ${sy(0)}`;
+      c.forEach((f, i) => { const yy = sy(f); d += ` L${sx(lo + i * bw)} ${yy} L${sx(lo + (i + 1) * bw)} ${yy}`; });
+      d += ` L${sx(hi)} ${sy(0)} Z`;
+      h += `<path class="h-${fl}" d="${d}"/>`;
+    });
+    h += `<line class="cut" x1="${sx(cut)}" y1="${pad.t}" x2="${sx(cut)}" y2="${H - pad.b}"/>`;
+    // legend + this jet marker
+    [['l', T_().flL], ['c', T_().flC], ['b', T_().flB]].forEach(([fl, n], i) => { h += `<rect class="h-${fl}" x="${W - 120}" y="${pad.t + 4 + i * 15}" width="12" height="8"/><text x="${W - 103}" y="${pad.t + 12 + i * 15}">${n}</text>`; });
+    const jx = sx(clamp(tag.jet.D, lo, hi)), col = { l: 'var(--reco)', c: 'var(--c-nh)', b: 'var(--c-ph)' }[tag.jet.fl];
+    h += `<path class="mk" fill="${col}" d="M${jx} ${H - pad.b - 2} l-6 -11 h12 Z"/><text x="${jx}" y="${H - pad.b - 16}" text-anchor="middle" style="fill:var(--fg)">${tx.jet}</text>`;
+    document.getElementById('dist').innerHTML = h;
+    const eb = fracAbove(S.b, cut), ec = fracAbove(S.c, cut), el = fracAbove(S.l, cut);
+    const rej = (e, n) => e > 0 ? (1 / e).toFixed(e > 0.1 ? 1 : 0) : '> ' + n;
+    document.getElementById('effs').innerHTML = `<div><span>${tx.b}</span><b>${(eb * 100).toFixed(0)} %</b></div><div><span>${tx.c}</span><b>${rej(ec, S.c.length)}</b></div><div><span>${tx.l}</span><b>${rej(el, S.l.length)}</b></div>`;
+  }
+
+  function drawTagTab() {
+    ensureSamples();
+    if (!tag.jet || tag.jet.fl !== tag.fl) tag.jet = genTagJet(tag.fl, tag.seed);
+    drawTagView(); drawTagSide(); drawTracks(); drawDist();
+  }
+
+  document.querySelectorAll('input[name=fl]').forEach(r => r.addEventListener('change', e => { tag.fl = e.target.value; tag.hover = -1; tag.jet = null; drawTagTab(); }));
+  document.querySelectorAll('input[name=tv]').forEach(r => r.addEventListener('change', e => { tag.view = e.target.value; drawTagView(); }));
+  document.querySelectorAll('input[name=wp]').forEach(r => r.addEventListener('change', e => { tag.wp = +e.target.value; drawTagSide(); drawDist(); }));
+  document.getElementById('tgTruth').addEventListener('change', e => { tag.truth = e.target.checked; drawTagView(); });
+  document.getElementById('tgNew').addEventListener('click', () => { tag.seed = (Math.random() * 2 ** 31) | 0; tag.hover = -1; tag.jet = null; drawTagTab(); });
+  const ttab = document.getElementById('ttab');
+  ttab.addEventListener('mouseover', e => {
+    const tr = e.target.closest('tr'); if (!tr) return;
+    const id = +tr.dataset.id; if (id === tag.hover) return;
+    tag.hover = id; drawTagView(); ttab.querySelectorAll('tr').forEach(x => x.classList.toggle('on', +x.dataset.id === id));
+  });
+  ttab.addEventListener('mouseleave', () => { tag.hover = -1; drawTagView(); ttab.querySelectorAll('tr.on').forEach(x => x.classList.remove('on')); });
+
+  // ---------- language, theme, tabs ----------
+  const rot = document.getElementById('rot');
+  const syncOut = () => {
+    document.getElementById('bndOut').textContent = `${Math.round(state.b * 100)} ${T_().ofCone}`;
+    document.getElementById('effOut').textContent = `${Math.round(state.eff * 100)} %`;
+  };
+  const darkMQ = window.matchMedia('(prefers-color-scheme: dark)');
+  const isDark = () => {
+    const t = document.documentElement.getAttribute('data-theme');
+    return t ? t === 'dark' : darkMQ.matches;
+  };
+  const ICON_MOON = '<svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M6.2 1.3a6.8 6.8 0 1 0 8.5 8.5A5.6 5.6 0 0 1 6.2 1.3z"/></svg>';
+  const ICON_SUN = '<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3.2" fill="currentColor"/><g stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M8 .9v1.8M8 13.3v1.8M.9 8h1.8M13.3 8h1.8M3 3l1.2 1.2M11.8 11.8 13 13M3 13l1.2-1.2M11.8 4.2 13 3"/></g></svg>';
+  function syncThemeBtn() {
+    const b = document.getElementById('themeBtn');
+    b.innerHTML = isDark() ? `${ICON_SUN}${T_().themeLight}` : `${ICON_MOON}${T_().themeDark}`;
+    b.setAttribute('aria-pressed', String(isDark()));
+  }
+  function applyLang() {
+    const tx = T_();
+    document.documentElement.lang = state.lang;
+    document.querySelectorAll('[data-i18n]').forEach(el => { el.innerHTML = tx[el.dataset.i18n]; });
+    document.getElementById('jtGroup').setAttribute('aria-label', tx.jtAria);
+    rot.textContent = controls.autoRotate ? tx.rotOff : tx.rotOn;
+    syncOut(); syncThemeBtn();
+    if (P.length) updatePanel();
+    drawTruthTab();
+    if (state.view === 'tagging') drawTagTab();
+  }
+
+  function route() {
+    const h = location.hash.slice(1);
+    state.view = h === 'truth' || h === 'tagging' ? h : 'explorer';
+    ['explorer', 'truth', 'tagging'].forEach(v => {
+      document.getElementById('panel-' + v).hidden = v !== state.view;
+      document.getElementById('tab-' + v).setAttribute('aria-selected', String(v === state.view));
+    });
+    if (state.view === 'explorer') resize();
+    else if (state.view === 'truth') drawTruthTab();
+    else drawTagTab();
+  }
+  window.addEventListener('hashchange', route);
+
+  const savedTheme = store.get('easejets-theme');
+  if (savedTheme === 'dark' || savedTheme === 'light') document.documentElement.setAttribute('data-theme', savedTheme);
+  document.getElementById('themeBtn').addEventListener('click', () => {
+    const next = isDark() ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    store.set('easejets-theme', next);
+  });
+  document.getElementById(state.lang === 'en' ? 'lang-en' : 'lang-es').checked = true;
+  document.querySelectorAll('input[name=lang]').forEach(r => r.addEventListener('change', e => {
+    state.lang = e.target.value; store.set('easejets-lang', state.lang); applyLang();
+  }));
+
+  // ---------- controls ----------
+  const bnd = document.getElementById('bnd'), eff = document.getElementById('eff');
+  bnd.addEventListener('input', () => { state.b = bnd.value / 100; syncOut(); build(); });
+  eff.addEventListener('input', () => { state.eff = eff.value / 100; syncOut(); refresh(); });
+  document.getElementById('smear').addEventListener('change', e => { state.smear = e.target.checked; refresh(); });
+  document.getElementById('nuIn').addEventListener('change', e => { state.nuIn = e.target.checked; refresh(); });
+  document.querySelectorAll('input[name=jtype]').forEach(r => r.addEventListener('change', e => { state.type = e.target.value; regen(); }));
+  document.getElementById('newEvt').addEventListener('click', () => { state.seed = (Math.random() * 2 ** 31) | 0; state.hover = -1; regen(); });
+  rot.addEventListener('click', () => { controls.autoRotate = !controls.autoRotate; rot.setAttribute('aria-pressed', controls.autoRotate); rot.textContent = controls.autoRotate ? T_().rotOff : T_().rotOn; });
+  document.getElementById('resetView').addEventListener('click', resetView);
+  const plist = document.getElementById('plist');
+  plist.addEventListener('mouseover', e => {
+    const tr = e.target.closest('tr'); if (!tr) return;
+    const id = +tr.dataset.id; if (id === state.hover) return;
+    state.hover = id; build();
+    plist.querySelectorAll('tr').forEach(x => x.classList.toggle('on', +x.dataset.id === id));
+  });
+  plist.addEventListener('mouseleave', () => { state.hover = -1; build(); plist.querySelectorAll('tr.on').forEach(x => x.classList.remove('on')); });
+
+  // truth-tab controls
+  document.querySelectorAll('input[name=proc]').forEach(r => r.addEventListener('change', drawHard));
+  document.querySelectorAll('input[name=ord]').forEach(r => r.addEventListener('change', e => { lund.order = e.target.value; syncOrdWho(); playLund(); }));
+  document.getElementById('lundPlay').addEventListener('click', playLund);
+  document.getElementById('lundNew').addEventListener('click', () => { lund.seed = (Math.random() * 2 ** 31) | 0; genLund(); playLund(); });
+  hadT.addEventListener('input', drawHad);
+  document.getElementById('hadPlay').addEventListener('click', playHad);
+  document.querySelectorAll('.pipe button').forEach(b => b.addEventListener('click', () => document.getElementById(b.dataset.go).scrollIntoView({ behavior: 'smooth', block: 'start' })));
+  new ResizeObserver(() => { if (state.view === 'truth') drawLund(); }).observe(cv);
+
+  // theme changes rebuild the scene with the new tokens
+  const retheme = () => { readColors(); build(); syncThemeBtn(); drawLund(); };
+  darkMQ.addEventListener('change', retheme);
+  new MutationObserver(retheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+  function loop() {
+    if (state.view === 'explorer') { controls.update(); renderer.render(scene, camera); placeLabels(); }
+    requestAnimationFrame(loop);
+  }
+
+  genLund();
+  readColors(); resize(); resetView(); applyLang(); regen(); route(); loop();
+})();
+</script>
+
+</body>
+</html>
