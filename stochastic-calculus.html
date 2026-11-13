@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Stochastic Calculus I</title>
-<meta name="description" content="Course notebook for discrete-time finance: binomial pricing and self-financing replication of a European call.">
+<meta name="description" content="Course notebook for discrete-time finance: binomial pricing and replication of a European call, then expectation, conditional expectation, martingales and the Markov property on coin-toss space.">
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -143,6 +143,54 @@ td.mv{font-weight:600;color:var(--path)}
   .stats>div:nth-child(n+3){border-top:1px solid var(--rule)}
   .theory .cols{grid-template-columns:minmax(0,1fr)}
 }
+/* ---- Chapter 2: coin-toss space */
+select{font:14px var(--f-body);color:var(--ink);background:var(--sunk);border:1px solid var(--rule);border-radius:6px;padding:7px 9px;width:100%;min-width:0}
+select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.seg{display:flex;border:1px solid var(--rule);border-radius:7px;overflow:hidden;background:var(--sunk)}
+.seg button{flex:1;font:500 13px var(--f-body);color:var(--ink-2);background:none;border:0;padding:7px 8px;cursor:pointer}
+.seg button+button{border-left:1px solid var(--rule)}
+.seg button[aria-pressed="true"]{background:var(--accent-soft);color:var(--ink);box-shadow:inset 0 -2px 0 var(--accent)}
+.seg button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.c2-sec{margin-top:16px}
+.c2-sec .lead{max-width:72ch;margin:2px 0 14px;color:var(--ink-2);font-size:14px}
+.c2-split{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:20px;align-items:start}
+.idea{background:var(--sunk);border-radius:8px;padding:14px 16px;font-size:13.5px;color:var(--ink-2);min-width:0}
+.idea h4{margin:0 0 6px;font:600 13px var(--f-body);color:var(--ink);letter-spacing:.02em}
+.idea p{margin:0 0 8px}.idea p:last-child{margin-bottom:0}
+.idea .eq{font-size:15.5px;white-space:normal}
+.idea ol{margin:4px 0 0;padding-left:18px}.idea li{margin:3px 0}
+.idea dl.kv{font-size:13.5px}
+.dist{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:7px 12px;align-items:center;font-size:13px}
+.dist .x{font-family:var(--f-mono);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.dist .track{height:16px;background:var(--sunk);border-radius:3px;min-width:0}
+.dist .bar{height:100%;background:var(--accent);opacity:.85;border-radius:3px;min-width:2px}
+.dist .pr{font-family:var(--f-mono);font-variant-numeric:tabular-nums;color:var(--ink-2);white-space:nowrap}
+.dist .pr small{font-family:var(--f-body);color:var(--ink-3)}
+.esum{margin:14px 0 0;padding:10px 12px;border:1px dashed var(--rule);border-radius:8px;font:14px var(--f-mono);color:var(--ink-2);overflow-x:auto;white-space:nowrap}
+.esum b{color:var(--ink);font-weight:600}
+details.outs{margin-top:14px}
+details.outs summary{cursor:pointer;font-size:13.5px;color:var(--accent);font-weight:500}
+details.outs .tablewrap{margin-top:10px}
+td.om{font-weight:600;letter-spacing:.06em;text-align:left}
+tfoot td{font-weight:600;background:var(--sunk);border-bottom:0}
+.c2tree text.om{fill:var(--ink-3);font-size:11px;letter-spacing:.05em}
+.c2tree .node text{font-size:11.5px}
+.node.blk rect{fill:var(--path-soft);stroke:var(--path);stroke-width:1.5}
+.node.up rect{stroke:var(--pos);stroke-width:2}
+.node.dn rect{stroke:var(--neg);stroke-width:2}
+.node.up text.dr{fill:var(--pos)}.node.dn text.dr{fill:var(--neg)}
+.node.zero rect{stroke:var(--ink-3)}
+.ctl{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:flex-end;margin-bottom:12px}
+.ctl .field{width:min(320px,100%)}
+.ctl .seg{min-width:min(360px,100%)}
+.verdict{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px}
+.pill.warn{color:var(--path)}
+td.vals{text-align:left;white-space:normal;min-width:160px}
+td.st{text-align:left}
+td.paths{text-align:left;letter-spacing:.05em;white-space:normal;color:var(--ink-2)}
+.mkwrap tbody tr{cursor:default}
+.c2-theory .cols{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width:980px){ .c2-split{grid-template-columns:minmax(0,1fr)} }
 </style>
 </head>
 <body>
@@ -156,6 +204,7 @@ td.mv{font-weight:600;color:var(--path)}
     <div class="hdr-right">
       <nav class="tabs" role="tablist" aria-label="Chapters">
         <button role="tab" id="tab-binomial" aria-controls="panel-binomial" aria-selected="true">Binomial model</button>
+        <button role="tab" id="tab-prob" aria-controls="panel-prob" aria-selected="false">Probability &amp; martingales</button>
       </nav>
       <button id="theme-btn" type="button" aria-label="Switch background"></button>
     </div>
@@ -267,6 +316,143 @@ td.mv{font-weight:600;color:var(--path)}
         <div><h4>Backward induction</h4><div class="eq"><i>V<sub>t</sub></i> = [<i>q V</i><sub>up</sub> + (1−<i>q</i>) <i>V</i><sub>down</sub>] / (1+<i>r</i>)</div><p>Start from the payoff max(<i>S<sub>N</sub></i> − <i>K</i>, 0) and step back one period at a time.</p></div>
         <div><h4>Delta hedge</h4><div class="eq">Δ<i><sub>t</sub></i> = (<i>V</i><sub>up</sub> − <i>V</i><sub>down</sub>) / (<i>S</i><sub>up</sub> − <i>S</i><sub>down</sub>)</div><p>For a call 0 ≤ Δ ≤ 1: the hedge is long the stock and borrows cash.</p></div>
         <div><h4>Wealth of the hedge</h4><div class="eq"><i>X<sub>t</sub></i> = <i>V<sub>t</sub></i> + (<i>X</i>₀ − <i>V</i>₀)(1+<i>r</i>)<i><sup>t</sup></i></div><p>Holding the call's Δ with the wrong starting capital leaves the gap in the bank, where it earns interest.</p></div>
+      </div>
+    </section>
+  </main>
+
+  <main id="panel-prob" role="tabpanel" aria-labelledby="tab-prob" hidden>
+    <section class="intro">
+      <div class="eyebrow">Chapter 2 · Probability theory on coin-toss space</div>
+      <h2>Expectation, martingales and the Markov property</h2>
+      <p>Toss a coin <i>N</i> times. Each outcome ω is a string of H and T, and every random quantity in the binomial model, from the stock price <i>S<sub>n</sub></i> to an option payoff or a running maximum, is a function of ω. This chapter asks four questions about such a function <i>X</i>: what is its average, what is the best forecast of it given the tosses seen so far, when is that forecast already today's value, and how much of the past the forecast really needs.</p>
+    </section>
+
+    <div class="layout">
+      <aside class="rail">
+        <div class="panel">
+          <h3>Model</h3>
+          <p class="sub">Same binomial stock as Chapter 1. Up = heads, down = tails.</p>
+          <div class="fields">
+            <div class="field"><label for="c2-N">Tosses <i>N</i> (1–5)</label><input id="c2-N" type="number" min="1" max="5" step="1" value="3"></div>
+            <div class="field"><label for="c2-S0">Spot <i>S</i>₀</label><input id="c2-S0" type="number" step="any" value="4"></div>
+            <div class="field"><label for="c2-u">Up factor <i>u</i></label><input id="c2-u" type="number" step="any" value="2"></div>
+            <div class="field"><label for="c2-d">Down factor <i>d</i></label><input id="c2-d" type="number" step="any" value="0.5"></div>
+            <div class="field"><label for="c2-r">Rate <i>r</i> per step</label><input id="c2-r" type="number" step="any" value="0.25"></div>
+            <div class="field"><label for="c2-K">Strike <i>K</i></label><input id="c2-K" type="number" step="any" value="5"></div>
+            <div class="field"><label for="c2-p">Actual P(H) = <i>p</i></label><input id="c2-p" type="text" value="2/3" autocomplete="off" spellcheck="false"></div>
+            <div class="field" style="justify-content:flex-end"><button class="btn" id="c2-reset" type="button">Reset defaults</button></div>
+          </div>
+          <p class="err" id="c2-err" role="alert" hidden></p>
+        </div>
+
+        <div class="panel">
+          <h3>Probability measure</h3>
+          <p class="sub">The same coin, two ways of weighting it. Every average on this tab uses the one selected here.</p>
+          <div class="seg" role="group" aria-label="Probability measure">
+            <button type="button" id="c2-mP" aria-pressed="true">Actual <i>P</i></button>
+            <button type="button" id="c2-mQ" aria-pressed="false">Risk-neutral <i>P̃</i></button>
+          </div>
+          <p class="hint" id="c2-ptxt"></p>
+        </div>
+
+        <div class="panel">
+          <h3>Random variable <i>X</i></h3>
+          <p class="sub">A function of the full outcome ω = ω₁…ω<sub><i>N</i></sub>.</p>
+          <div class="field"><label for="c2-X">Choose <i>X</i></label>
+            <select id="c2-X">
+              <option value="SN">Final price S_N</option>
+              <option value="call">Call payoff (S_N − K)⁺</option>
+              <option value="max" selected>Running maximum max S_n (lookback)</option>
+              <option value="avg">Average price (S_0+…+S_N)/(N+1) (Asian)</option>
+            </select></div>
+          <p class="hint" id="c2-Xtxt"></p>
+        </div>
+      </aside>
+
+      <div class="main">
+        <dl class="stats">
+          <div><dt>P(H) in use</dt><dd id="c2-s1"></dd></div>
+          <div><dt>Expectation E[<i>X</i>]</dt><dd id="c2-s2"></dd></div>
+          <div><dt>Discounted E[<i>X</i>]/(1+<i>r</i>)<i><sup>N</sup></i></dt><dd id="c2-s3"></dd></div>
+          <div><dt>Outcomes 2<i><sup>N</sup></i></dt><dd id="c2-s4"></dd></div>
+        </dl>
+
+        <section class="panel">
+          <div class="head"><h3>Expectation: weigh every outcome</h3><span class="eyebrow">Section 2.2</span></div>
+          <p class="lead" style="margin:2px 0 14px;color:var(--ink-2)">An outcome with <i>k</i> heads has probability <i>p<sup>k</sup></i>(1−<i>p</i>)<i><sup>N−k</sup></i>. Outcomes that give the same value of <i>X</i> pool together into its distribution. The expectation is the balance point of that distribution.</p>
+          <div class="c2-split">
+            <div style="min-width:0">
+              <div class="dist" id="c2-dist" aria-label="Distribution of X"></div>
+              <div class="esum" id="c2-esum"></div>
+            </div>
+            <div class="idea" id="c2-idea1"></div>
+          </div>
+          <details class="outs">
+            <summary>Show all outcomes ω</summary>
+            <div class="tablewrap">
+              <table><thead><tr><th style="text-align:left">ω</th><th>Heads</th><th>P(ω)</th><th>S<sub>N</sub>(ω)</th><th>X(ω)</th><th>X(ω)·P(ω)</th></tr></thead>
+                <tbody id="c2-otab"></tbody><tfoot id="c2-ofoot"></tfoot></table>
+            </div>
+          </details>
+        </section>
+      </div>
+    </div>
+
+    <section class="panel c2-sec">
+      <div class="head"><h3>Conditional expectation: the best forecast with partial information</h3><span class="eyebrow">Section 2.3</span></div>
+      <p class="lead">After <i>n</i> tosses you know ω₁…ω<sub><i>n</i></sub> but not the rest. <i>E<sub>n</sub></i>[<i>X</i>] averages <i>X</i> over the outcomes still possible. On the tree that is one backward step at a time: each node is the probability-weighted average of its two children. Click a node to see the outcomes it averages over.</p>
+      <div class="c2-split">
+        <div class="treebox c2tree" id="c2-ctree"></div>
+        <div class="idea" id="c2-cnode" aria-live="polite"></div>
+      </div>
+      <div class="legend"><span><i style="--c:var(--accent);--b:var(--accent-soft)"></i>selected node: what we know</span><span><i style="--c:var(--path);--b:var(--path-soft)"></i>futures still possible</span></div>
+    </section>
+
+    <section class="panel c2-sec">
+      <div class="head"><h3>Martingales: no expected drift</h3><span class="eyebrow">Section 2.4</span></div>
+      <p class="lead">A process <i>M<sub>n</sub></i> is a martingale when the best forecast of the next value is the current value: <i>E<sub>n</sub></i>[<i>M</i><sub><i>n</i>+1</sub>] = <i>M<sub>n</sub></i> at every node. Each box shows <i>M<sub>n</sub></i> and, beneath it, the expected change over the next toss. Green rises on average, red falls, grey stays put.</p>
+      <div class="ctl">
+        <div class="field"><label for="c2-proc">Process <i>M<sub>n</sub></i></label>
+          <select id="c2-proc">
+            <option value="S">Stock price S_n</option>
+            <option value="Sd" selected>Discounted stock S_n/(1+r)^n</option>
+            <option value="V">Discounted price of X, Ṽ_n/(1+r)^n</option>
+            <option value="Doob">Forecast of X, E_n[X]</option>
+          </select></div>
+      </div>
+      <div class="c2-split">
+        <div class="treebox c2tree" id="c2-mtree"></div>
+        <div class="idea" aria-live="polite"><div class="verdict" id="c2-mverdict"></div><div id="c2-mtext"></div><div id="c2-mnode" style="margin-top:12px"></div></div>
+      </div>
+    </section>
+
+    <section class="panel c2-sec">
+      <div class="head"><h3>The Markov property: how much memory a forecast needs</h3><span class="eyebrow">Section 2.5</span></div>
+      <p class="lead">A process is Markov when the forecast of anything in its future depends only on where it is now, not on the path that led there. Group the paths at time <i>n</i> by a candidate state. If every path in a group gives the same forecast <i>E<sub>n</sub></i>[<i>X</i>], the forecast is a function <i>g<sub>n</sub></i> of the state and the state carries all the memory you need.</p>
+      <div class="ctl">
+        <div class="field" style="width:140px"><label for="c2-mn">Time <i>n</i></label><select id="c2-mn"></select></div>
+        <div class="field"><span style="font-size:12.5px;color:var(--ink-2)">State to track</span>
+          <div class="seg" role="group" aria-label="State to track">
+            <button type="button" id="c2-stS" aria-pressed="true"><i>S<sub>n</sub></i></button>
+            <button type="button" id="c2-stM" aria-pressed="false">(<i>S<sub>n</sub></i>, max so far)</button>
+            <button type="button" id="c2-stY" aria-pressed="false">(<i>S<sub>n</sub></i>, sum so far)</button>
+          </div></div>
+      </div>
+      <div class="c2-split">
+        <div style="min-width:0">
+          <div class="tablewrap mkwrap"><table><thead><tr><th style="text-align:left">State</th><th style="text-align:left">Paths in this state</th><th style="text-align:left">Forecasts E<sub>n</sub>[X]</th><th>One value?</th></tr></thead><tbody id="c2-mk"></tbody></table></div>
+        </div>
+        <div class="idea" id="c2-mkidea" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <section class="panel theory c2-theory">
+      <h3>The four definitions behind the page</h3>
+      <div class="cols">
+        <div><h4>Expectation</h4><div class="eq">E[<i>X</i>] = Σ<sub>ω</sub> <i>X</i>(ω) P(ω)</div><p>On coin-toss space P(ω) = <i>p</i><sup>#H(ω)</sup><i>q</i><sup>#T(ω)</sup>. Changing <i>p</i> to <i>p̃</i> reweights the same outcomes.</p></div>
+        <div><h4>Conditional expectation</h4><div class="eq"><i>E<sub>n</sub></i>[<i>X</i>] = <i>p E</i><sub><i>n</i>+1</sub>[<i>X</i>]<sub>H</sub> + <i>q E</i><sub><i>n</i>+1</sub>[<i>X</i>]<sub>T</sub></div><p>A random variable that depends only on the first <i>n</i> tosses, with <i>E</i>₀[<i>X</i>] = E[<i>X</i>] and <i>E<sub>N</sub></i>[<i>X</i>] = <i>X</i>.</p></div>
+        <div><h4>Martingale</h4><div class="eq"><i>M<sub>n</sub></i> = <i>E<sub>n</sub></i>[<i>M</i><sub><i>n</i>+1</sub>]</div><p>Then E[<i>M<sub>n</sub></i>] is constant in <i>n</i>. Replace = with ≤ for a submartingale and ≥ for a supermartingale.</p></div>
+        <div><h4>Markov process</h4><div class="eq"><i>E<sub>n</sub></i>[<i>f</i>(<i>X</i><sub><i>n</i>+1</sub>)] = <i>g</i>(<i>X<sub>n</sub></i>)</div><p>For every <i>f</i> there is a <i>g</i>. Pricing then needs one value per state, not per path: <i>v<sub>n</sub></i>(<i>s</i>) = [<i>p̃ v</i><sub><i>n</i>+1</sub>(<i>us</i>) + <i>q̃ v</i><sub><i>n</i>+1</sub>(<i>ds</i>)]/(1+<i>r</i>).</p></div>
       </div>
     </section>
   </main>
@@ -549,12 +735,12 @@ $('cp-txt').addEventListener('click', () => st.model && copy(report(), 'Report')
 // ---- tabs (hash routing, ready for more chapters)
 function route(){
   const tabs = [...document.querySelectorAll('[role=tab]')];
-  const want = location.hash.slice(1), map = {'binomial-model':'tab-binomial'};
+  const want = location.hash.slice(1), map = {'binomial-model':'tab-binomial', 'probability':'tab-prob'};
   const id = map[want] || 'tab-binomial';
   tabs.forEach(b => { const on = b.id === id; b.setAttribute('aria-selected', on); $(b.getAttribute('aria-controls')).hidden = !on; });
 }
 document.querySelectorAll('[role=tab]').forEach(b => b.addEventListener('click', () => {
-  const h = {'tab-binomial':'binomial-model'}[b.id]; if (location.hash.slice(1) !== h) location.hash = h; route();
+  const h = {'tab-binomial':'binomial-model', 'tab-prob':'probability'}[b.id]; if (location.hash.slice(1) !== h) location.hash = h; route();
 }));
 addEventListener('hashchange', route);
 route();
@@ -573,6 +759,245 @@ btn.addEventListener('click', () => { const next = eff() === 'dark' ? 'light' : 
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', paint);
 new MutationObserver(m => { if (m.some(r => r.attributeName === 'data-theme')) paint(); }).observe(root, {attributes:true});
 paint();
+})();
+</script>
+<script>
+// ---- Chapter 2: probability on coin-toss space
+(() => {
+const $ = id => document.getElementById(id);
+function g(x, p = 6){
+  if (!isFinite(x)) return String(x);
+  if (x === 0) return '0';
+  const ex = Number(x.toExponential(p-1).split('e')[1]);
+  const trim = s => s.includes('.') ? s.replace(/0+$/,'').replace(/\.$/,'') : s;
+  if (ex < -4 || ex >= p){ const [m, e] = x.toExponential(p-1).split('e'); return trim(m) + 'e' + e; }
+  return trim(x.toFixed(Math.max(0, p-1-ex)));
+}
+const f = (x, p = 6) => g(x, p).replace(/-/g, '−');
+const fs = (x, p = 6) => (x > 0 ? '+' : '') + f(x, p);
+const DEF = {'c2-N':3, 'c2-S0':4, 'c2-u':2, 'c2-d':0.5, 'c2-r':0.25, 'c2-K':5, 'c2-p':'2/3'};
+const XTXT = {
+  SN:'Depends only on the last price. Many paths share the same S_N.',
+  call:'A function of S_N alone, so it inherits the Markov structure of the stock.',
+  max:'Remembers the highest price along the way: path-dependent.',
+  avg:'Remembers every price along the way: path-dependent.'};
+const XNAME = {SN:'S<sub>N</sub>', call:'(S<sub>N</sub> − K)⁺', max:'max S<sub>n</sub>', avg:'average price'};
+const st = {measure:'P', X:'max', csel:'H', proc:'Sd', msel:'', mn:2, mstate:'S', m:null};
+
+function num(id){ const v = $(id).value.trim(); return v === '' ? NaN : Number(v); }
+function frac(s){ s = s.trim(); const m = s.match(/^([0-9.]+)\s*\/\s*([0-9.]+)$/); return m ? Number(m[1])/Number(m[2]) : (s === '' ? NaN : Number(s)); }
+const nH = w => [...w].filter(c => c === 'H').length;
+
+function build(){
+  const N = num('c2-N'), S0 = num('c2-S0'), u = num('c2-u'), d = num('c2-d'), r = num('c2-r'), K = num('c2-K'), p = frac($('c2-p').value);
+  if (!Number.isInteger(N) || N < 1 || N > 5) throw Error('N must be a whole number from 1 to 5. Five tosses already give 32 paths.');
+  if (![S0, u, d, r, K].every(Number.isFinite)) throw Error('Every parameter needs a finite number.');
+  if (!(S0 > 0) || K < 0 || !(0 < d && d < 1+r && 1+r < u)) throw Error('Require S₀ > 0, K ≥ 0 and 0 < d < 1+r < u.');
+  if (!(p > 0 && p < 1)) throw Error('p must lie strictly between 0 and 1. Fractions such as 2/3 work.');
+  const pt = (1+r-d)/(u-d), pm = st.measure === 'P' ? p : pt;
+  const levels = [['']];
+  for (let n = 1; n <= N; n++) levels.push(levels[n-1].flatMap(w => [w+'H', w+'T']));
+  const S = w => S0 * u**nH(w) * d**(w.length - nH(w));
+  const pref = w => Array.from({length: w.length+1}, (_, k) => S(w.slice(0, k)));
+  const X = w => { const s = pref(w), last = s[s.length-1];
+    return st.X === 'SN' ? last : st.X === 'call' ? Math.max(last-K, 0) : st.X === 'max' ? Math.max(...s) : s.reduce((a, b) => a+b, 0)/s.length; };
+  const condUnder = q => { const memo = new Map();
+    const E = w => { if (memo.has(w)) return memo.get(w);
+      const v = w.length === N ? X(w) : q*E(w+'H') + (1-q)*E(w+'T'); memo.set(w, v); return v; };
+    return E; };
+  const E = condUnder(pm), Et = condUnder(pt);
+  const prob = w => pm**nH(w) * (1-pm)**(w.length - nH(w));
+  return {N, S0, u, d, r, K, p, pt, pm, levels, S, pref, X, E, Et, prob};
+}
+
+function recompute(){
+  try { st.m = build(); $('c2-err').hidden = true; }
+  catch (e){ $('c2-err').textContent = e.message; $('c2-err').hidden = false; return; }
+  const N = st.m.N;
+  if (st.csel.length > N) st.csel = st.csel.slice(0, N);
+  if (st.msel.length >= N) st.msel = st.msel.slice(0, N-1);
+  if (st.mn > N) st.mn = N;
+  $('c2-mn').innerHTML = Array.from({length: N+1}, (_, n) => `<option value="${n}"${n === st.mn ? ' selected' : ''}>n = ${n}</option>`).join('');
+  render();
+}
+
+function render(){
+  const m = st.m;
+  $('c2-mP').setAttribute('aria-pressed', st.measure === 'P'); $('c2-mQ').setAttribute('aria-pressed', st.measure === 'Q');
+  const rel = Math.abs(m.p - m.pt) < 1e-12 ? 'equal to' : m.p > m.pt ? 'above' : 'below';
+  $('c2-ptxt').innerHTML = `<i>p</i> = ${f(m.p)} and <i>p̃</i> = (1+r−d)/(u−d) = ${f(m.pt)}. The actual probability is ${rel} the risk-neutral one.`;
+  $('c2-Xtxt').textContent = XTXT[st.X];
+  const EX = m.E('');
+  $('c2-s1').innerHTML = `${st.measure === 'P' ? '<i>p</i>' : '<i>p̃</i>'} = ${f(m.pm)}`;
+  $('c2-s2').textContent = f(EX, 8);
+  $('c2-s3').textContent = f(EX/(1+m.r)**m.N, 8);
+  $('c2-s4').textContent = 2**m.N;
+  renderExpectation(); renderCond(); renderMart(); renderMarkov();
+}
+
+function renderExpectation(){
+  const m = st.m, leaves = m.levels[m.N], groups = new Map();
+  for (const w of leaves){ const x = m.X(w), k = x.toPrecision(10);
+    const gr = groups.get(k) || {x, P:0, n:0}; gr.P += m.prob(w); gr.n++; groups.set(k, gr); }
+  const rows = [...groups.values()].sort((a, b) => b.x - a.x), maxP = Math.max(...rows.map(r => r.P));
+  $('c2-dist').innerHTML = rows.map(r => `<span class="x">${f(r.x, 5)}</span><div class="track"><div class="bar" style="width:${(100*r.P/maxP).toFixed(2)}%"></div></div>
+    <span class="pr">${f(r.P, 4)} <small>· ${r.n} path${r.n > 1 ? 's' : ''}</small></span>`).join('');
+  const terms = rows.slice().reverse().map(r => `${f(r.x, 4)}·${f(r.P, 3)}`);
+  const EX = m.E('');
+  $('c2-esum').innerHTML = `E[X] = Σ x·P(X = x) = ${terms.length > 6 ? terms.slice(0, 5).join(' + ') + ' + …' : terms.join(' + ')} = <b>${f(EX, 8)}</b>`;
+  const P = st.measure === 'P', pr = P ? 'p' : 'p̃', g1 = m.pm*m.u + (1-m.pm)*m.d;
+  const cmp = Math.abs(g1 - (1+m.r)) < 1e-12 ? 'exactly matches' : g1 > 1+m.r ? 'beats' : 'trails';
+  $('c2-idea1').innerHTML = `<h4>Same coin, different weights</h4>
+    <p>One step of the stock grows on average by the factor</p>
+    <div class="eq"><i>${pr}u</i> + (1−<i>${pr}</i>)<i>d</i> = ${f(g1)}</div>
+    <p>which ${cmp} the bank's 1+<i>r</i> = ${f(1+m.r)}. So E[<i>S<sub>N</sub></i>] = ${f(g1)}<sup>${m.N}</sup>·${f(m.S0)} = ${f(m.S0*g1**m.N, 6)}.</p>
+    <p>${P ? 'Under the actual measure the stock earns a risk premium. Switch to <i>P̃</i>: it is the one weighting under which the stock grows like the bank, and that is all “risk-neutral” means.'
+           : 'Under <i>P̃</i> the stock grows exactly like money in the bank. That is the definition of the risk-neutral measure. Discounting E<sup>~</sup>[<i>X</i>] by (1+<i>r</i>)<sup><i>N</i></sup> then gives the no-arbitrage price of a claim paying <i>X</i>.'}</p>`;
+  let tot = 0, totP = 0;
+  $('c2-otab').innerHTML = leaves.map(w => { const P = m.prob(w), x = m.X(w); tot += x*P; totP += P;
+    return `<tr><td class="om">${w}</td><td>${nH(w)}</td><td>${f(P, 6)}</td><td>${f(m.S(w), 6)}</td><td>${f(x, 6)}</td><td>${f(x*P, 6)}</td></tr>`; }).join('');
+  $('c2-ofoot').innerHTML = `<tr><td class="om">Sum</td><td></td><td>${f(totP, 6)}</td><td></td><td></td><td>${f(tot, 8)}</td></tr>`;
+}
+
+// non-recombining tree, heads drawn above tails
+function drawTree(box, opt){
+  const N = st.m.N, leafH = N <= 3 ? 54 : N === 4 ? 36 : 28, two = opt.sub && N <= 4;
+  const bh = Math.min(two ? 38 : 26, leafH - 8), bw = 82, colW = 104, padX = 4, padT = 4, axisH = 22, tail = 52;
+  const W = padX*2 + bw + N*colW + tail, H = padT*2 + 2**N*leafH + axisH;
+  const pos = w => { let i = 0; for (const c of w) i = 2*i + (c === 'T'); const sz = 2**(N - w.length);
+    return [padX + bw/2 + w.length*colW, padT + (i*sz + sz/2)*leafH]; };
+  let out = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="group" aria-label="${opt.aria}">`;
+  const on = [], off = [];
+  for (let n = 0; n < N; n++) for (const w of st.m.levels[n]) for (const c of 'HT'){
+    const [x, y] = pos(w), [xx, yy] = pos(w+c), ln = `<line class="edge${opt.edgeOn(w+c) ? ' on' : ''}" x1="${x+bw/2}" y1="${y}" x2="${xx-bw/2}" y2="${yy}"/>`;
+    (opt.edgeOn(w+c) ? on : off).push(ln); }
+  out += off.join('') + on.join('');
+  for (let n = 0; n <= N; n++) for (const w of st.m.levels[n]){
+    const [x, y] = pos(w), sub = two && n < N ? opt.sub(w) : '';
+    out += `<g class="node${opt.cls(w)}" data-p="${w}" tabindex="0" role="button" aria-label="Node ${w || 'start'}: ${opt.label(w)}">
+      <rect x="${x-bw/2}" y="${y-bh/2}" width="${bw}" height="${bh}" rx="5"/>
+      <text class="v" x="${x}" y="${sub ? y-3 : y+4}" text-anchor="middle">${opt.label(w)}</text>
+      ${sub ? `<text class="dr" x="${x}" y="${y+12}" text-anchor="middle" style="font-size:10.5px">${sub}</text>` : ''}
+      ${n === N ? `<text class="om" x="${x+bw/2+8}" y="${y+4}">${w}</text>` : ''}</g>`;
+  }
+  out += `<g class="axis">`;
+  for (let n = 0; n <= N; n++) out += `<text x="${padX + bw/2 + n*colW}" y="${H-6}" text-anchor="middle">n = ${n}</text>`;
+  box.innerHTML = out + `</g></svg>`;
+}
+function treeKeys(box, pick){
+  box.addEventListener('click', e => { const n = e.target.closest('.node'); if (n && st.m) pick(n.dataset.p); });
+  box.addEventListener('keydown', e => { const n = e.target.closest('.node'); if (!n || (e.key !== 'Enter' && e.key !== ' ') || !st.m) return;
+    e.preventDefault(); const w = n.dataset.p; pick(w); box.querySelector(`.node[data-p="${w}"]`)?.focus(); });
+}
+
+function renderCond(){
+  const m = st.m, s = st.csel, n = s.length, pr = st.measure === 'P' ? 'p' : 'p̃';
+  drawTree($('c2-ctree'), {aria:'Tree of conditional expectations', label: w => f(m.E(w), 5),
+    cls: w => w === s ? ' sel' : (w.startsWith(s) ? ' blk' : ''), edgeOn: w => w.length > n && w.startsWith(s)});
+  const leaves = m.levels[m.N].filter(w => w.startsWith(s));
+  const name = s || 'the start';
+  let h = `<h4>${s ? `After seeing ${s}` : 'Before any toss'}</h4>`;
+  if (n === m.N){
+    h += `<p>All ${m.N} tosses are known, so nothing is left to average: <i>E<sub>${n}</sub></i>[<i>X</i>](${s}) = <i>X</i>(${s}) = ${f(m.X(s), 8)}.</p>
+      <p>Click an earlier node to watch the averaging.</p>`;
+  } else {
+    h += `<p>${s ? `The first ${n} toss${n > 1 ? 'es are' : ' is'} known. ` : 'Nothing is known yet, so the forecast is the plain expectation. '}${leaves.length} outcomes are still possible.</p>
+      <p>One step back from the two children:</p>
+      <div class="eq"><i>E<sub>${n}</sub></i>[<i>X</i>](${s || '·'}) = <i>${pr}</i>·${f(m.E(s+'H'), 5)} + (1−<i>${pr}</i>)·${f(m.E(s+'T'), 5)} = <b>${f(m.E(s), 7)}</b></div>
+      <p>Same number as averaging the ${leaves.length} leaves directly, each weighted by its probability given ${name}:</p>
+      <dl class="kv">${leaves.map(w => { const rest = w.slice(n); const P = m.pm**nH(rest)*(1-m.pm)**(rest.length-nH(rest));
+        return `<dt><span style="font-family:var(--f-mono)">${s}<b style="color:var(--path)">${rest}</b></span></dt><dd>${f(m.X(w), 5)} × ${f(P, 4)}</dd>`; }).join('')}</dl>`;
+  }
+  h += `<h4 style="margin-top:12px">Five rules it obeys</h4><ol>
+    <li>Linearity: <i>E<sub>n</sub></i>[<i>aX</i>+<i>bY</i>] = <i>aE<sub>n</sub></i>[<i>X</i>] + <i>bE<sub>n</sub></i>[<i>Y</i>].</li>
+    <li>Taking out what is known: <i>E<sub>n</sub></i>[<i>XY</i>] = <i>X E<sub>n</sub></i>[<i>Y</i>] if <i>X</i> depends on the first <i>n</i> tosses only.</li>
+    <li>Iterated conditioning: <i>E<sub>n</sub></i>[<i>E<sub>m</sub></i>[<i>X</i>]] = <i>E<sub>n</sub></i>[<i>X</i>] for <i>n</i> ≤ <i>m</i>.</li>
+    <li>Independence: <i>E<sub>n</sub></i>[<i>X</i>] = E[<i>X</i>] if <i>X</i> depends only on tosses after <i>n</i>.</li>
+    <li>Jensen: <i>E<sub>n</sub></i>[φ(<i>X</i>)] ≥ φ(<i>E<sub>n</sub></i>[<i>X</i>]) for convex φ.</li></ol>`;
+  $('c2-cnode').innerHTML = h;
+}
+
+function procFn(m){
+  const disc = w => (1+m.r)**w.length;
+  return {S: w => m.S(w), Sd: w => m.S(w)/disc(w), V: w => m.Et(w)/(1+m.r)**m.N, Doob: w => m.E(w)}[st.proc];
+}
+function renderMart(){
+  const m = st.m, M = procFn(m), q = m.pm, pr = st.measure === 'P' ? 'p' : 'p̃';
+  const drift = w => q*M(w+'H') + (1-q)*M(w+'T') - M(w);
+  const tol = w => 1e-9*Math.max(1, Math.abs(M(w)));
+  let up = 0, dn = 0;
+  for (let n = 0; n < m.N; n++) for (const w of m.levels[n]){ const dr = drift(w); if (dr > tol(w)) up++; else if (dr < -tol(w)) dn++; }
+  drawTree($('c2-mtree'), {aria:'Martingale check tree', label: w => f(M(w), 5),
+    sub: w => { const dr = drift(w); return 'Δ ' + (Math.abs(dr) <= tol(w) ? '0' : fs(dr, 3)); },
+    cls: w => { let c = w === st.msel ? ' sel' : '';
+      if (w.length < m.N){ const dr = drift(w); c += dr > tol(w) ? ' up' : dr < -tol(w) ? ' dn' : ' zero'; } return c; },
+    edgeOn: w => w.length === st.msel.length + 1 && w.startsWith(st.msel)});
+  const kind = !up && !dn ? ['Martingale', 'yes'] : !dn ? ['Submartingale', 'warn'] : !up ? ['Supermartingale', 'warn'] : ['Neither', 'no'];
+  const meas = st.measure === 'P' ? 'actual <i>P</i>' : 'risk-neutral <i>P̃</i>';
+  $('c2-mverdict').innerHTML = `<span class="pill ${kind[1]}">${kind[0].toUpperCase()}</span><span style="font-size:13px">under ${meas}</span>`;
+  const desc = {
+    Martingale:'At every node the expected next value equals the current value. The best forecast of tomorrow is today, so E[<i>M<sub>n</sub></i>] is the same for every <i>n</i>.',
+    Submartingale:'It rises on average: at every node the expected next value is at least the current one.',
+    Supermartingale:'It falls on average: at every node the expected next value is at most the current one.',
+    Neither:'It drifts up at some nodes and down at others.'}[kind[0]];
+  const why = {
+    S: `Undiscounted, the stock is expected to grow by the factor <i>${pr}u</i> + (1−<i>${pr}</i>)<i>d</i> each step. It cannot be a martingale unless that factor is 1. Discount it to compare with the bank.`,
+    Sd: st.measure === 'Q' ? 'This is the defining property of <i>P̃</i>: the discounted stock is a <i>P̃</i>-martingale. Prices that are martingales leave no free lunch.'
+      : `Under the actual measure the discounted stock is a martingale only if <i>p</i> = <i>p̃</i>. Here <i>p</i> − <i>p̃</i> = ${fs(m.p - m.pt, 4)}, so ${m.p > m.pt ? 'the stock outruns the bank on average' : m.p < m.pt ? 'the stock lags the bank on average' : 'there is no risk premium'}.`,
+    V: st.measure === 'Q' ? `The discounted risk-neutral price of a claim paying <i>X</i> at time ${m.N}. It is a <i>P̃</i>-martingale by construction, and so is the discounted wealth of any self-financing portfolio.`
+      : 'Prices are computed with <i>p̃</i>, but the drift here is measured with <i>p</i>. The discounted price is generally not a martingale under the real-world measure.',
+    Doob: 'Any forecast process is a martingale under the measure that made it: by iterated conditioning <i>E<sub>n</sub></i>[<i>E</i><sub><i>n</i>+1</sub>[<i>X</i>]] = <i>E<sub>n</sub></i>[<i>X</i>]. Try every measure and every <i>X</i>; it never fails.'}[st.proc];
+  $('c2-mtext').innerHTML = `<p>${desc}</p><p>${why}</p>`;
+  const s = st.msel, n = s.length;
+  $('c2-mnode').innerHTML = `<h4>At node ${s || 'start'} (n = ${n})</h4>
+    <div class="eq"><i>E<sub>${n}</sub></i>[<i>M</i><sub>${n+1}</sub>] = <i>${pr}</i>·${f(M(s+'H'), 5)} + (1−<i>${pr}</i>)·${f(M(s+'T'), 5)} = ${f(M(s)+drift(s), 6)}</div>
+    <p>Current value <i>M<sub>${n}</sub></i> = ${f(M(s), 6)}, expected change ${fs(drift(s), 4)}. Click another node to check it.</p>`;
+}
+
+function renderMarkov(){
+  const m = st.m, n = st.mn, groups = new Map();
+  for (const w of m.levels[n]){
+    const s = m.pref(w), Sn = s[n];
+    const extra = st.mstate === 'M' ? Math.max(...s) : st.mstate === 'Y' ? s.reduce((a, b) => a+b, 0) : null;
+    const key = Sn.toPrecision(10) + (extra === null ? '' : '|' + extra.toPrecision(10));
+    const gr = groups.get(key) || {Sn, extra, paths:[], vals:[]}; gr.paths.push(w); gr.vals.push(m.E(w)); groups.set(key, gr);
+  }
+  const rows = [...groups.values()].sort((a, b) => b.Sn - a.Sn || (b.extra ?? 0) - (a.extra ?? 0));
+  let bad = 0;
+  $('c2-mk').innerHTML = rows.map(r => {
+    const uniq = [...new Set(r.vals.map(v => v.toPrecision(10)))].map(Number), ok = uniq.length === 1; if (!ok) bad++;
+    const label = st.mstate === 'S' ? `S = ${f(r.Sn, 5)}` : `(${f(r.Sn, 5)}, ${f(r.extra, 5)})`;
+    return `<tr><td class="st">${label}</td><td class="paths">${r.paths.map(p => p || '∅').join(' ')}</td>
+      <td class="vals">${uniq.map(v => f(v, 6)).join(', ')}</td><td><span class="pill ${ok ? 'yes' : 'no'}">${ok ? 'YES' : 'NO'}</span></td></tr>`; }).join('');
+  const P = 2**n, k = rows.length, stName = {S:'<i>S<sub>n</sub></i>', M:'(<i>S<sub>n</sub></i>, <i>M<sub>n</sub></i>)', Y:'(<i>S<sub>n</sub></i>, <i>Y<sub>n</sub></i>)'}[st.mstate];
+  let h = `<h4>${P} path${P > 1 ? 's' : ''} collapse to ${k} state${k > 1 ? 's' : ''}</h4>`;
+  if (!bad){
+    h += `<p><span class="pill yes">FUNCTION OF THE STATE</span></p><p>Every group agrees, so at time ${n} the forecast of ${XNAME[st.X]} can be written <i>g<sub>${n}</sub></i>(${stName}). The path detail inside a group is irrelevant.</p>`;
+    if (st.mstate === 'S') h += `<p>This is the Markov property of the stock: the next price is today's times <i>u</i> or <i>d</i>, whatever happened before. Pricing then runs on the recombining tree,</p><div class="eq"><i>g<sub>n</sub></i>(<i>s</i>) = <i>p</i> <i>g</i><sub><i>n</i>+1</sub>(<i>us</i>) + <i>q</i> <i>g</i><sub><i>n</i>+1</sub>(<i>ds</i>),</div><p>with <i>N</i>+1 states at maturity instead of 2<sup><i>N</i></sup> paths.</p>`;
+    else h += `<p>The pair ${stName} is a Markov process even when the stock price alone is not enough. The extra coordinate stores exactly the memory that ${XNAME[st.X]} needs.</p>`;
+    if (n === 0 || n === 1) h += `<p>At early times every path has its own state, so agreement is automatic. Move to a later <i>n</i> for a real test.</p>`;
+  } else {
+    const need = st.X === 'max' ? 'the running maximum <i>M<sub>n</sub></i> = max<sub><i>k</i>≤<i>n</i></sub> <i>S<sub>k</sub></i>' : 'the running sum <i>Y<sub>n</sub></i> = <i>S</i>₀ + … + <i>S<sub>n</sub></i>';
+    h += `<p><span class="pill no">NEEDS MORE MEMORY</span></p><p>${bad} state${bad > 1 ? 's hold' : ' holds'} paths with the same ${stName} but different forecasts. ${XNAME[st.X]} remembers the route, so ${stName} alone does not determine the future of <i>X</i>.</p>
+      <p>Add ${need} to the state. The pair is Markov, and the forecast becomes a function of it again.</p>`;
+  }
+  $('c2-mkidea').innerHTML = h;
+}
+
+// ---- events
+Object.keys(DEF).forEach(id => $(id).addEventListener('input', recompute));
+$('c2-reset').addEventListener('click', () => { Object.entries(DEF).forEach(([id, v]) => $(id).value = v); recompute(); });
+$('c2-mP').addEventListener('click', () => { st.measure = 'P'; recompute(); });
+$('c2-mQ').addEventListener('click', () => { st.measure = 'Q'; recompute(); });
+$('c2-X').addEventListener('change', e => { st.X = e.target.value; recompute(); });
+$('c2-proc').addEventListener('change', e => { st.proc = e.target.value; st.m && renderMart(); });
+$('c2-mn').addEventListener('change', e => { st.mn = +e.target.value; st.m && renderMarkov(); });
+const stBtns = {S:'c2-stS', M:'c2-stM', Y:'c2-stY'};
+Object.entries(stBtns).forEach(([k, id]) => $(id).addEventListener('click', () => {
+  st.mstate = k; Object.entries(stBtns).forEach(([kk, ii]) => $(ii).setAttribute('aria-pressed', kk === k)); st.m && renderMarkov(); }));
+treeKeys($('c2-ctree'), w => { st.csel = w; renderCond(); });
+treeKeys($('c2-mtree'), w => { if (w.length < st.m.N){ st.msel = w; renderMart(); } });
+recompute();
 })();
 </script>
 </body>
