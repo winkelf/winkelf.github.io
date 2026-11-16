@@ -197,7 +197,43 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--truth); out
 .card { display: grid; gap: 8px; align-content: start; padding: 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 0; }
 .card h3 { margin: 0; font-family: var(--f-display); font-stretch: 82%; font-weight: 700; font-size: 18px; }
 .card p { margin: 0; font-size: 14px; }
-.card svg { width: 100%; height: auto; max-height: 130px; }
+.card svg { width: 100%; height: auto; max-height: 210px; }
+.card { transition: border-color .2s, box-shadow .2s; }
+.card.sync { border-color: var(--truth); box-shadow: inset 0 0 0 1px var(--truth); }
+.gdlg { width: min(720px, calc(100vw - 32px)); max-height: calc(100vh - 48px); padding: 0; border: 1px solid var(--line); border-radius: 0; background: var(--panel); color: var(--fg); }
+.gdlg::backdrop { background: color-mix(in srgb, var(--bg) 70%, transparent); }
+.gdhead { position: sticky; top: 0; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 18px; background: var(--panel); border-bottom: 1px solid var(--line); }
+.gdhead h3 { margin: 0; font-family: var(--f-display); font-stretch: 82%; font-weight: 700; font-size: 22px; }
+.gdbody { padding: 6px 18px 18px; display: grid; gap: 10px; font-size: 14.5px; }
+.gdbody h4 { margin: 10px 0 0; font-family: var(--f-display); font-stretch: 85%; font-weight: 700; font-size: 17px; }
+.gdbody p, .gdbody ol, .gdbody ul { margin: 0; } .gdbody li + li { margin-top: 6px; }
+.gdbody .eq { background: var(--bg); border-left: 2px solid var(--truth); padding: 2px 12px; overflow-x: auto; overflow-y: hidden; }
+.gdbody .katex { font-size: 1.05em; }
+.gdbody .aside { font-size: 13.5px; color: var(--muted); }
+.cardsbar { display: grid; gap: 8px; justify-items: start; }
+.cards.sketchmode .cardbar { display: none; }
+.cards.sketchmode .card svg { max-height: 130px; }
+.cardbar { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+.cardbar button { font-size: 12.5px; padding: 4px 9px; }
+.synctag { font-family: var(--f-mono); font-size: 11.5px; color: var(--truth); visibility: hidden; }
+.card.sync .synctag { visibility: visible; }
+.fy .em { opacity: .2; transition: opacity .3s; cursor: pointer; }
+.fy .em.on, .fy .em.hl { opacity: 1; }
+.fy .em .g { stroke-width: 1.3; }
+.fy .em .dot { fill: var(--truth); stroke: none; }
+.fy .em:not(.on) .dot { fill: var(--panel); stroke: var(--muted); stroke-width: 1; }
+.fy .num { fill: var(--panel); font-size: 8.5px; font-weight: 600; text-anchor: middle; }
+.fy .em:not(.on) .num { opacity: 0; }
+.fy .em.hl .g { stroke: var(--c-ph); stroke-width: 1.8; }
+.fy .em.hl .dot { fill: var(--c-ph); stroke: none; }
+.fy .em.hl .num { opacity: 1; fill: var(--panel); }
+.fy .hit { stroke: transparent; stroke-width: 12; pointer-events: stroke; }
+.fy .ant { fill: color-mix(in srgb, var(--truth) 12%, transparent); stroke: none; }
+.fy .kick { opacity: .35; }
+.fy .kick.go { animation: kick .45s ease-out; }
+@keyframes kick { 0% { opacity: 1; transform: translate(5px, 2px); } 100% { opacity: .35; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .fy .kick.go { animation: none; } .fy .em { transition: none; } }
+#lund { touch-action: pan-y; }
 
 .hadro { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 @media (max-width: 760px) { .hadro { grid-template-columns: minmax(0, 1fr); } }
@@ -515,6 +551,7 @@ button { font-family: var(--f-display); font-weight: 600; font-size: 13px; lette
             <div class="btns">
               <button class="primary" type="button" id="lundPlay" data-i18n="play"></button>
               <button type="button" id="lundNew" data-i18n="newShower"></button>
+              <button type="button" id="genOpen" aria-haspopup="dialog" data-i18n="genBtn"></button>
             </div>
           </div>
           <div class="who" id="ordWho"></div>
@@ -522,12 +559,24 @@ button { font-family: var(--f-display); font-weight: 600; font-size: 13px; lette
           <p class="cap" data-i18n="lundCap"></p>
         </div>
       </div>
+      <div class="cardsbar">
+        <div class="seg mini" role="radiogroup" id="cardViewGroup">
+          <input type="radio" name="cardview" id="cv-sketch" value="sketch"><label for="cv-sketch" data-i18n="cvSketch"></label>
+          <input type="radio" name="cardview" id="cv-anim" value="anim" checked><label for="cv-anim" data-i18n="cvAnim"></label>
+        </div>
+        <p class="cap" id="cardsCap" data-i18n="cardsCap"></p>
+      </div>
       <div class="cards">
-        <div class="card"><svg class="fy" id="sk1" viewBox="0 0 200 110" aria-hidden="true"></svg><h3 data-i18n="c1h"></h3><div class="who">Herwig 7 (q̃)</div><p data-i18n="c1p"></p></div>
-        <div class="card"><svg class="fy" id="sk2" viewBox="0 0 200 110" aria-hidden="true"></svg><h3 data-i18n="c2h"></h3><div class="who">Pythia 8 · Sherpa CSShower · Herwig 7 dipole · Dire</div><p data-i18n="c2p"></p></div>
-        <div class="card"><svg class="fy" id="sk3" viewBox="0 0 200 110" aria-hidden="true"></svg><h3 data-i18n="c3h"></h3><div class="who">Vincia · PanScales · Alaric (Sherpa 3)</div><p data-i18n="c3p"></p></div>
+        <div class="card"><svg class="fy" id="sk1" viewBox="0 0 300 174" aria-hidden="true"></svg><div class="cardbar"><button type="button" class="cardplay" data-ord="angle" data-i18n="cardPlay"></button><span class="synctag" data-i18n="syncTag"></span></div><h3 data-i18n="c1h"></h3><div class="who">Herwig 7 (q̃)</div><p data-i18n="c1p"></p></div>
+        <div class="card"><svg class="fy" id="sk2" viewBox="0 0 300 174" aria-hidden="true"></svg><div class="cardbar"><button type="button" class="cardplay" data-ord="kt" data-i18n="cardPlay"></button><span class="synctag" data-i18n="syncTag"></span></div><h3 data-i18n="c2h"></h3><div class="who">Pythia 8 · Sherpa CSShower · Herwig 7 dipole · Dire</div><p data-i18n="c2p"></p></div>
+        <div class="card"><svg class="fy" id="sk3" viewBox="0 0 300 174" aria-hidden="true"></svg><div class="cardbar"><button type="button" class="cardplay" data-ord="kt" data-i18n="cardPlay"></button><span class="synctag" data-i18n="syncTag"></span></div><h3 data-i18n="c3h"></h3><div class="who">Vincia · PanScales · Alaric (Sherpa 3)</div><p data-i18n="c3p"></p></div>
       </div>
     </section>
+
+    <dialog id="genDlg" class="gdlg" aria-labelledby="genTitle">
+      <div class="gdhead"><h3 id="genTitle" data-i18n="genTitle"></h3><button type="button" id="genClose" aria-label="Close">✕</button></div>
+      <div class="gdbody" data-i18n="genBody"></div>
+    </dialog>
 
     <!-- 3 hadronization -->
     <section class="tsec" id="sec-had">
@@ -696,6 +745,9 @@ button { font-family: var(--f-display); font-weight: 600; font-size: 13px; lette
   </div>
 </div>
 
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script>
@@ -759,6 +811,10 @@ button { font-family: var(--f-display); font-weight: 600; font-size: 13px; lette
       c2h: 'Dipolos ordenados en k<sub>t</sub>', c2p: 'Cada emisión la hace un dipolo de color: un emisor radia y un espectador absorbe el retroceso, así se conserva el momento en cada paso. Ordenar en k<sub>t</sub> facilita combinar con elementos de matriz de varias multiplicidades.',
       c3h: 'Antenas y showers NLL', c3p: 'Una antena trata al par de color como un único radiador. La generación reciente cuida cómo se reparte el retroceso para alcanzar precisión logarítmica de siguiente orden (NLL), que los showers anteriores pierden en algunos observables.',
       sk: { emit: 'emisor', spec: 'espectador', recoil: 'retroceso', ant: 'antena' },
+      cardsCap: 'Cada tarjeta dibuja las mismas emisiones del plano de Lund como un diagrama: el gluón sale del quark con su ángulo Δ y con un largo que crece con ln k<sub>t</sub>, y el número indica su lugar en el orden de ese esquema. Al reproducir, solo la tarjeta que comparte el orden elegido se anima junto con el plano (queda resaltada y coincide punto por punto); las demás muestran el shower completo. Pasá el mouse por un punto o por un gluón para ver la misma emisión en todas las vistas.',
+      genBtn: '¿Cómo se generan?', genTitle: 'Cómo genera las emisiones un shower real',
+      genBody: '<p class="aside">En este plano de Lund el número de emisiones está fijo en 18 para que el gráfico se vea lleno: es una elección de ilustración, no un resultado físico. Las posiciones sí siguen aproximadamente la densidad correcta.</p><h4>Una emisión por vez</h4><p>Un shower real no recibe como dato cuántas emisiones hacer. Las genera de a una, y el número es lo que resulta cuando se detiene:</p><ol><li><b>Empieza</b> con un partón a la escala dura \\(t_0 \\sim Q\\). La variable \\(t\\) es la de evolución de cada esquema: \\(\\tilde q\\) en Herwig, \\(k_t\\) en Pythia, etc.</li><li><b>Elige la escala de la próxima emisión</b> \\(t < t_{\\text{actual}}\\) con el factor de forma de Sudakov, la probabilidad de que <i>no</i> haya emisión entre las dos escalas:<div class="eq">\\[ \\Delta(t_{\\text{actual}},\\,t) = \\exp\\left[-\\int_{t}^{t_{\\text{actual}}}\\frac{dt\'}{t\'}\\int dz\\,\\frac{\\alpha_s}{2\\pi}\\,P(z)\\right] \\]</div>Se sortea \\(r \\in (0,1)\\) y se resuelve \\(\\Delta = r\\). En la práctica se usa el <b>algoritmo de veto</b>: se muestrea de una cota superior más simple y se acepta cada intento con probabilidad (valor verdadero)/(cota).</li><li><b>Si \\(t\\) queda sobre el corte</b> \\(t_{\\text{cut}}\\) (\\(k_t \\sim Q_0 \\approx 1\\) GeV), se hace la emisión: se sortea \\(z\\) (y \\(\\varphi\\)) según la función de splitting \\(P(z)\\), se aplica el retroceso (dipolo, antena…) y se repite el paso 2 desde \\(t\\).</li><li><b>Si \\(t\\) cae bajo el corte</b>, ese partón deja de radiar. Cada partón saliente, incluidos los gluones emitidos, sigue su propia cadena: esas son las ramas secundarias. En el plano de Lund primario solo aparecen las emisiones del partón principal.</li></ol><p>Así, la multiplicidad es una variable aleatoria que cambia de evento a evento.</p><h4>Qué fija el número típico</h4><p>A orden logarítmico dominante, la densidad de emisiones primarias en el plano de Lund es casi uniforme:</p><div class="eq">\\[ dN \\simeq \\frac{2\\alpha_s C}{\\pi}\\; d\\ln\\frac{1}{\\Delta}\\; d\\ln k_t \\]</div><ul><li>\\(C = C_F = 4/3\\) para un jet de quark y \\(C_A = 3\\) para uno de gluón: los jets de gluón radian unas \\(9/4\\) veces más.</li><li>El número medio de emisiones primarias es esa densidad por el área del triángulo, \\(\\approx \\tfrac12 \\left[\\ln(p_T R/Q_0)\\right]^2\\). Para \\(p_T = 200\\) GeV y \\(R = 0.4\\) el área es \\(\\approx 9.6\\).</li><li>Con \\(\\alpha_s\\) corriendo entre \\(\\sim 0.15\\) y \\(\\sim 0.5\\) (más grande a \\(k_t\\) bajo), salen unas pocas emisiones primarias por encima de 1 GeV en un jet de quark, y alrededor del doble en uno de gluón. En esa aproximación el conteo es casi poissoniano.</li><li>Sumando las ramas secundarias, al final del shower hay muchos más partones: decenas. Ese número crece con la energía del jet aproximadamente como \\(\\exp\\sqrt{c\\,\\ln Q}\\), como predice MLLA.</li></ul>',
+      cvSketch: 'Esquemas', cvAnim: 'Emisiones del plano', cardPlay: 'Ver este orden en el plano', syncTag: '⇄ en sincronía con el plano',
       hadP: '<p>Al llegar a Q<sub>0</sub> el shower termina con decenas de quarks y gluones con color. El confinamiento los convierte en hadrones a distancias de ~1 fm, donde no hay teoría perturbativa: se usan modelos con parámetros ajustados a datos, sobre todo de LEP. Mové el tiempo para comparar los dos que se usan hoy.</p>',
       strH: 'Cuerdas de Lund', strP: 'Entre un quark y un antiquark se estira un tubo de flujo de color con tensión κ ≈ 1 GeV/fm. Los gluones son quiebres (kinks) en la cuerda. Cuando hay energía suficiente, la cuerda se rompe creando pares q q̄ por efecto túnel, y cada tramo forma un hadrón. Describe bien la supresión de quarks s y las correlaciones entre hadrones vecinos.',
       cluH: 'Clusters', cluP: 'Por preconfinamiento, los partones vecinos en color forman sistemas sin color de masa acotada. Cada gluón se parte en un par q q̄, los pares vecinos forman clusters y cada cluster decae en dos hadrones, casi por espacio de fase. Los clusters muy pesados primero se dividen.',
@@ -868,6 +924,10 @@ button { font-family: var(--f-display); font-weight: 600; font-size: 13px; lette
       c2h: 'k<sub>t</sub>-ordered dipoles', c2p: 'Each emission comes from a colour dipole: an emitter radiates and a spectator absorbs the recoil, so momentum is conserved at every step. Ordering in k<sub>t</sub> makes it easier to merge with matrix elements of several multiplicities.',
       c3h: 'Antennae and NLL showers', c3p: 'An antenna treats the colour pair as a single radiator. The latest generation takes care of how recoil is shared so the shower reaches next-to-leading-logarithmic (NLL) accuracy, which earlier showers lose for some observables.',
       sk: { emit: 'emitter', spec: 'spectator', recoil: 'recoil', ant: 'antenna' },
+      cardsCap: 'Each card draws the same emissions as the Lund plane as a diagram: the gluon leaves the quark at its angle Δ, with a length that grows with ln k<sub>t</sub>, and the number gives its place in that scheme\'s order. On play, only the card that shares the chosen order animates with the plane (it is highlighted and matches it point for point); the others show the complete shower. Hover a point or a gluon to see the same emission in every view.',
+      genBtn: 'How are they generated?', genTitle: 'How a real shower generates emissions',
+      genBody: '<p class="aside">In this Lund plane the number of emissions is fixed at 18 so the plot looks full: it is an illustrative choice, not a physical result. The positions do roughly follow the right density.</p><h4>One emission at a time</h4><p>A real shower is never told how many emissions to make. It generates them one by one, and the count is whatever comes out when it stops:</p><ol><li><b>Start</b> with a parton at the hard scale \\(t_0 \\sim Q\\). The variable \\(t\\) is each scheme\'s evolution variable: \\(\\tilde q\\) in Herwig, \\(k_t\\) in Pythia, and so on.</li><li><b>Pick the next emission scale</b> \\(t < t_{\\text{current}}\\) with the Sudakov form factor, the probability of <i>no</i> emission between the two scales:<div class="eq">\\[ \\Delta(t_{\\text{current}},\\,t) = \\exp\\left[-\\int_{t}^{t_{\\text{current}}}\\frac{dt\'}{t\'}\\int dz\\,\\frac{\\alpha_s}{2\\pi}\\,P(z)\\right] \\]</div>Draw \\(r \\in (0,1)\\) and solve \\(\\Delta = r\\). In practice generators use the <b>veto algorithm</b>: sample from a simpler overestimate and accept each trial with probability (true value)/(overestimate).</li><li><b>If \\(t\\) is above the cutoff</b> \\(t_{\\text{cut}}\\) (\\(k_t \\sim Q_0 \\approx 1\\) GeV), make the emission: sample \\(z\\) (and \\(\\varphi\\)) from the splitting function \\(P(z)\\), apply recoil (dipole, antenna, …) and repeat step 2 from \\(t\\).</li><li><b>If \\(t\\) falls below the cutoff</b>, that parton stops radiating. Every outgoing parton, including the emitted gluons, runs its own chain: those are the secondary branches. Only the leading parton\'s emissions appear in the primary Lund plane.</li></ol><p>So the multiplicity is a random variable that changes from event to event.</p><h4>What sets the typical number</h4><p>At leading log, the density of primary emissions in the Lund plane is nearly uniform:</p><div class="eq">\\[ dN \\simeq \\frac{2\\alpha_s C}{\\pi}\\; d\\ln\\frac{1}{\\Delta}\\; d\\ln k_t \\]</div><ul><li>\\(C = C_F = 4/3\\) for a quark jet and \\(C_A = 3\\) for a gluon jet: gluon jets radiate about \\(9/4\\) as much.</li><li>The mean number of primary emissions is that density times the triangle\'s area, \\(\\approx \\tfrac12 \\left[\\ln(p_T R/Q_0)\\right]^2\\). For \\(p_T = 200\\) GeV and \\(R = 0.4\\) the area is \\(\\approx 9.6\\).</li><li>With \\(\\alpha_s\\) running between \\(\\sim 0.15\\) and \\(\\sim 0.5\\) (larger at low \\(k_t\\)), a quark jet gets a few primary emissions above 1 GeV and a gluon jet about twice as many. In that approximation the count is close to Poisson.</li><li>Adding the secondary branches, the shower ends with many more partons: dozens. That number grows with the jet energy roughly like \\(\\exp\\sqrt{c\\,\\ln Q}\\), as MLLA predicts.</li></ul>',
+      cvSketch: 'Schematics', cvAnim: 'Plane emissions', cardPlay: 'Show this order in the plane', syncTag: '⇄ in sync with the plane',
       hadP: '<p>When it reaches Q<sub>0</sub> the shower ends with dozens of coloured quarks and gluons. Confinement turns them into hadrons at distances of ~1 fm, where there is no perturbative theory, so models with parameters tuned to data (mostly from LEP) are used. Move the time slider to compare the two in use today.</p>',
       strH: 'Lund strings', strP: 'A colour flux tube with tension κ ≈ 1 GeV/fm stretches between a quark and an antiquark. Gluons are kinks on the string. Once there is enough energy, the string breaks by tunnelling q q̄ pairs out of the vacuum, and each piece becomes a hadron. It describes strangeness suppression and correlations between neighbouring hadrons well.',
       cluH: 'Clusters', cluP: 'Thanks to preconfinement, colour-neighbouring partons form colourless systems of limited mass. Each gluon splits into a q q̄ pair, neighbouring pairs form clusters, and each cluster decays into two hadrons, close to phase space. Very heavy clusters split first.',
@@ -1343,7 +1403,20 @@ button { font-family: var(--f-display); font-weight: 600; font-size: 13px; lette
     document.getElementById('procCap').innerHTML = T_().procCap[p];
   }
 
-  function drawSketches() {
+  // ---------- shower cards: the Lund-plane emissions drawn as emission diagrams ----------
+  const CARDS = [{ id: 'sk1', order: 'angle' }, { id: 'sk2', order: 'kt', kind: 'dipole' }, { id: 'sk3', order: 'kt', kind: 'antenna' }];
+  function gluonPath(ax, ay, bx, by) {
+    const dx = bx - ax, dy = by - ay, len = Math.hypot(dx, dy), ux = dx / len, uy = dy / len, nx = uy, ny = -ux;
+    const N = Math.max(2, Math.round(len / 5.5)), r = len / (2 * Math.PI * N), d = 2.1, steps = N * 12;
+    let p = '';
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps * 2 * Math.PI * N, al = r * t - d * Math.sin(t), off = d - d * Math.cos(t);
+      p += (i ? 'L' : 'M') + (ax + ux * al + nx * off).toFixed(1) + ' ' + (ay + uy * al + ny * off).toFixed(1);
+    }
+    return p;
+  }
+  // schematic pictures of each scheme (the alternative to the animated emission diagrams)
+  function drawSchematics() {
     const sk = T_().sk;
     // angular ordering: successive emissions at shrinking angles
     document.getElementById('sk1').innerHTML = fey([
@@ -1367,9 +1440,61 @@ button { font-family: var(--f-display); font-weight: 600; font-size: 13px; lette
       { t: 'g', a: [100, 46], b: [100, 4] },
     ], `<path class="colr" d="M22 40 Q100 60 178 40"/><text x="112" y="70" class="sm">${sk.ant}</text>` + vtx([[100, 50]]));
   }
+  function drawSketches() {
+    const sketch = lund.cardView === 'sketch', cardsEl = document.querySelector('#sec-ps .cards');
+    cardsEl.classList.toggle('sketchmode', sketch);
+    document.getElementById('cardsCap').hidden = sketch;
+    for (const c of CARDS) document.getElementById(c.id).setAttribute('viewBox', sketch ? '0 0 200 110' : '0 0 300 174');
+    if (sketch) { cardsEl.querySelectorAll('.card.sync').forEach(el => el.classList.remove('sync')); drawSchematics(); return; }
+    const sk = T_().sk, Y = 130, VX0 = 24, VX1 = 216;
+    for (const c of CARDS) {
+      const idx = lund.pts.map((_, i) => i).sort((a, b) => lscore(lund.pts[b], c.order) - lscore(lund.pts[a], c.order));
+      const n = idx.length;
+      let h = '';
+      if (c.kind) {
+        if (c.kind === 'antenna') h += `<path class="ant" d="M12 ${Y} L230 ${Y} L104 162 Z"/>`;
+        h += fey([{ t: 'f', a: [104, 162], b: [12, Y] }]);
+        h += `<g class="kick"><line class="recoil" x1="110" y1="162" x2="124" y2="167.5"/><path class="recoilhead" d="M130 170 L120 170 L123 163 Z"/></g>`;
+        h += `<text class="sm" x="14" y="170">${c.kind === 'dipole' ? 'q̄ · ' + sk.spec : 'q̄'}</text><text class="sm" x="134" y="171">${sk.recoil}</text>`;
+        if (c.kind === 'antenna') h += `<text class="sm" x="122" y="152">${sk.ant} q q̄</text><g class="kick"><line class="recoil" x1="282" y1="${Y}" x2="290" y2="${Y}"/><path class="recoilhead" d="M297 ${Y} L289 ${Y - 4} L289 ${Y + 4} Z"/></g>`;
+      }
+      h += fey([{ t: 'f', a: [12, Y], b: [c.kind === 'antenna' ? 280 : 296, Y] }]);
+      h += `<text class="sm" x="296" y="${Y + 16}" text-anchor="end">q${c.kind === 'dipole' ? ' · ' + sk.emit : ''}</text>`;
+      h += `<text class="sm" x="296" y="13" text-anchor="end">${c.order === 'angle' ? 'θ₁ > θ₂ > θ₃ > …' : 'kₜ₁ > kₜ₂ > kₜ₃ > …'}</text>`;
+      h += `<circle class="vtx" cx="12" cy="${Y}" r="3.2"/>`;
+      idx.forEach((pi, k) => {
+        const p = lund.pts[pi], vx = VX0 + (VX1 - VX0) * k / (n - 1);
+        const phi = (8 + 68 * (1 - p.x / LY)) * Math.PI / 180, L = 16 + 102 * Math.max(0, p.y) / LY;
+        const ex = vx + L * Math.cos(phi), ey = Y - L * Math.sin(phi);
+        h += `<g class="em" data-i="${pi}"><line class="hit" x1="${vx}" y1="${Y}" x2="${ex.toFixed(1)}" y2="${ey.toFixed(1)}"/><path class="g" d="${gluonPath(vx, Y, ex, ey)}"/><circle class="vtx" cx="${vx.toFixed(1)}" cy="${Y}" r="1.8"/><circle class="dot" cx="${ex.toFixed(1)}" cy="${ey.toFixed(1)}" r="6.5"/><text class="num" x="${ex.toFixed(1)}" y="${(ey + 3).toFixed(1)}">${k + 1}</text></g>`;
+      });
+      document.getElementById(c.id).innerHTML = h;
+      c.n = undefined;
+    }
+    updateCards();
+  }
+  // reveal each card's emissions with the Lund clock, in that card's own evolution order
+  function updateCards() {
+    if (lund.cardView === 'sketch') return;
+    for (const c of CARDS) {
+      // only the card whose order is selected in the Lund plane follows the animation; the others stay complete
+      const sync = c.id === lund.card && c.order === lund.order, svg = document.getElementById(c.id), [lo, hi] = lrange(c.order), v = sync ? hi - lund.s * (hi - lo) : -Infinity;
+      let n = 0;
+      svg.querySelectorAll('.em').forEach(g => {
+        const i = +g.dataset.i, on = lscore(lund.pts[i], c.order) >= v - 1e-9, hl = i === lund.hover;
+        g.classList.toggle('on', on); n += on;
+        if (hl && !g.classList.contains('hl')) svg.appendChild(g);
+        g.classList.toggle('hl', hl);
+      });
+      if (sync && lund.playing && c.kind && c.n !== undefined && n > c.n)
+        svg.querySelectorAll('.kick').forEach(k => { k.classList.remove('go'); void k.getBoundingClientRect(); k.classList.add('go'); });
+      c.n = n;
+      svg.closest('.card').classList.toggle('sync', sync);
+    }
+  }
 
   // ---------- Lund plane ----------
-  const lund = { order: 'angle', seed: 11, s: 1, playing: false, pts: [] };
+  const lund = { order: 'angle', seed: 11, s: 1, playing: false, pts: [], hover: null, geom: null, card: 'sk1', cardView: 'anim' }; // card: the one shower card that follows the plane
   const LY = Math.log(200 * 0.4); // ln(pT R / GeV)
   function genLund() {
     const R = mulberry32(lund.seed); lund.pts = [];
@@ -1380,8 +1505,8 @@ button { font-family: var(--f-display); font-weight: 600; font-size: 13px; lette
       lund.pts.push({ x, y });
     }
   }
-  const lscore = p => lund.order === 'angle' ? -p.x : lund.order === 'kt' ? p.y : p.y - p.x;
-  const lrange = () => lund.order === 'angle' ? [-LY, 0] : lund.order === 'kt' ? [0, LY] : [-LY, LY];
+  const lscore = (p, o = lund.order) => o === 'angle' ? -p.x : o === 'kt' ? p.y : p.y - p.x;
+  const lrange = (o = lund.order) => o === 'angle' ? [-LY, 0] : o === 'kt' ? [0, LY] : [-LY, LY];
   const cv = document.getElementById('lund');
   function drawLund() {
     const w = cv.clientWidth, h = cv.clientHeight; if (!w) return;
@@ -1395,6 +1520,7 @@ button { font-family: var(--f-display); font-weight: 600; font-size: 13px; lette
     const sx = x => pad.l + (x - X0) / (X1 - X0) * (w - pad.l - pad.r);
     const sy = y => h - pad.b - (y - Y0) / (Y1 - Y0) * (h - pad.t - pad.b);
     const tx = T_().lund;
+    lund.geom = { sx, sy };
     g.font = '11px "JetBrains Mono", monospace';
     // non-perturbative band
     g.fillStyle = muted; g.globalAlpha = 0.1; g.fillRect(sx(X0), sy(0), sx(X1) - sx(X0), sy(Y0) - sy(0)); g.globalAlpha = 1;
@@ -1430,7 +1556,13 @@ button { font-family: var(--f-display); font-weight: 600; font-size: 13px; lette
       if (on) { g.fillStyle = truth; g.fill(); g.fillStyle = bg; g.fillText(String(i + 1), X, Y + 3.5); }
       else { g.strokeStyle = muted; g.globalAlpha = 0.5; g.lineWidth = 1; g.stroke(); g.globalAlpha = 1; }
     });
+    if (lund.hover !== null && lund.pts[lund.hover]) {
+      const p = lund.pts[lund.hover];
+      g.strokeStyle = tok('--c-ph'); g.lineWidth = 2.5; g.beginPath(); g.arc(sx(p.x), sy(p.y), 12, 0, Math.PI * 2); g.stroke();
+    }
+    updateCards();
   }
+  function setLundHover(i) { if (i === lund.hover) return; lund.hover = i; drawLund(); }
   function syncOrdWho() { document.getElementById('ordWho').innerHTML = T_().ordWho[lund.order]; }
   function playLund() {
     if (lund.playing) return;
@@ -1941,9 +2073,41 @@ button { font-family: var(--f-display); font-weight: 600; font-size: 13px; lette
 
   // truth-tab controls
   document.querySelectorAll('input[name=proc]').forEach(r => r.addEventListener('change', drawHard));
-  document.querySelectorAll('input[name=ord]').forEach(r => r.addEventListener('change', e => { lund.order = e.target.value; syncOrdWho(); playLund(); }));
+  document.querySelectorAll('input[name=ord]').forEach(r => r.addEventListener('change', e => {
+    lund.order = e.target.value;
+    // the radio picks the first card with that order (kt → dipoles); virtuality has no card
+    lund.card = (CARDS.find(c => c.order === lund.order) || {}).id || null;
+    syncOrdWho(); playLund();
+  }));
   document.getElementById('lundPlay').addEventListener('click', playLund);
-  document.getElementById('lundNew').addEventListener('click', () => { lund.seed = (Math.random() * 2 ** 31) | 0; genLund(); playLund(); });
+  document.getElementById('lundNew').addEventListener('click', () => { lund.seed = (Math.random() * 2 ** 31) | 0; lund.hover = null; genLund(); drawSketches(); playLund(); });
+  { const saved = store.get('easejets-cardview'); if (saved === 'sketch' || saved === 'anim') { lund.cardView = saved; document.getElementById('cv-' + saved).checked = true; } }
+  document.querySelectorAll('input[name=cardview]').forEach(r => r.addEventListener('change', e => {
+    lund.cardView = e.target.value; store.set('easejets-cardview', lund.cardView); drawSketches();
+  }));
+  const genDlg = document.getElementById('genDlg');
+  document.getElementById('genOpen').addEventListener('click', () => {
+    // typeset the LaTeX each time: a language switch rewrites the dialog's HTML
+    if (window.renderMathInElement) renderMathInElement(genDlg, { delimiters: [{ left: '\\[', right: '\\]', display: true }, { left: '\\(', right: '\\)', display: false }], throwOnError: false });
+    genDlg.showModal();
+  });
+  document.getElementById('genClose').addEventListener('click', () => genDlg.close());
+  genDlg.addEventListener('click', e => { if (e.target === genDlg) genDlg.close(); }); // click on backdrop
+  document.querySelectorAll('.cardplay').forEach(b => b.addEventListener('click', () => {
+    const o = b.dataset.ord; document.getElementById('ord-' + o).checked = true;
+    lund.order = o; lund.card = b.closest('.card').querySelector('svg.fy').id; syncOrdWho(); playLund();
+  }));
+  const cardsEl = document.querySelector('#sec-ps .cards');
+  cardsEl.addEventListener('pointermove', e => { const em = e.target.closest('.em'); setLundHover(em ? +em.dataset.i : null); });
+  cardsEl.addEventListener('pointerleave', () => setLundHover(null));
+  cv.addEventListener('pointermove', e => {
+    if (!lund.geom) return;
+    const r = cv.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
+    let best = null, bd = 14 * 14;
+    lund.pts.forEach((p, i) => { const d = (lund.geom.sx(p.x) - mx) ** 2 + (lund.geom.sy(p.y) - my) ** 2; if (d < bd) { bd = d; best = i; } });
+    setLundHover(best);
+  });
+  cv.addEventListener('pointerleave', () => setLundHover(null));
   hadT.addEventListener('input', drawHad);
   document.getElementById('hadPlay').addEventListener('click', playHad);
   document.querySelectorAll('.pipe button').forEach(b => b.addEventListener('click', () => document.getElementById(b.dataset.go).scrollIntoView({ behavior: 'smooth', block: 'start' })));
